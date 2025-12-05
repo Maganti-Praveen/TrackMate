@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 import offlineBuffer from '../utils/offlineBuffer';
+import { API_BASE_URL } from '../constants/api';
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const SOCKET_URL = API_BASE_URL;
 const TOKEN_KEY = 'tm_token';
 const MIN_UPDATE_INTERVAL_MS = Number(import.meta.env.VITE_MIN_UPDATE_INTERVAL_MS) || 3000;
 const FLUSH_DELAY_MS = Math.min(500, MIN_UPDATE_INTERVAL_MS);

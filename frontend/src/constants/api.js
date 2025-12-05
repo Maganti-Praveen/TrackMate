@@ -1,3 +1,6 @@
+const FALLBACK_BASE_URL = 'http://localhost:5000';
+// ^ Replace the URL above with your deployed backend host if you do not set VITE_BACKEND_URL.
+
 const inferApiBaseUrl = () => {
   if (import.meta.env?.VITE_BACKEND_URL) {
     return import.meta.env.VITE_BACKEND_URL;
@@ -17,7 +20,7 @@ const inferApiBaseUrl = () => {
     return `${protocol}//${hostname}`;
   }
 
-  return 'http://localhost:5000';
+  return FALLBACK_BASE_URL;
 };
 
 export const API_BASE_URL = inferApiBaseUrl();
