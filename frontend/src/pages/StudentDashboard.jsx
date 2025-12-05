@@ -83,6 +83,7 @@ const StudentDashboard = () => {
   });
   const [toasts, setToasts] = useState([]);
   const toastTimeouts = useRef({});
+  const subscribedTripRef = useRef(null);
 
   const persistNotificationPreference = useCallback((value) => {
     if (typeof window === 'undefined') return;
@@ -156,8 +157,41 @@ const StudentDashboard = () => {
       const initialBusPosition = normalizeLocation(
         nextBus?.lastKnownLocation || nextBus?.location || data?.lastKnownLocation
       );
-      setBusPosition(initialBusPosition);
-      setTripId(deriveTripId(data));
+      setBusPosition(initialBusPosition || null);
+
+      let resolvedTripId = deriveTripId(data);
+      let nextStatus = 'Live updates ready.';
+
+      try {
+        const tripResponse = await api.get('/students/trip');
+        const tripData = tripResponse.data;
+        if (tripData) {
+          resolvedTripId = tripData._id || tripData.id || resolvedTripId;
+          const liveLocation = normalizeLocation(tripData?.bus?.lastKnownLocation);
+          if (liveLocation) {
+            setBusPosition(liveLocation);
+          }
+        } else if (!resolvedTripId) {
+          nextStatus = 'Waiting for a driver to start your trip.';
+        }
+      } catch (tripError) {
+        console.warn('Unable to load live trip', tripError);
+        if (!resolvedTripId) {
+          nextStatus = 'Waiting for a driver to start your trip.';
+        }
+      }
+
+      try {
+        const etaResponse = await api.get('/students/eta');
+        const etaMinutes = etaResponse?.data?.etaMinutes;
+        if (typeof etaMinutes === 'number') {
+          setEta({ value: etaMinutes * 60 * 1000, source: 'server', updatedAt: Date.now() });
+        }
+      } catch (etaError) {
+        console.warn('Unable to load stop ETA', etaError);
+      }
+
+      setTripId(resolvedTripId);
       if (Array.isArray(data?.recentEvents)) {
         const normalizedHistory = data.recentEvents.slice(0, 5).map((event) => ({
           type: event.type || event.status || 'INFO',
@@ -166,7 +200,7 @@ const StudentDashboard = () => {
         }));
         setHistoryEvents(normalizedHistory);
       }
-      setStatusMessage('Live updates ready.');
+      setStatusMessage(nextStatus);
     } catch (err) {
       setError('Unable to load your assignment. Contact the transport admin.');
     } finally {
@@ -276,22 +310,58 @@ const StudentDashboard = () => {
     [maybeNotify, pushToast, stopInfo]
   );
 
+  const handleSubscriptionAck = useCallback(
+    (payload) => {
+      if (!payload?.tripId) return;
+      setStatusMessage('Connected to live trip feed.');
+      if (payload?.source === 'legacy:join') return;
+      pushToast({
+        title: 'Live tracking active',
+        message: 'Realtime bus alerts are enabled.',
+        type: 'success',
+        duration: 4000
+      });
+    },
+    [pushToast]
+  );
+
+  const handleSubscriptionError = useCallback(
+    (payload) => {
+      const message = payload?.message || 'Unable to join live trip room.';
+      setStatusMessage(message);
+      pushToast({ title: 'Live updates unavailable', message, type: 'warning' });
+    },
+    [pushToast]
+  );
+
   const socketHandlers = useMemo(
     () => ({
       'trip:location_update': handleLocationUpdate,
       'trip:eta_update': handleEtaUpdate,
       'trip:stop_arrived': (payload) => handleStopEvent(payload, 'ARRIVED'),
-      'trip:stop_left': (payload) => handleStopEvent(payload, 'LEFT')
+      'trip:stop_left': (payload) => handleStopEvent(payload, 'LEFT'),
+      'trip:subscribed': handleSubscriptionAck,
+      'trip:subscription_error': handleSubscriptionError
     }),
-    [handleEtaUpdate, handleLocationUpdate, handleStopEvent]
+    [handleEtaUpdate, handleLocationUpdate, handleStopEvent, handleSubscriptionAck, handleSubscriptionError]
   );
 
   const { socket, isConnected } = useSocket(socketHandlers);
 
   useEffect(() => {
-    if (socket && tripId) {
-      socket.emit('join', { room: `trip_${tripId}` });
+    if (!socket || !tripId) {
+      return undefined;
     }
+
+    socket.emit('student:subscribe', { tripId });
+    subscribedTripRef.current = tripId;
+
+    return () => {
+      socket.emit('student:unsubscribe', { tripId });
+      if (subscribedTripRef.current === tripId) {
+        subscribedTripRef.current = null;
+      }
+    };
   }, [socket, tripId]);
 
   const enableNotifications = useCallback(async () => {

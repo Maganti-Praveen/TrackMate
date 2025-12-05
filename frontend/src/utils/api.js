@@ -1,33 +1,11 @@
 import axios from 'axios';
+import { API_ROOT } from '../constants/api';
 
-const inferApiUrl = () => {
-  if (import.meta.env.VITE_BACKEND_URL) {
-    return import.meta.env.VITE_BACKEND_URL;
-  }
-
-  if (typeof window !== 'undefined') {
-    const { protocol, hostname, port } = window.location;
-    const defaultPort = 5000;
-    const numericPort = port ? Number(port) : null;
-    const isLocalHost = ['localhost', '127.0.0.1'].includes(hostname);
-    const isLanHost = hostname?.startsWith('192.168.') || hostname?.startsWith('10.') || hostname?.endsWith('.local');
-
-    if (isLocalHost || isLanHost || numericPort === 5173) {
-      return `${protocol}//${hostname}:${defaultPort}`;
-    }
-
-    return `${protocol}//${hostname}`;
-  }
-
-  return 'http://localhost:5000';
-};
-
-const API_URL = inferApiUrl();
 const TOKEN_KEY = 'tm_token';
 const USER_KEY = 'tm_user';
 
 export const api = axios.create({
-  baseURL: `${API_URL}/api`
+  baseURL: API_ROOT
 });
 
 export const setAuthToken = (token) => {

@@ -7,7 +7,7 @@ export const ELURU_SIM_PATH = [
   { lat: 16.7064, lng: 81.0895 }
 ];
 
-export const DEFAULT_MAP_ZOOM = 14;
+export const DEFAULT_MAP_ZOOM = 10;
 
 export const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_LAYER_ATTRIBUTION = '&copy; OpenStreetMap contributors';

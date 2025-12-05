@@ -40,7 +40,11 @@ const assignStudent = async (req, res) => {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   )
     .populate('student', 'username name')
-    .populate('bus', 'name numberPlate')
+    .populate({
+      path: 'bus',
+      select: 'name numberPlate driver',
+      populate: { path: 'driver', select: 'name username' }
+    })
     .populate('stop', 'name sequence');
 
   res.status(201).json(assignment);
@@ -49,7 +53,11 @@ const assignStudent = async (req, res) => {
 const getAssignments = async (_req, res) => {
   const assignments = await StudentAssignment.find()
     .populate('student', 'username name')
-    .populate('bus', 'name numberPlate')
+    .populate({
+      path: 'bus',
+      select: 'name numberPlate driver',
+      populate: { path: 'driver', select: 'name username' }
+    })
     .populate('stop', 'name sequence');
   res.json(assignments);
 };
@@ -70,7 +78,11 @@ const updateAssignment = async (req, res) => {
 
     await assignment.populate([
       { path: 'student', select: 'username name' },
-      { path: 'bus', select: 'name numberPlate' },
+      {
+        path: 'bus',
+        select: 'name numberPlate driver',
+        populate: { path: 'driver', select: 'name username' }
+      },
       { path: 'stop', select: 'name sequence' }
     ]);
 

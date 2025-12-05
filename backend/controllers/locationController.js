@@ -231,6 +231,26 @@ const registerLocationHandlers = (io) => {
       }
     }, 5000);
 
+    const joinedTrips = new Set();
+
+    const subscribeToTrip = (tripId, source = 'student:subscribe') => {
+      const normalized = tripId ? tripId.toString() : null;
+      if (!normalized) return;
+      const room = `trip_${normalized}`;
+      socket.join(room);
+      joinedTrips.add(normalized);
+      socket.emit('trip:subscribed', { tripId: normalized, source });
+    };
+
+    const unsubscribeFromTrip = (tripId) => {
+      const normalized = tripId ? tripId.toString() : null;
+      if (!normalized) return;
+      const room = `trip_${normalized}`;
+      socket.leave(room);
+      joinedTrips.delete(normalized);
+      socket.emit('trip:unsubscribed', { tripId: normalized });
+    };
+
     socket.on('auth:token', ({ token }) => {
       try {
         const decoded = jwt.verify(token, JWT_SECRET);
@@ -239,6 +259,37 @@ const registerLocationHandlers = (io) => {
       } catch (error) {
         socket.emit('auth:error', { message: 'Invalid token' });
         socket.disconnect(true);
+      }
+    });
+
+    socket.on('student:subscribe', ({ tripId } = {}) => {
+      if (!socket.user) {
+        socket.emit('trip:subscription_error', { message: 'Authenticate before subscribing.' });
+        return;
+      }
+      if (!tripId) {
+        socket.emit('trip:subscription_error', { message: 'tripId is required.' });
+        return;
+      }
+      subscribeToTrip(tripId);
+    });
+
+    socket.on('student:unsubscribe', ({ tripId } = {}) => {
+      if (!tripId) return;
+      unsubscribeFromTrip(tripId);
+    });
+
+    socket.on('join', ({ room, tripId } = {}) => {
+      const resolvedTripId = tripId || (typeof room === 'string' && room.startsWith('trip_') ? room.slice(5) : null);
+      const targetRoom = room || (resolvedTripId ? `trip_${resolvedTripId}` : null);
+      if (!targetRoom) {
+        socket.emit('trip:subscription_error', { message: 'Room or tripId is required.' });
+        return;
+      }
+      socket.join(targetRoom);
+      if (resolvedTripId) {
+        joinedTrips.add(resolvedTripId);
+        socket.emit('trip:subscribed', { tripId: resolvedTripId, source: 'legacy:join' });
       }
     });
 
