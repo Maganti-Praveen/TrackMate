@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Chivo:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tm-space: 'Space Grotesk', 'Chivo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --tm-midnight: #01040c;
+  --tm-abyss: #050c1f;
+  --tm-ink: #f8fafc;
+  --tm-muted: #9fb2d4;
+  --tm-accent: #ff6b2c;
+  --tm-accent-soft: #ffb347;
+  --tm-panel: rgba(7, 18, 45, 0.9);
+  --tm-panel-alt: rgba(11, 26, 58, 0.85);
+  --tm-border: rgba(255, 255, 255, 0.08);
+  --tm-card-shadow: 0 25px 80px rgba(0, 0, 0, 0.65);
+}
+
+body {
+  font-family: var(--tm-space);
+  min-height: 100vh;
+  background-color: var(--tm-midnight);
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255, 107, 44, 0.2), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.18), transparent 45%),
+    linear-gradient(135deg, #01040c 0%, #050c1f 100%);
+  color: var(--tm-ink);
+  line-height: 1.7;
+}
+
+::selection {
+  background: rgba(11, 124, 255, 0.3);
+  color: #f8fafc;
+}
+
+.admin-glow {
+  background: linear-gradient(145deg, rgba(6, 14, 36, 0.9), rgba(15, 26, 58, 0.85));
+  border: 1px solid var(--tm-border);
+  box-shadow: var(--tm-card-shadow);
+  color: var(--tm-ink);
+}
+
+.frosted-panel {
+  background: var(--tm-panel-alt);
+  border: 1px solid var(--tm-border);
+  color: var(--tm-text);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.muted-copy {
+  color: var(--tm-muted);
+}
+
+.surface-card {
+  background: var(--tm-panel);
+  border: 1px solid var(--tm-border);
+  box-shadow: var(--tm-card-shadow);
+  color: var(--tm-ink);
+}
+
+.surface-card--alt {
+  background: radial-gradient(circle at top, rgba(255, 107, 44, 0.08), transparent 55%),
+    rgba(4, 10, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--tm-ink);
+}
+
+input,
+select,
+textarea {
+  background-color: rgba(4, 10, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--tm-ink);
+}
+
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+  color: var(--tm-muted);
+}
+
+button {
+  font-family: inherit;
+}

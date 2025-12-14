@@ -1,0 +1,17 @@
+module.exports = {
+  RADIUS_METERS: 1000,
+  SUSTAIN_TIME_MS: 0,
+  LEAVE_RADIUS_METERS: 80,
+  MIN_UPDATE_INTERVAL_MS: 3000,
+  ETA_ALPHA: 0.25,
+  SEG_ALPHA: 0.15,
+  MIN_SPEED_MPS: 0.8,
+  ASSUMED_SPEED_MPS: 8,
+  DEFAULT_SEG_SEC: 120,
+  ETA_EMIT_DELTA_MS: 5000,
+  JWT_SECRET: process.env.JWT_SECRET || 'trackmate_dev_secret',
+  OSRM_BASE_URL: 'http://router.project-osrm.org',
+  OSRM_CACHE_TTL_MS: 60000,
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || 'BFHhjifeev0Ff44ZnY49dHbee6LACpUub5IzN6OMaoDJuac2f0uddLeMXbbggQUpaUvDdv-LiXBXM9gJpfw07dg',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || 'cBoQCgPdtFtItM2PZKfpljAvF2VRi7jbE3VokYlfAXs'
+};

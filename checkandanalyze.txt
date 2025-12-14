@@ -1,0 +1,218 @@
+SUPER PROMPT — FULL REPO ANALYZE + IMPLEMENT (LOCAL DEVELOPMENT ONLY)
+
+You are a development agent. Your job: read the entire repository in the current workspace, analyze the code, find gaps vs the TrackMate spec below, and implement the missing/buggy pieces so the project runs locally end-to-end for development and testing. Do not deploy anywhere. Work only in-place on this repository, creating or modifying files as needed.
+
+Important constraints (must follow exactly)
+
+This project is for local development & testing only — do not add any cloud-specific deployment or paid APIs.
+
+Passwords must remain plain-text (as requested) — do not implement bcrypt or hashing.
+
+Store auth tokens in sessionStorage on the frontend and rehydrate on refresh.
+
+Use only free libraries & services: Leaflet + OSM tiles, leaflet.pm or leaflet.draw, turf/haversine, Socket.IO.
+
+Do not require VAPID or server push subscriptions — browser Notification API + service worker registration.showNotification is enough for this iteration.
+
+Keep code readable, modular, and commented. Add TODO comments where future security improvements should be made (e.g., hashing).
+
+Assume the provided MongoDB connection string is correct and use it for local dev.
+
+Goals (what the finished repo must do locally)
+Core features (end-to-end working)
+
+Backend:
+
+JWT auth (plain-text password verification) with POST /api/auth/login.
+
+REST endpoints: routes for buses, routes, stops, trips, events; minimal admin-protected endpoints.
+
+Socket.IO server with socket auth: expects auth:token from clients; validates JWT and attaches socket.user.
+
+Server-side geofence detection on driver:location_update to auto-create StopEvent ARRIVED/LEFT with debounce/hysteresis constants (RADIUS_METERS=50, SUSTAIN_TIME_MS=6000, LEAVE_RADIUS=80, MIN_UPDATE_INTERVAL_MS=3000).
+
+In-memory activeTrips tracking with DB persistence of events and trip currentStopIndex.
+
+Simple ETA engine (default per-segment time 120s) and trip:eta_update emission.
+
+Seed script seed.js that creates sample admin ad1/ad1, driver dr1/dr1, two students (22ME1A0501,22ME1A0502), a bus, and a sample route (geojson + two stops). Print sample JWT tokens and tripId(s) on seed run.
+
+DEV_TESTS.md explaining local tests and a small socket-client-test.js script to simulate GPS pings.
+
+Frontend:
+
+React app with AuthContext storing token & user in sessionStorage and rehydrating on page refresh.
+
+Axios api util that reads token from sessionStorage and sets Authorization header; 401 interceptor clears sessionStorage and redirects to login.
+
+useSocket singleton hook: connects socket.io-client, emits auth:token on connect, reauths on token change, provides emitLocation(payload) that either sends or buffers when offline.
+
+Admin Map Editor (/admin/routes) using Leaflet + leaflet.pm to draw route polyline and place stops; Save sends POST /api/routes with {name, geojson, stops}.
+
+Driver Dashboard:
+
+Start Trip API call (POST /api/trips/start) and receives tripId.
+
+navigator.geolocation.watchPosition integration sending driver:location_update events via useSocket.emitLocation.
+
+Client-side throttling to MIN_UPDATE_INTERVAL_MS, offline buffer, flush on reconnect.
+
+Big buttons for Start Trip / Start Tracking / Stop Tracking / End Trip and status UI.
+
+Driver simulator page (if running on desktop) to simulate a path and emit location updates.
+
+Student Dashboard:
+
+Map (Leaflet) showing student stop and moving bus marker from socket trip:location_update.
+
+Shows ETA (prefer trip:eta_update; fallback compute from distance).
+
+Notification opt-in toggle; use Notification API and service worker registration to show notifications both in-page and via SW (no VAPID).
+
+Toast UI for in-page alerts.
+
+Service Worker at /public/sw.js to handle showNotification and notification click.
+
+Robustness & developer friendliness
+
+All new/modified files should include comments describing behavior and security caveats.
+
+Add helpful console logs for demo/troubleshooting guarded by a DEBUG flag or NODE_ENV !== 'production'.
+
+Provide README.md updates with exact local run steps for backend and frontend, seed instructions, and dev-test flows.
+
+What you must do now (step-by-step instructions for the agent)
+
+Scan repository
+
+Read all files in repo. Produce a report (console output) listing:
+
+Files present in /backend and /frontend (or top-level), package.json(s), and any existing server/client entrypoints.
+
+Any missing expected files (e.g., server.js, models, frontend App.jsx, etc.) or obvious mismatches.
+
+Run static checks locally (if possible)
+
+If node/npm are available to the agent environment, run npm install where needed and run node server.js or npm run dev to detect runtime errors. If the agent cannot execute, still run a static lint/check by parsing package.json scripts and code structure to detect missing modules or obvious syntax errors.
+
+Report errors found.
+
+Implement missing backend functionality (create/modify files under /backend):
+
+Ensure config/db.js connects using provided MongoDB URL.
+
+Create/modify models: User, Bus, Route, StopEvent, Trip (with fields as specified earlier).
+
+Implement authController.js (login — plain text check → sign JWT) and authRoutes.
+
+Implement routeController, tripController, eventController per API spec.
+
+Add utils/geoUtils.js with haversine distance function; add config/constants.js with geofence constants and JWT secret.
+
+Wire up Socket.IO in server.js. On socket connect expect auth:token then set socket.user. Implement handlers:
+
+driver:location_update — throttle per MIN_UPDATE_INTERVAL_MS and run geofence detection and events per algorithm provided earlier.
+
+driver:manual_event — persist and broadcast.
+
+Create seed.js which seeds DB and prints tokens and sample route/trip ids.
+
+Implement missing frontend functionality (create/modify files under /frontend/src):
+
+Create/update AuthContext.jsx (sessionStorage token, rehydrate).
+
+Create utils/api.js (axios instance with interceptors).
+
+Create hooks/useSocket.js (singleton socket, auth:token emit, emitLocation with buffering).
+
+Create pages:
+
+Login.jsx
+
+DriverDashboard.jsx (watchPosition integration)
+
+DriverSimulator.jsx (simulate coordinates)
+
+ManageRoutes.jsx + components/MapEditor.jsx (Leaflet + leaflet.pm)
+
+StudentDashboard.jsx + components/StudentMap.jsx, NotificationToggle.jsx, Toast.jsx
+
+Add public/sw.js service worker and frontend registerServiceWorker() code.
+
+Ensure package.json includes necessary deps: axios, socket.io-client, leaflet, leaflet.pm (or leaflet-draw), @turf/turf (optional), react-router-dom, tailwindcss (if used) or simple CSS.
+
+Ensure integration points match
+
+REST endpoints used by frontend must exist and accept expected payloads.
+
+Socket event names must match both sides:
+
+Client → Server: auth:token, driver:location_update, driver:manual_event
+
+Server → Clients: trip:location_update, trip:stop_arrived, trip:stop_left, trip:eta_update
+
+Ensure server emits to trip_<tripId> rooms and clients join accordingly.
+
+Add developer utilities
+
+DEV_TESTS.md with step-by-step local test instructions and sample socket-client-test.js.
+
+seed.js script to populate DB.
+
+Update README.md with local run commands:
+
+Backend: cd backend && npm install && node seed.js && node server.js (or npm run dev)
+
+Frontend: cd frontend && npm install && npm run dev
+
+How to login (ad1/ad1, dr1/dr1, students) and where to find tokens/tripIds from seed output.
+
+Run or simulate run
+
+If possible, run the backend and perform a quick smoke test:
+
+Start server, run seed, then run the socket test script to simulate driver pings and verify ARRIVED/LEFT are written to DB and emitted.
+
+Otherwise, provide exact instructions and the test script so you (local) can run them.
+
+Produce final report
+
+Print a concise summary:
+
+Files created/modified.
+
+New npm packages added.
+
+Commands to run backend & frontend locally.
+
+Example test run logs (seed output with tokens/tripIds) — if agent executed seed, show real output; otherwise explain exactly what the seed will print.
+
+Short list of remaining manual checks or TODOs (e.g., adjust geofence params, polish UI).
+
+Behavior expectations for the agent
+
+If files already exist, patch them rather than delete and rewrite unless absolutely necessary.
+
+If a requested endpoint or file conflicts with existing code style, prefer minimal, backwards-compatible changes.
+
+Write clear comments in new code explaining why plain-text passwords are insecure and where to switch to bcrypt.
+
+Add helpful debug logs guarded by if (process.env.DEBUG) or if (process.env.NODE_ENV !== 'production').
+
+Do not add any cloud vendor-specific code, API keys, or paid services.
+
+Preserve any custom code or features you find that are already correct.
+
+When finished, output (mandatory)
+
+A list of all files created or modified (paths).
+
+package.json diffs (new dependencies).
+
+Exact commands to run backend and frontend locally (including seeding).
+
+If the agent ran tests, include the server console output for seed and socket simulation.
+
+If agent could not execute runtime steps, say so and provide exact steps for me to run locally (copy-paste ready).
+
+A short action plan with next recommended improvements (security, persistence of activeTrips, production concerns).

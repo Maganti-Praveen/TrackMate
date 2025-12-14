@@ -1,0 +1,33 @@
+
+/* Dark Theme for Leaflet Controls */
+.leaflet-bar {
+  border: none !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.leaflet-bar a {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #94a3b8 !important; /* slate-400 */
+  border-bottom: 1px solid #334155 !important; /* slate-700 */
+}
+
+.leaflet-bar a:hover {
+  background-color: #334155 !important; /* slate-700 */
+  color: #f8fafc !important; /* slate-50 */
+}
+
+.leaflet-bar a:first-child {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+.leaflet-bar a:last-child {
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+  border-bottom: none !important;
+}
+
+/* Map Canvas rounded corners */
+.map-editor__canvas {
+  border-radius: 1.5rem; /* rounded-3xl matches container */
+}
