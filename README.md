@@ -4,7 +4,7 @@
 
 TrackMate is a modern, full-stack progressive web application (PWA) designed to solve the chaos of school bus tracking. It avoids the pitfalls of laggy GPS by implementing intelligent smoothing, real-time socket simulation known as "God Mode," and a sophisticated admin "Route Lab" for managing transit networks.
 
-![Driver Dashboard](screenshots/driver_dash.png)
+![Driver Dashboard](Screenshots/driver_dash.png)
 
 ## 🚀 Key Features
 
@@ -66,4 +66,4 @@ VAPID_PRIVATE_KEY=your_web_push_private_key
 
 | Driver Simulation | Route Lab | Student View |
 |:---:|:---:|:---:|
-| ![Driver Sim](screenshots/sim_mode.png) | ![Route Lab](screenshots/route_lab.png) | ![Mobile View](screenshots/student_mobile.png) |
+| ![Driver Sim](Screenshots/god_mode.png) | ![Route Lab](Screenshots/route%20table.png) | ![Mobile View](Screenshots/student_mobile1.jpg) |
