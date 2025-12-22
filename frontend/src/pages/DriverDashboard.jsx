@@ -24,7 +24,23 @@ const DriverDashboard = () => {
   const { user } = useAuth();
   const [trip, setTrip] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
-  const [simulate, setSimulate] = useState(false); // Auto-simulation (Eluru path)
+  const [showSosModal, setShowSosModal] = useState(false);
+  const [sosMessage, setSosMessage] = useState('Bus Breakdown');
+
+  const handleConfirmSos = () => {
+    if (!trip) return;
+    const finalMessage = sosMessage.trim() || 'Bus Breakdown';
+    const payload = {
+      tripId: trip._id || trip.id,
+      location: lastPosition ? { lat: lastPosition.lat, lng: lastPosition.lng } : null,
+      message: finalMessage
+    };
+    socket.emit('driver:sos', payload);
+    addLog(`SOS SENT: ${finalMessage}`);
+    setStatusMessage('SOS ALERT BROADCASTED');
+    setShowSosModal(false);
+  };
+
   const [isSimulationMode, setIsSimulationMode] = useState(false); // Manual click-to-teleport (God Mode)
   const [debugLog, setDebugLog] = useState([]);
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -47,6 +63,9 @@ const DriverDashboard = () => {
   const { isTracking, permissionStatus, lastPosition, error: geoError, pingsSent, startTracking, stopTracking } =
     useGeolocation({
       onPosition: (position) => {
+        // If God Mode (Manual Simulation) is active, ignore real GPS to prevent jumping
+        if (isSimulationMode) return;
+
         if (!trip) {
           addLog('Position skipped (no active trip).');
           return;
@@ -70,8 +89,7 @@ const DriverDashboard = () => {
         addLog(sent ? `Sent ${position.lat},${position.lng}` : 'Buffered location (offline)');
         setStatusMessage(sent ? 'Live location transmitted.' : 'Offline. Location buffered.');
       },
-      simulate,
-      simulatedPath: SIM_PATH
+
     });
 
   useEffect(() => {
@@ -122,30 +140,18 @@ const DriverDashboard = () => {
     if (!ensureTrip()) return;
     setStatusMessage('Starting trip...');
     try {
-      const { data } = await api.post('/trips/start', { busId: user.assignedBusId });
+      const { data } = await api.post('/trips/start', { busId: user?.assignedBusId });
       setTrip(data);
-      setStatusMessage('Trip started. Start tracking to stream GPS.');
+      // AUTO-START TRACKING
+      refreshSocketAuth();
+      startTracking();
+      setStatusMessage('Trip started & Live Tracking Active.');
       addLog(`Trip started ${data._id}`);
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to start trip.';
       setStatusMessage(message);
       addLog(message);
     }
-  };
-
-  const handleStartTracking = () => {
-    if (!trip) {
-      setStatusMessage('Start a trip before tracking.');
-      return;
-    }
-    refreshSocketAuth();
-    startTracking();
-    setStatusMessage('Tracking started. Keep this screen active for continuous GPS.');
-  };
-
-  const handleStopTracking = () => {
-    stopTracking();
-    setStatusMessage('Tracking paused.');
   };
 
   const handleEndTrip = async () => {
@@ -240,13 +246,38 @@ const DriverDashboard = () => {
             Clear Today's History
           </button>
           <button
-            onClick={() => setIsSimulationMode(!isSimulationMode)}
+            onClick={() => {
+              const newMode = !isSimulationMode;
+              setIsSimulationMode(newMode);
+              if (newMode) {
+                stopTracking();
+                addLog('Simulation Mode ON: GPS Tracking Paused.');
+              } else {
+                if (trip) {
+                  startTracking();
+                  addLog('Simulation Mode OFF: GPS Tracking Resumed.');
+                }
+              }
+            }}
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${isSimulationMode
               ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
               : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
           >
             {isSimulationMode ? '🛠️ God Mode ON' : '🛠️ Enable Sim'}
+          </button>
+          <button
+            onClick={() => {
+              if (!trip) {
+                setStatusMessage('Start a trip to use SOS.');
+                return;
+              }
+              setSosMessage('Bus Breakdown');
+              setShowSosModal(true);
+            }}
+            className="flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-rose-600/40 hover:bg-rose-700 animate-pulse"
+          >
+            🚨 SOS PANIC
           </button>
         </div>
       </header>
@@ -260,21 +291,20 @@ const DriverDashboard = () => {
         pingsSent={pingsSent}
         onStartTrip={handleStartTrip}
         onEndTrip={handleEndTrip}
-        onStartTracking={handleStartTracking}
-        onStopTracking={handleStopTracking}
         tripId={trip?._id || trip?.id}
         warnings={warnings}
-        simulate={simulate}
-        onToggleSimulate={setSimulate}
+
       />
 
-      {statusMessage && (
-        <div className="rounded border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-slate-100">
-          {statusMessage}
-          {!isOnline && <span className="ml-2 text-amber-600">(offline)</span>}
-          {isSimulationMode && <div className="mt-1 text-xs text-indigo-300">Tap anywhere on the map to teleport bus.</div>}
-        </div>
-      )}
+      {
+        statusMessage && (
+          <div className="rounded border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-slate-100">
+            {statusMessage}
+            {!isOnline && <span className="ml-2 text-amber-600">(offline)</span>}
+            {isSimulationMode && <div className="mt-1 text-xs text-indigo-300">Tap anywhere on the map to teleport bus.</div>}
+          </div>
+        )
+      }
       {geoError && <p className="text-sm text-rose-300">GPS error: {geoError}</p>}
 
       <DriverMap lastPosition={lastPosition} busId={trip?.bus?._id || trip?.bus} route={trip?.route}>
@@ -310,7 +340,62 @@ const DriverDashboard = () => {
           {debugLog.length ? debugLog.join('\n') : 'Waiting for events...'}
         </pre>
       </section>
-    </main>
+
+      {/* Custom SOS Modal */}
+      {showSosModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md space-y-4 rounded-3xl border-2 border-rose-500 bg-slate-900 p-6 shadow-[0_0_50px_rgba(225,29,72,0.6)] animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-rose-500/20 p-4 mb-4 ring-2 ring-rose-500/50">
+                <span className="text-4xl animate-pulse">🚨</span>
+              </div>
+              <h2 className="text-2xl font-bold uppercase tracking-widest text-white">Emergency Broadcast</h2>
+              <p className="mt-2 text-sm text-rose-200/80">
+                This will alert all connected students and admins immediately.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Nature of Emergency</label>
+              <input
+                type="text"
+                autoFocus
+                value={sosMessage}
+                onChange={(e) => setSosMessage(e.target.value)}
+                placeholder="e.g. Flat Tyre, Engine Smoke, Accident..."
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-lg text-white placeholder-white/20 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 transition"
+              />
+              <div className="flex gap-2 flex-wrap">
+                {['Bus Breakdown', 'Flat Tyre', 'Medical Emergency', 'Accident'].map(suggestion => (
+                  <button
+                    key={suggestion}
+                    onClick={() => setSosMessage(suggestion)}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10 hover:text-white hover:border-white/30 transition"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-4">
+              <button
+                onClick={() => setShowSosModal(false)}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSos}
+                className="rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-4 py-3 font-bold text-white shadow-lg shadow-rose-600/30 hover:scale-[1.02] hover:shadow-rose-600/50 transition-all active:scale-[0.98]"
+              >
+                BROADCAST SOS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main >
   );
 };
 

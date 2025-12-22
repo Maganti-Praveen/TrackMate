@@ -21,8 +21,11 @@ const stopEventSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['ARRIVED', 'LEFT'],
+      enum: ['ARRIVED', 'LEFT', 'SOS'],
       required: true
+    },
+    message: {
+      type: String
     },
     timestamp: {
       type: Date,

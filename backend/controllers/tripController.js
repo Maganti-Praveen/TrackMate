@@ -112,4 +112,36 @@ const deleteDailyHistory = async (req, res) => {
   }
 };
 
-module.exports = { startTrip, advanceToNextStop, getActiveTrip, deleteDailyHistory };
+const endTrip = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const trip = await Trip.findById(tripId);
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    if (trip.driver.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized. You are not the driver of this trip.' });
+    }
+
+    trip.status = 'COMPLETED';
+    trip.endedAt = new Date();
+    await trip.save();
+
+    // Clear from in-memory cache if it exists (for location tracking)
+    try {
+      const { activeTrips } = require('../inMemory/activeTrips');
+      activeTrips.delete(trip._id.toString());
+    } catch (e) {
+      // ignore
+    }
+
+    res.json({ message: 'Trip ended successfully', trip });
+  } catch (error) {
+    console.error('endTrip error', error);
+    res.status(500).json({ message: 'Failed to end trip', error: error.message });
+  }
+};
+
+module.exports = { startTrip, advanceToNextStop, getActiveTrip, deleteDailyHistory, endTrip };

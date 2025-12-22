@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { MapPin, Navigation, Bell, BellOff, Info } from 'lucide-react';
+import { MapPin, Navigation, Bell, BellOff, Info, RefreshCw } from 'lucide-react';
 import StudentMap from '../components/StudentMap';
 import NotificationToggle from '../components/NotificationToggle';
 import { useSocket } from '../hooks/useSocket';
@@ -11,8 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const TOKEN_KEY = 'tm_token';
 const NOTIFICATION_PREF_KEY = 'tm_student_notifications';
-// Hardcoded Public Key (In production, serve this via API)
-const VAPID_PUBLIC_KEY = 'BFHhjifeev0Ff44ZnY49dHbee6LACpUub5IzN6OMaoDJuac2f0uddLeMXbbggQUpaUvDdv-LiXBXM9gJpfw07dg';
+const VAPID_PUBLIC_KEY = 'BESvdNeBIH86BBPiukXJZ2ID1dQ9lACvMt_hCiBnRvvdQuxFi4AIHdSWPZU-UPqh251PYL57K0v0sy6cWEajAME';
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -114,6 +113,14 @@ const StudentDashboard = () => {
 
     try {
       const registration = await navigator.serviceWorker.ready;
+
+      // Check for existing subscription
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        // Unsubscribe from old key to be safe (handles key rotation)
+        await existingSub.unsubscribe();
+      }
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -234,25 +241,6 @@ const StudentDashboard = () => {
     ? normalizeLocation(stopInfo)
     : null;
 
-  const handleLocationUpdate = useCallback(
-    (payload) => {
-      if (!payload) return;
-      if (tripId && payload.tripId && payload.tripId !== tripId) return;
-      setBusPosition({ lat: payload.lat, lng: payload.lng });
-      setStatusMessage('Live GPS update received.');
-      if (!eta || eta?.source !== 'server') {
-        const fallback = computeFallbackETA(
-          { lat: payload.lat, lng: payload.lng },
-          stopPosition
-        );
-        if (fallback) {
-          setEta({ value: fallback, source: 'fallback', updatedAt: Date.now() });
-        }
-      }
-    },
-    [eta, stopPosition, tripId]
-  );
-
   const handleEtaUpdate = useCallback(
     (payload) => {
       if (!payload || !stopInfo) return;
@@ -341,6 +329,41 @@ const StudentDashboard = () => {
     []
   );
 
+  const [busSpeed, setBusSpeed] = useState(0);
+  const [sosAlert, setSosAlert] = useState(null);
+
+  const speakStatus = () => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Text-to-speech not supported');
+      return;
+    }
+    const stopName = stopInfo?.name || 'unknown stop';
+    const etaText = eta?.value ? `${Math.ceil(eta.value / 60000)} minutes` : 'unknown time';
+    const text = `The bus is currently at ${busPosition ? 'a known location' : 'unknown location'} and will arrive at ${stopName} in approximately ${etaText}. Current speed is ${Math.round(busSpeed * 3.6)} kilometers per hour.`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleLocationUpdate = useCallback(
+    (payload) => {
+      if (!payload) return;
+      if (tripId && payload.tripId && payload.tripId !== tripId) return;
+      setBusPosition({ lat: payload.lat, lng: payload.lng });
+      setBusSpeed(payload.speed || 0);
+      setStatusMessage('Live GPS update received.');
+      if (!eta || eta?.source !== 'server') {
+        const fallback = computeFallbackETA(
+          { lat: payload.lat, lng: payload.lng },
+          stopPosition
+        );
+        if (fallback) {
+          setEta({ value: fallback, source: 'fallback', updatedAt: Date.now() });
+        }
+      }
+    },
+    [eta, stopPosition, tripId]
+  );
+
   const socketHandlers = useMemo(
     () => ({
       'trip:location_update': handleLocationUpdate,
@@ -348,10 +371,19 @@ const StudentDashboard = () => {
       'trip:stop_arrived': (payload) => handleStopEvent(payload, 'ARRIVED'),
       'trip:stop_left': (payload) => handleStopEvent(payload, 'LEFT'),
       'trip:subscribed': handleSubscriptionAck,
-      'trip:subscription_error': handleSubscriptionError
+      'trip:subscription_error': handleSubscriptionError,
+      'trip:sos': (payload) => {
+        setSosAlert(payload);
+        setHistoryEvents(prev => [{
+          type: 'SOS',
+          stopName: payload.message || 'Emergency Alert',
+          timestamp: payload.timestamp || Date.now()
+        }, ...prev].slice(0, 5));
+      }
     }),
     [handleEtaUpdate, handleLocationUpdate, handleStopEvent, handleSubscriptionAck, handleSubscriptionError]
   );
+
 
   const { socket, isConnected, isAuthenticated } = useSocket(socketHandlers);
 
@@ -396,7 +428,17 @@ const StudentDashboard = () => {
     }
   }, [persistNotificationPreference]);
 
-  const disableNotifications = useCallback(() => {
+  const disableNotifications = useCallback(async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
+    } catch (e) {
+      console.warn('Unsubscribe failed locally', e);
+    }
+
     setNotificationsEnabled(false);
     persistNotificationPreference(false);
     toast('Notifications disabled', { icon: '🔕' });
@@ -422,117 +464,199 @@ const StudentDashboard = () => {
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-10 text-white">
-      <header className="space-y-1 text-white">
-        <p className="text-xs uppercase tracking-[0.4em] text-white/60">Live student view</p>
-        <h1 className="text-3xl font-semibold text-white">Track your ride</h1>
-        <p className="text-sm text-white/70">Stay synced with your bus, stop ETA, and notifications.</p>
+      <header className="flex items-center justify-between text-white">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/60">Welcome, {profile?.name || user?.name || user?.username || 'Student'}</p>
+          <h1 className="text-3xl font-semibold text-white">Track your bus</h1>
+          <p className="text-sm text-white/70">Stay synced with your bus, stop ETA, and notifications.</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchProfile}
+            className="rounded-full bg-indigo-500/20 p-3 text-indigo-200 hover:bg-indigo-500/40 hover:text-white transition"
+            title="Sync Data"
+          >
+            <span className="sr-only">Sync Data</span>
+            <RefreshCw size={24} />
+          </button>
+          <button
+            onClick={speakStatus}
+            className="rounded-full bg-indigo-500/20 p-3 text-indigo-200 hover:bg-indigo-500/40 hover:text-white transition"
+            title="Speak Status"
+          >
+            <span className="sr-only">Speak Status</span>
+            🔊
+          </button>
+        </div>
       </header>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-white/60">Bus</p>
-            <p className="text-2xl font-semibold">{profile?.bus?.name || 'Not assigned'}</p>
-            <p className="text-sm text-white/60">Trip ID: {tripId || '—'}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-widest text-white/60">Your stop</p>
-            <p className="text-2xl font-semibold">{stopInfo?.name || 'Not assigned'}</p>
-            <p className="text-sm text-white/60">ETA: {formattedEta}</p>
+      {sosAlert && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-red-600 p-6 text-white shadow-2xl animate-pulse cursor-pointer" onClick={() => setSosAlert(null)}>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="rounded-full bg-white/20 p-4">
+                <span className="text-4xl">🚨</span>
+              </div>
+              <h2 className="text-3xl font-bold uppercase tracking-widest">Emergency Alert</h2>
+              <p className="text-lg font-medium">{sosAlert.message}</p>
+              <p className="text-sm opacity-80">
+                Location shared with admins. Stay calm and follow college protocols.
+              </p>
+              <button
+                className="mt-4 rounded-lg bg-white px-6 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
+                onClick={(e) => { e.stopPropagation(); setSosAlert(null); }}
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
-        <dl className="grid gap-6 text-sm text-white/80 sm:grid-cols-3">
-          <div>
-            <dt className="text-xs uppercase tracking-widest text-white/50">Socket</dt>
-            <dd className="text-base font-semibold">{isConnected ? 'Connected' : 'Disconnected'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-widest text-white/50">Status</dt>
-            <dd className="text-base font-semibold">{statusMessage || 'Waiting for live data'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-widest text-white/50">Notifications</dt>
-            <dd className="text-base font-semibold">{notificationsEnabled ? 'Enabled' : 'Disabled'} ({permission})</dd>
-          </div>
+      )}
 
-          {/* Journey Progress */}
-          {tripId && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
-              <header className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/60">Live Journey</p>
-                  <h2 className="text-xl font-semibold text-white">Route Progress</h2>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-indigo-400">
-                    {journey?.progress?.percentage ?? 0}%
-                  </span>
-                  <span className="text-xs text-white/40 block">completed</span>
-                </div>
-              </header>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
+          {/* Main Info Grid */}
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Bus Info */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/60">Bus</p>
+              <p className="text-2xl font-semibold">{profile?.bus?.name || 'Not assigned'}</p>
+              <p className="text-sm text-white/60">Trip ID: {tripId || '—'}</p>
+            </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg bg-white/5 p-4 border border-white/5">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <p className="text-xs uppercase tracking-widest text-white/50">Current / Last Stop</p>
+            {/* Stop Info */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/60">Your stop</p>
+              <p className="text-2xl font-semibold">{stopInfo?.name || 'Not assigned'}</p>
+              <p className="text-sm text-white/60">ETA: {formattedEta}</p>
+            </div>
+
+            {/* Speed Info */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/60">Live Speed</p>
+              <p className="text-2xl font-semibold font-mono text-emerald-400">
+                {Math.round(busSpeed * 3.6)} <span className="text-sm font-sans text-white/60">km/h</span>
+              </p>
+              <p className="text-sm text-white/60">Real-time telemetry</p>
+            </div>
+
+            {/* Socket Status */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/50">Socket</p>
+              <p className="text-base font-semibold">{isConnected ? 'Connected' : 'Disconnected'}</p>
+            </div>
+
+            {/* System Status */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/50">Status</p>
+              <p className="text-base font-semibold">{statusMessage || 'Waiting for live data'}</p>
+            </div>
+
+            {/* Notifications */}
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/50">Notifications</p>
+              <p className="text-base font-semibold">{notificationsEnabled ? 'Enabled' : 'Disabled'} ({permission})</p>
+            </div>
+
+            {/* Journey Progress - Full Width */}
+            {tripId && (
+              <div className="col-span-1 md:col-span-3 mt-4 pt-4 border-t border-white/10">
+                <header className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60">Live Journey</p>
+                    <h2 className="text-xl font-semibold text-white">Route Progress</h2>
                   </div>
-                  <p className="text-lg font-medium text-white">{journey?.currentStop?.name || 'Start'}</p>
-                  <p className="text-sm text-white/40">Stop #{journey?.currentStop?.seq ?? 0}</p>
-                </div>
-
-                <div className="rounded-lg bg-white/5 p-4 border border-white/5">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
-                    <p className="text-xs uppercase tracking-widest text-white/50">Up Next</p>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-indigo-400">
+                      {journey?.progress?.percentage ?? 0}%
+                    </span>
+                    <span className="text-xs text-white/40 block">completed</span>
                   </div>
-                  <p className="text-lg font-medium text-white">{journey?.nextStop?.name || 'End of Route'}</p>
-                  <p className="text-sm text-white/40">Stop #{journey?.nextStop?.seq ?? ((journey?.currentStop?.seq ?? 0) + 1)}</p>
+                </header>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-lg bg-white/5 p-4 border border-white/5 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                      <p className="text-xs uppercase tracking-widest text-white/50">Current / Last Stop</p>
+                    </div>
+                    <p className="text-lg font-medium text-white line-clamp-1" title={journey?.currentStop?.name}>{journey?.currentStop?.name || 'Start'}</p>
+                    <p className="text-sm text-white/40">Stop #{journey?.currentStop?.seq ?? 0}</p>
+                  </div>
+
+                  <div className="rounded-lg bg-white/5 p-4 border border-white/5 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
+                      <p className="text-xs uppercase tracking-widest text-white/50">Up Next</p>
+                    </div>
+                    <p className="text-lg font-medium text-white line-clamp-1" title={journey?.nextStop?.name}>{journey?.nextStop?.name || 'End of Route'}</p>
+                    <p className="text-sm text-white/40">Stop #{journey?.nextStop?.seq ?? ((journey?.currentStop?.seq ?? 0) + 1)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </dl>
-      </div>
+            )}
+          </div>
+        </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
-        <StudentMap busPosition={busPosition} stopPosition={stopPosition} />
-      </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
+          <StudentMap busPosition={busPosition} stopPosition={stopPosition} />
+        </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
-        <NotificationToggle
-          enabled={notificationsEnabled}
-          permission={permission}
-          onEnable={enableNotifications}
-          onDisable={disableNotifications}
-        />
-      </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
+          <NotificationToggle
+            enabled={notificationsEnabled}
+            permission={permission}
+            onEnable={enableNotifications}
+            onDisable={disableNotifications}
+          />
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <button
+              onClick={async () => {
+                try {
+                  toast('Sending test push...');
+                  await api.get('/notifications/test-push');
+                  toast.success('Test Push Sent! Check status bar.');
+                } catch (err) {
+                  toast.error('Test Push Failed: ' + err.message);
+                }
+              }}
+              disabled={!notificationsEnabled}
+              className="w-full rounded-lg bg-indigo-500/20 py-2 text-sm font-semibold text-indigo-300 hover:bg-indigo-500/30 hover:text-white disabled:opacity-50 transition"
+            >
+              🔔 Send Test Notification
+            </button>
+            <p className="mt-2 text-xs text-slate-400">
+              Note: If sending works but you don't see it, check your OS "Focus Assist" or "Do Not Disturb" settings.
+            </p>
+          </div>
+        </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
-        <header className="mb-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/60">Timeline</p>
-          <h2 className="text-xl font-semibold text-white">Recent stop events</h2>
-          <p className="text-sm text-white/70">We keep the last five updates for quick review.</p>
-        </header>
-        <ul className="space-y-3 text-sm">
-          {historyEvents.length ? (
-            historyEvents.map((event, idx) => (
-              <li key={`${event.timestamp}-${idx}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <p className="font-medium text-white">
-                  {event.type === 'ARRIVED'
-                    ? 'Arrived at'
-                    : event.type === 'LEFT'
-                      ? 'Left'
-                      : event.type}{' '}
-                  {event.stopName || 'stop'}
-                </p>
-                <p className="text-xs text-white/70">{new Date(event.timestamp).toLocaleTimeString()}</p>
-              </li>
-            ))
-          ) : (
-            <li className="text-white/60">No events yet. Stay tuned!</li>
-          )}
-        </ul>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-sm">
+          <header className="mb-4">
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Timeline</p>
+            <h2 className="text-xl font-semibold text-white">Recent stop events</h2>
+            <p className="text-sm text-white/70">We keep the last five updates for quick review.</p>
+          </header>
+          <ul className="space-y-3 text-sm">
+            {historyEvents.length ? (
+              historyEvents.map((event, idx) => (
+                <li key={`${event.timestamp}-${idx}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="font-medium text-white">
+                    {event.type === 'ARRIVED'
+                      ? 'Arrived at'
+                      : event.type === 'LEFT'
+                        ? 'Left'
+                        : event.type}{' '}
+                    {event.stopName || 'stop'}
+                  </p>
+                  <p className="text-xs text-white/70">{new Date(event.timestamp).toLocaleTimeString()}</p>
+                </li>
+              ))
+            ) : (
+              <li className="text-white/60">No events yet. Stay tuned!</li>
+            )}
+          </ul>
+        </div>
       </div>
     </main>
   );

@@ -24,7 +24,8 @@ self.addEventListener('push', (event) => {
     },
     // Adding tag allows coalescing multiple rapid updates into one
     tag: data.tag || 'trackmate-update',
-    renotify: true
+    renotify: true,
+    requireInteraction: true // Keeps notification visible until clicked
   };
 
   event.waitUntil(

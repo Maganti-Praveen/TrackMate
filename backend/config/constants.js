@@ -12,6 +12,6 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET || 'trackmate_dev_secret',
   OSRM_BASE_URL: 'http://router.project-osrm.org',
   OSRM_CACHE_TTL_MS: 60000,
-  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || 'BFHhjifeev0Ff44ZnY49dHbee6LACpUub5IzN6OMaoDJuac2f0uddLeMXbbggQUpaUvDdv-LiXBXM9gJpfw07dg',
-  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || 'cBoQCgPdtFtItM2PZKfpljAvF2VRi7jbE3VokYlfAXs'
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || 'BESvdNeBIH86BBPiukXJZ2ID1dQ9lACvMt_hCiBnRvvdQuxFi4AIHdSWPZU-UPqh251PYL57K0v0sy6cWEajAME',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || 'mUxrhj7Qii068GZLI61uOQT6HyPToFekaAivrWk7qVI'
 };

@@ -9,7 +9,6 @@ const App = () => {
       <Navbar />
       <Outlet />
       <Toaster position="top-center" reverseOrder={false} />
-      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 };

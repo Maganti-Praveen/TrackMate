@@ -13,9 +13,7 @@ const TrackingControls = ({
   onStartTracking,
   onStopTracking,
   tripId,
-  warnings = [],
-  simulate,
-  onToggleSimulate
+  warnings = []
 }) => (
   <section className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/80 to-slate-950/60 p-4 shadow-xl shadow-black/40">
     <header className="flex flex-wrap items-center justify-between gap-2">
@@ -23,10 +21,6 @@ const TrackingControls = ({
         <h2 className="text-xl font-semibold text-white">Driver Controls</h2>
         <p className="text-xs text-slate-300">Keep this tab active while tracking. Browsers pause GPS in the background.</p>
       </div>
-      <label className="flex items-center gap-2 text-sm text-slate-200">
-        <input type="checkbox" checked={simulate} onChange={(e) => onToggleSimulate?.(e.target.checked)} />
-        Simulate Location
-      </label>
     </header>
 
     {warnings.length > 0 && (
@@ -40,35 +34,23 @@ const TrackingControls = ({
     )}
 
     <div className="grid gap-3 sm:grid-cols-2">
-      <button
-        type="button"
-        onClick={onStartTrip}
-        className="rounded-xl bg-gradient-to-r from-emerald-500 to-lime-500 px-4 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/30"
-      >
-        {tripId ? 'Trip Active' : 'Start Trip'}
-      </button>
-      <button
-        type="button"
-        onClick={onEndTrip}
-        disabled={!tripId}
-        className="rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-3 text-lg font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-500"
-      >
-        End Trip
-      </button>
-      <button
-        type="button"
-        onClick={onStartTracking}
-        className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-3 text-lg font-semibold text-white shadow-lg shadow-orange-500/30"
-      >
-        Start Tracking
-      </button>
-      <button
-        type="button"
-        onClick={onStopTracking}
-        className="rounded-xl bg-slate-800/80 px-4 py-3 text-lg font-semibold text-white"
-      >
-        Stop Tracking
-      </button>
+      {!tripId ? (
+        <button
+          type="button"
+          onClick={onStartTrip}
+          className="col-span-2 rounded-xl bg-gradient-to-r from-emerald-500 to-lime-500 px-4 py-4 text-xl font-bold text-white shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+        >
+          ▶ Start Trip
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onEndTrip}
+          className="col-span-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-4 text-xl font-bold text-white shadow-lg shadow-rose-500/30 transition hover:scale-[1.02]"
+        >
+          ⏹ End Trip
+        </button>
+      )}
     </div>
 
     <div className="grid gap-3 sm:grid-cols-2">

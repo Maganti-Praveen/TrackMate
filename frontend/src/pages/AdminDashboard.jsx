@@ -1,10 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../utils/api';
+import { useSocket } from '../hooks/useSocket';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [trips, setTrips] = useState([]);
   const [events, setEvents] = useState([]);
+  const [sosAlert, setSosAlert] = useState(null);
+
+  const socketHandlers = useMemo(() => ({
+    'trip:sos': (payload) => setSosAlert(payload),
+    'admin:joined': () => console.log('Joined admin socket room')
+  }), []);
+
+  const { socket, isConnected } = useSocket(socketHandlers);
+
+  useEffect(() => {
+    if (socket && isConnected) {
+      socket.emit('admin:join');
+    }
+  }, [socket, isConnected]);
 
   useEffect(() => {
     api.get('/admin/dashboard').then((res) => setStats(res.data));
@@ -14,7 +29,31 @@ const AdminDashboard = () => {
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8">
+      {sosAlert && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-red-600 p-6 text-white shadow-2xl animate-pulse cursor-pointer">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="rounded-full bg-white/20 p-4">
+                <span className="text-4xl">🚨</span>
+              </div>
+              <h2 className="text-3xl font-bold uppercase tracking-widest">Emergency Alert</h2>
+              <p className="text-lg font-medium">{sosAlert.message}</p>
+              <p className="text-sm opacity-80">
+                Trip ID: {sosAlert.tripId}
+              </p>
+              <button
+                className="mt-4 rounded-lg bg-white px-6 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
+                onClick={() => setSosAlert(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-6xl">
+
         <h2 className="text-2xl font-semibold text-slate-800">Admin Dashboard</h2>
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {['busCount', 'driverCount', 'studentCount', 'activeTrips'].map((key) => (

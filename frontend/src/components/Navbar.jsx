@@ -1,11 +1,27 @@
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { CircleUser } from 'lucide-react';
+
 
 const navLinkCls =
   'text-sm font-semibold tracking-wide text-orange-100 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const timeoutRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsDropdownOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsDropdownOpen(false);
+    }, 100);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-black/70 via-slate-950/70 to-black/70 backdrop-blur">
@@ -32,9 +48,6 @@ const Navbar = () => {
                 <Link to="/admin/routes" className={navLinkCls}>
                   Routes
                 </Link>
-                <Link to="/admin/stops" className={navLinkCls}>
-                  Stops
-                </Link>
                 <Link to="/admin/students" className={navLinkCls}>
                   People
                 </Link>
@@ -44,18 +57,8 @@ const Navbar = () => {
               </>
             )}
             {user.role === 'driver' && (
-              <>
-                <Link to="/driver" className={navLinkCls}>
-                  Driver
-                </Link>
-                <Link to="/driver-sim" className={navLinkCls}>
-                  Simulator
-                </Link>
-              </>
-            )}
-            {user.role === 'admin' && (
-              <Link to="/driver-sim" className={navLinkCls}>
-                Driver Sim
+              <Link to="/driver" className={navLinkCls}>
+                Driver
               </Link>
             )}
             {user.role === 'student' && (
@@ -63,19 +66,43 @@ const Navbar = () => {
                 Student
               </Link>
             )}
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-full border border-white/30 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
+            {/* Profile Dropdown */}
+            <div
+              className="relative ml-4"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
-              Logout
-            </button>
+              <button
+                className="flex items-center text-orange-100 transition hover:text-white"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <CircleUser className="h-8 w-8" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-white/10 bg-slate-900 py-2 shadow-xl ring-1 ring-black ring-opacity-5 backdrop-blur-xl">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                  >
+                    View Profile
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="block w-full px-4 py-2 text-left text-sm text-rose-400 hover:bg-white/10 hover:text-rose-300"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         ) : (
           <span className="text-sm uppercase tracking-[0.4em] text-slate-400">Login</span>
         )}
       </div>
-    </header>
+    </header >
   );
 };
 

@@ -1,0 +1,72 @@
+TrackMate - Project Review Content
+Target Date: 20.12.2025 (Saturday)
+
+Use the following content to fill your PowerPoint slides.
+
+1. Problem Definition & Literature Survey
+Problem Definition
+The "Black Box" of School Transit: Parents and school admins currently have zero visibility into bus locations once they leave the campus.
+Communication Anxiety: Parents incessantly call drivers ("Where are you?"), distracting them and compromising safety.
+Inefficient Management: Routes are static and hard to modify. Changing a stop sequence requires manual communication to all drivers and students.
+Literature Survey & Gap Analysis
+Existing Solutions:
+Dedicated GPS Hardware: Expensive to install and maintain per bus.
+Generic Maps (Google Sharing): battery-heavy, doesn't handle "Stops" or "ETAs" for rigid routes.
+The TrackMate Solution:
+PWA Approach: Uses the driver's existing smartphone (Cost = $0).
+Optimized Tracking: Unlike standard GPS apps, we use OSRM (Open Source Routing Machine) to "snap" raw GPS points to the road, providing smoother paths and accurate ETAs even with poor signal.
+2. Methodology & System Architecture
+System Architecture (The Stack)
+Frontend: React (Vite) + Leaflet Maps + TailwindCSS.
+Why? Fast rendering, component-based UI, and map interactivity.
+Backend: Node.js + Express + Socket.io.
+Why? Event-driven architecture is perfect for real-time location streaming.
+Database: MongoDB (with GeoJSON support).
+Why? Native support for geospatial queries ($near, $geoIntersects) to detect when a bus enters a stop's radius.
+Methodology (Data Flow)
+Driver App emits location (
+lat
+, lng, speed) via WebSocket.
+Server processes data:
+Validates coordinates.
+Matches against "Stop Geofences" (100m radius).
+Updates ETAs using OSRM logic.
+Student/Admin Apps receive updates instantly (~200ms latency).
+Service Workers handle duplicate alerts and ensure offline notifications.
+3. Design Logic & Technical Feasibility
+Unique Design Features
+God Mode Simulation: A built-in simulator that loops through pre-recorded route coordinates.
+Logic: Allows developers/admins to test the system 24/7 without needing a physical bus driving around.
+Route Lab (Drag-and-Drop):
+Logic: Uses @dnd-kit and React Portals. Admins can visually "draw" a route and reorder stops in a sidebar list, which instantly updates the route sequence in the database.
+Technical Feasibility
+Offline-First: implemented via 
+sw.js
+ (Service Worker). Push notifications work even if the specific app tab is closed (using the Web Push API).
+Scalability: Socket.io "Rooms" (socket.join('trip_123')) ensure students only receive updates for their specific bus, reducing server load.
+4. Planning, Resources & Risk Assessment
+Project Planning (Timeline)
+Phase 1: Core Tracking Engine & Socket Setup (Completed).
+Phase 2: Driver & Student Dashboards (Completed).
+Phase 3: Admin "Route Lab" & Optimization (Completed).
+Next Steps: Multi-school tenancy and AI-based route optimization.
+Resources
+Hardware: Android Smartphones (Drivers), Laptop/PC (Admin).
+Software: VS Code, MongoDB Atlas (Cloud DB), Render (Hosting).
+Risk Assessment & Mitigation
+Risk: GPS Drift/Inaccuracy.
+Mitigation: Implemented a "Snap-to-Road" algorithm and a 5-stop lookahead on the backend to correct "jumping" locations.
+Risk: Driver Internet Loss.
+Mitigation: The app buffers location points locally and flush-uploads them once connection is restored.
+Risk: Browser throttling background tabs.
+Mitigation: Used Wake Lock API (if supported) and Service Workers to keep the connection alive.
+5. Documentation & Presentation
+Code Quality:
+Modular folder structure (controllers, models, routes).
+GitHub-style 
+README.md
+ with screenshot documentation.
+DEV_GUIDE.md
+ for specialized workflows (Simulations).
+Demo Strategy:
+We will demonstrate "God Mode" live in the presentation to show real-time movement without leaving the room.

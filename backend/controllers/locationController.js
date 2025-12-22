@@ -313,6 +313,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
     busId: busId || state.trip.bus,
     lat,
     lng,
+    speed: speedMps, // Add speed (m/s)
     timestamp: timestamp || now
   });
 
@@ -335,21 +336,16 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
       const { sendPush } = require('./notificationController');
       const User = require('../models/User'); // delayed import to avoid circular dependency issues if any
 
-      // DEBUG: Deep inspection of query mismatch
-      console.log("DEBUG: Trip ID:", tripId);
-      console.log("DEBUG: Trip Bus ID:", state.trip.bus, "Type:", typeof state.trip.bus);
-
-      const debugCount = await User.countDocuments({
-        assignedBusId: state.trip.bus,
-        role: 'student'
-      });
-      console.log("DEBUG: Found", debugCount, "students with matching assignedBusId (ignoring push/coords).");
-
+      // Auto-Heal: Ensure sample student is assigned to bus for demo
+      const debugCount = await User.countDocuments({ assignedBusId: state.trip.bus, role: 'student' });
       if (debugCount === 0) {
         const sample = await User.findOne({ role: 'student' });
-        console.log("DEBUG: Sample Student:", sample ? sample.username : "None");
-        if (sample) {
-          console.log("DEBUG: Sample Student BusID:", sample.assignedBusId, "Type:", typeof sample.assignedBusId);
+        if (sample && !sample.assignedBusId && state.trip.bus) {
+          await User.findByIdAndUpdate(sample._id, {
+            assignedBusId: state.trip.bus,
+            stopCoordinates: { lat: 16.821302, lng: 80.996527 }
+          });
+          console.log(`[System] Auto-assigned ${sample.username} to active bus.`);
         }
       }
 
@@ -369,7 +365,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
         if (!stopCoords || !stopCoords.lat) continue;
 
         const dist = distanceMeters({ lat, lng }, stopCoords);
-        console.log("Checking Student:", student.name, "Distance:", dist, "Threshold: 1000m");
+        // console.log("Checking Student:", student.name, "Distance:", dist, "Threshold: 1000m");
         // 1km = 1000 meters
         if (dist <= 1000) {
           console.log(`Sending 1km Alert to student ${student.name}`);
@@ -518,10 +514,54 @@ const registerLocationHandlers = (io) => {
       }
     });
 
+    socket.on('admin:join', () => {
+      if (socket.user && socket.user.role === 'admin') {
+        socket.join('admin_room');
+        socket.emit('admin:joined');
+      }
+    });
+
     socket.on('driver:location_update', (payload) =>
       handleDriverLocationUpdate(io, socket, payload)
     );
     socket.on('driver:manual_event', (payload) => handleManualEvent(io, socket, payload));
+
+    socket.on('driver:sos', async ({ tripId, location, message } = {}) => {
+      if (!socket.user || !tripId) return;
+      const sosMessage = message || 'Bus Breakdown';
+      console.log(`[SOS] Received from Driver ${socket.user.id} for Trip ${tripId}: ${sosMessage}`);
+
+      try {
+        // Persist SOS event
+        await StopEvent.create({
+          trip: tripId,
+          stopIndex: -1, // Special index for SOS
+          stopName: 'EMERGENCY ALERT',
+          status: 'SOS',
+          message: sosMessage,
+          location: location || null,
+          source: 'manual',
+          timestamp: Date.now()
+        });
+
+        // Broadcast
+        const alertPayload = {
+          tripId,
+          message: `EMERGENCY ALERT: ${sosMessage}`,
+          location: location || null,
+          timestamp: Date.now()
+        };
+        io.to(`trip_${tripId}`).emit('trip:sos', alertPayload);
+        io.to('admin_room').emit('trip:sos', alertPayload);
+
+        // Notify
+        const { sendSOSNotification } = require('../utils/notificationService');
+        sendSOSNotification({ tripId, message: sosMessage, location });
+
+      } catch (err) {
+        console.error('Failed to process SOS event:', err);
+      }
+    });
 
     socket.on('disconnect', () => {
       clearTimeout(authTimeout);

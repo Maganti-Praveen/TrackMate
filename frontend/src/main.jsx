@@ -19,6 +19,7 @@ import ManageStops from './pages/ManageStops';
 import AssignStudents from './pages/AssignStudents';
 import ManageStudents from './pages/ManageStudents';
 import DriverSimulator from './pages/DriverSimulator';
+import Profile from './pages/Profile';
 
 const router = createBrowserRouter(
   [
@@ -109,6 +110,14 @@ const router = createBrowserRouter(
           element: (
             <ProtectedRoute roles={['student']}>
               <StudentDashboard />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'profile',
+          element: (
+            <ProtectedRoute roles={['admin', 'driver', 'student']}>
+              <Profile />
             </ProtectedRoute>
           )
         }

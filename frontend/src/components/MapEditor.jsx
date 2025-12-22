@@ -329,6 +329,28 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
           >
             Save Route
           </button>
+          <button
+            type="button"
+            className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm transition hover:bg-indigo-100 disabled:opacity-50"
+            onClick={() => {
+              setStops((prev) => {
+                const manualReindex = prev.slice().reverse().map((s, i) => ({ ...s, seq: i }));
+                // Trigger polyline update
+                if (polylineLayer.current) polylineLayer.current.remove();
+                if (manualReindex.length > 1) {
+                  const latlngs = manualReindex.map((s) => [s.lat, s.lng]);
+                  const newPolyline = L.polyline(latlngs, { color: '#2563eb', weight: 4 }).addTo(mapInstance.current);
+                  newPolyline.pm.enable();
+                  polylineLayer.current = newPolyline;
+                  setRouteGeom(lineToGeoJSON(newPolyline));
+                }
+                return manualReindex;
+              });
+            }}
+            disabled={sortedStops.length < 2}
+          >
+            Reverse Stops
+          </button>
         </div>
       </div>
 
@@ -366,7 +388,7 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
           </SortableContext>
         </DndContext>
       </div>
-    </div>
+    </div >
   );
 
   return (

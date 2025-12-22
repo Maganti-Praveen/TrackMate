@@ -70,4 +70,26 @@ const ensureDefaultAccounts = async () => {
   }
 };
 
-module.exports = { login, getProfile, ensureDefaultAccounts };
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, phone, password } = req.body;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name) user.name = name.trim();
+    if (phone) user.phone = phone.trim();
+    if (password) user.password = password.trim();
+
+    await user.save();
+    res.json(serializeUser(user));
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+};
+
+module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts };

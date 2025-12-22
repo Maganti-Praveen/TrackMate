@@ -33,12 +33,15 @@ const sendPush = async (user, payload) => {
         await webpush.sendNotification(user.pushSubscription, JSON.stringify(payload));
     } catch (error) {
         console.error(`Push failed for user ${user.username}:`, error.message);
-        if (error.statusCode === 410) {
-            // Subscription expired
+        // If subscription is invalid (404/410) or keys mismatch (401/400), clear it
+        if ([404, 410, 400, 401].includes(error.statusCode)) {
+            console.log(`Clearing invalid subscription for ${user.username}`);
             await User.findByIdAndUpdate(user._id, { pushSubscription: null });
         }
     }
 };
+
+const fs = require('fs');
 
 const testPush = async (req, res) => {
     try {
@@ -49,17 +52,34 @@ const testPush = async (req, res) => {
         }
 
         console.log('Sending Test Push to:', user.name);
-        await webpush.sendNotification(user.pushSubscription, JSON.stringify({
-            title: 'Test Notification',
-            body: 'This is a test message from the Debugger.',
-            url: '/',
-            tag: 'test-push'
-        }));
+        try {
+            await webpush.sendNotification(user.pushSubscription, JSON.stringify({
+                title: 'Test Notification',
+                body: 'This is a test message from the Debugger.',
+                url: '/',
+                tag: 'test-push'
+            }));
+            res.json({ message: 'Test notification sent.' });
+        } catch (pushErr) {
+            // Write to file so we can read it via tool
+            const logMsg = `[PUSH ERROR] ${new Date().toISOString()} - ${pushErr.message} - Code: ${pushErr.statusCode}\nStack: ${pushErr.stack}\n`;
+            fs.appendFileSync('debug.log', logMsg);
 
-        res.json({ message: 'Test notification sent.' });
+            console.error('Test Push Failed:', pushErr);
+            // If failed, assume invalid subscription and clear it so frontend knows to re-subscribe
+            if ([404, 410, 400, 401].includes(pushErr.statusCode)) {
+                await User.findByIdAndUpdate(user._id, { pushSubscription: null });
+                return res.status(400).json({ message: 'Subscription invalid or expired. Please toggle notifications OFF then ON.' });
+            }
+            throw pushErr;
+        }
     } catch (error) {
         console.error('Test Push Error:', error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            message: error.message || 'Internal Server Error',
+            code: error.statusCode || 'UNKNOWN',
+            details: error.body || error.stack
+        });
     }
 };
 
