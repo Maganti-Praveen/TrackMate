@@ -369,11 +369,19 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
         // 1km = 1000 meters
         if (dist <= 1000) {
           console.log(`Sending 1km Alert to student ${student.name}`);
+
+          // Calculate approximate ETA (Minutes)
+          // Speed is in m/s. Use current speed or assumed speed (e.g. 30km/h ~ 8m/s) if stuck
+          const currentSpeed = speedMps > 1 ? speedMps : 8.33;
+          const etaSeconds = dist / currentSpeed;
+          const etaMinutes = Math.ceil(etaSeconds / 60);
+
           await sendPush(student, {
-            title: 'Bus Approaching!',
-            body: `Bus is ${Math.round(dist)}m away from your stop.`,
+            title: `Bus Arriving Soon!`,
+            body: `Bus is approx ${etaMinutes} min away (${Math.round(dist)}m). Get ready!`,
             url: '/student',
-            tag: 'proximity-alert'
+            tag: 'proximity-alert',
+            icon: '/icons/bus-icon.png'
           });
           state.notifiedStudents.add(student._id.toString());
         }

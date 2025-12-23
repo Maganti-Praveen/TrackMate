@@ -8,31 +8,36 @@ TrackMate is a modern, full-stack progressive web application (PWA) designed to 
 
 ## 🚀 Key Features
 
-*   **⚡ "God Mode" Simulation**: Drivers can toggle a simulation loop that mimics real GPS movement or "teleport" instantly by clicking a map location. Critical for testing without driving a bus.
-*   **🧠 Intelligent ETA Engine**: The backend (`locationController.js`) uses OSRM for precise routing but falls back to "crow-flies" logic if the routing server times out (>1.5s), ensuring zero lag for end-users.
-*   **🧪 Route Lab**: A powerful Admin interface built with **React Portals** and **@dnd-kit**. Administrators can draw routes on the map and drag-and-drop stops in the sidebar to reorder them in real-time.
-*   **📴 Offline-First PWA**: A custom Service Worker (`sw.js`) ensures students receive "Bus Arrived" push notifications even when the app is closed or the phone is locked. No more "silent failures."
+* **⚡ "God Mode" Simulation**: Drivers can toggle a simulation loop that mimics real GPS movement or "teleport" instantly by clicking a map location. Critical for testing without driving a bus.
+* **🚨 SOS Panic System**: Instant emergency broadcasting. Drivers can trigger a "Bus Breakdown" or "Emergency" alert that overrides all student screens with a red warning modal and pushes a high-priority system notification.
+* **🗣️ Voice Announcements**: Accessibility-first design. Students can tap the speaker icon to hear real-time status: *"Bus is arriving in 2 minutes at 45 km/h"*.
+* **🧠 Intelligent ETA Engine**: The backend (`locationController.js`) uses OSRM for precise routing but falls back to "crow-flies" logic if the routing server times out (>1.5s), ensuring zero lag for end-users.
+* **🧪 Route Lab**: A powerful Admin interface built with **React Portals** and **@dnd-kit**. Administrators can draw routes on the map and drag-and-drop stops in the sidebar to reorder them in real-time.
+* **📴 Offline-First PWA**: A custom Service Worker (`sw.js`) ensures students receive "Bus Arrived" and "SOS" push notifications even when the app is closed or the phone is locked. No more "silent failures."
 
 ## 🛠️ Technology Stack
 
-*   **Frontend**: React (Vite), Leaflet (Maps), @dnd-kit (Drag & Drop), Socket.io-client.
-*   **Backend**: Node.js, Express, MongoDB (Mongoose).
-*   **Real-Time**: Socket.io (Bi-directional low-latency communication).
-*   **Mobile**: PWA (Manifest + Service Worker) for installable app-like experience.
+* **Frontend**: React (Vite), Leaflet (Maps), @dnd-kit (Drag & Drop), Socket.io-client.
+* **Backend**: Node.js, Express, MongoDB (Mongoose).
+* **Real-Time**: Socket.io (Bi-directional low-latency communication).
+* **Mobile**: PWA (Manifest + Service Worker) for installable app-like experience.
 
 ## 🏁 Quick Start
 
 ### Prerequisites
-*   Node.js (v18+)
-*   MongoDB (Local or Atlas URI)
+
+* Node.js (v18+)
+* MongoDB (Local or Atlas URI)
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/your-username/trackmate.git
 cd trackmate
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd backend
 npm install
@@ -41,6 +46,7 @@ npm run dev
 ```
 
 ### 3. Frontend Setup
+
 ```bash
 cd ../frontend
 npm install

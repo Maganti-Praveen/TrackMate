@@ -201,7 +201,7 @@ const DriverDashboard = () => {
       lat,
       lng,
       accuracy: 5, // High accuracy for manual clicks
-      speed: 30, // Simulated speed
+      speed: 12, // Simulated speed (~43 km/h)
       heading: 0,
       timestamp: Date.now(),
       force: true // Force immediate arrival logic on backend
@@ -231,14 +231,14 @@ const DriverDashboard = () => {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 text-white">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-white">Driver Streaming Dashboard</h1>
           <p className="text-sm text-slate-300">
             Logged in as {user?.name || user?.username}. Bus: {user?.assignedBusId || 'unassigned'}.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-start md:justify-end">
           <button
             onClick={handleResetDailyHistory}
             className="rounded-full bg-red-900/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-900/60"

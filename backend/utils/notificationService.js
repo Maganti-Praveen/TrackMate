@@ -40,11 +40,50 @@ const sendPushNotification = async ({ busId, title, body }) => {
   return sentCount;
 };
 
-const sendSOSNotification = async ({ tripId, message }) => {
-  console.log(`🚨 SOS BROADCAST | Trip: ${tripId} | Msg: ${message}`);
-  // In a real implementation: find bus -> find assignments -> broadcast
-  // For now, we log it. The sendPushNotification above handles standard alerts.
-  return true;
+const sendSOSNotification = async ({ tripId, message, location }) => {
+  try {
+    const Trip = require('../models/Trip');
+    const User = require('../models/User');
+
+    console.log(`🚨 SOS BROADCAST | Trip: ${tripId} | Msg: ${message}`);
+
+    const trip = await Trip.findById(tripId);
+    if (!trip || !trip.bus) {
+      console.error('SOS Error: Trip or Bus not found');
+      return false;
+    }
+
+    // Find all students assigned to this bus with a subscription
+    const students = await User.find({
+      assignedBusId: trip.bus,
+      role: 'student',
+      pushSubscription: { $ne: null }
+    }).select('username pushSubscription');
+
+    console.log(`[SOS] Found ${students.length} students to alert.`);
+
+    let sentCount = 0;
+    for (const student of students) {
+      const payload = {
+        title: '🚨 EMERGENCY ALERT',
+        body: `Driver SOS: ${message}`,
+        icon: '/icons/sos-alert.png', // Ensure this exists or use default
+        data: { url: '/student' },
+        tag: 'sos-alert',
+        renotify: true,
+        requireInteraction: true // Critical for SOS
+      };
+
+      const success = await sendPush(student.pushSubscription, payload);
+      if (success) sentCount++;
+    }
+
+    console.log(`[SOS] Sent push to ${sentCount}/${students.length} students.`);
+    return true;
+  } catch (err) {
+    console.error('SOS Push Error:', err);
+    return false;
+  }
 };
 
 module.exports = { sendPushNotification, sendSOSNotification };
