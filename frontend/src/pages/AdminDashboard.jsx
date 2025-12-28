@@ -7,9 +7,11 @@ const AdminDashboard = () => {
   const [trips, setTrips] = useState([]);
   const [events, setEvents] = useState([]);
   const [sosAlert, setSosAlert] = useState(null);
+  const [visitorCount, setVisitorCount] = useState(0);
 
   const socketHandlers = useMemo(() => ({
     'trip:sos': (payload) => setSosAlert(payload),
+    'stats:live_visitors': (count) => setVisitorCount(count),
     'admin:joined': () => console.log('Joined admin socket room')
   }), []);
 
@@ -54,7 +56,16 @@ const AdminDashboard = () => {
 
       <div className="mx-auto max-w-6xl">
 
-        <h2 className="text-2xl font-semibold text-slate-800">Admin Dashboard</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-slate-800">Admin Dashboard</h2>
+          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm border border-slate-200">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-sm font-medium text-slate-600">{visitorCount} Live Visitors</span>
+          </div>
+        </div>
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {['busCount', 'driverCount', 'studentCount', 'activeTrips'].map((key) => (
             <div key={key} className="rounded border border-slate-200 bg-white p-4 shadow-sm">

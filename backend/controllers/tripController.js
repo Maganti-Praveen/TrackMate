@@ -40,6 +40,16 @@ const startTrip = async (req, res) => {
       startedAt: new Date()
     });
 
+    // Notify listeners that a bus has started a trip
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('bus:trip_started', {
+        busId: bus._id.toString(),
+        tripId: trip._id.toString(),
+        message: 'Trip Started'
+      });
+    }
+
     res.status(201).json(trip);
   } catch (error) {
     console.error('startTrip error', error);

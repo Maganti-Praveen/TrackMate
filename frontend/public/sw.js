@@ -25,7 +25,8 @@ self.addEventListener('push', (event) => {
     // Adding tag allows coalescing multiple rapid updates into one
     tag: data.tag || 'trackmate-update',
     renotify: true,
-    requireInteraction: true // Keeps notification visible until clicked
+    requireInteraction: true, // Keeps notification visible until clicked
+    vibrate: data.tag === 'sos-alert' ? [500, 200, 500, 200, 500] : [200]
   };
 
   event.waitUntil(

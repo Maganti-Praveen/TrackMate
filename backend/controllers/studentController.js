@@ -90,6 +90,7 @@ const getLiveTrip = async (req, res) => {
 
   const trip = await Trip.findOne({ bus: assignment.bus, status: 'ONGOING' })
     .populate('bus', 'name lastKnownLocation')
+    .populate('driver', 'name phone')
     .populate('route'); // This fetches the full route with stops array
 
   if (!trip) {

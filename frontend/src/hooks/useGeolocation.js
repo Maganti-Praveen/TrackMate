@@ -46,6 +46,12 @@ export const useGeolocation = ({ onPosition, simulate = false, simulatedPath = [
     watchIdRef.current = null;
   };
 
+  const onPositionRef = useRef(onPosition);
+
+  useEffect(() => {
+    onPositionRef.current = onPosition;
+  }, [onPosition]);
+
   const handlePosition = useCallback(
     (position) => {
       const now = Date.now();
@@ -63,9 +69,9 @@ export const useGeolocation = ({ onPosition, simulate = false, simulatedPath = [
       };
       setLastPosition(normalized);
       setPingsSent((prev) => prev + 1);
-      onPosition?.(normalized);
+      onPositionRef.current?.(normalized);
     },
-    [onPosition]
+    []
   );
 
   const startSimulation = useCallback(() => {

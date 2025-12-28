@@ -41,6 +41,20 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
 });
+app.set('io', io);
+
+// --- Live Visitor Counter ---
+let liveVisitorCount = 0;
+
+io.on('connection', (socket) => {
+  liveVisitorCount++;
+  io.emit('stats:live_visitors', liveVisitorCount);
+
+  socket.on('disconnect', () => {
+    liveVisitorCount = Math.max(0, liveVisitorCount - 1);
+    io.emit('stats:live_visitors', liveVisitorCount);
+  });
+});
 
 registerLocationHandlers(io);
 

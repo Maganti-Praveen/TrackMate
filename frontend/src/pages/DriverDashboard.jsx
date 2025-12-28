@@ -26,6 +26,7 @@ const DriverDashboard = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [showSosModal, setShowSosModal] = useState(false);
   const [sosMessage, setSosMessage] = useState('Bus Breakdown');
+  const [visitorCount, setVisitorCount] = useState(0);
 
   const handleConfirmSos = () => {
     if (!trip) return;
@@ -54,7 +55,8 @@ const DriverDashboard = () => {
       () => ({
         'trip:stop_arrived': (payload) => addLog(`ARRIVED event ${payload.stopIndex ?? ''}`),
         'trip:stop_left': (payload) => addLog(`LEFT event ${payload.stopIndex ?? ''}`),
-        'trip:location_update': () => addLog('Server echoed location update')
+        'trip:location_update': () => addLog('Server echoed location update'),
+        'stats:live_visitors': (count) => setVisitorCount(count)
       }),
       []
     )
@@ -233,7 +235,16 @@ const DriverDashboard = () => {
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 text-white">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Driver Streaming Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-white">Driver Streaming Dashboard</h1>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              {visitorCount} Online
+            </span>
+          </div>
           <p className="text-sm text-slate-300">
             Logged in as {user?.name || user?.username}. Bus: {user?.assignedBusId || 'unassigned'}.
           </p>

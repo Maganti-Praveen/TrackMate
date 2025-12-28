@@ -79,7 +79,11 @@ const StudentDashboard = () => {
   const [stopInfo, setStopInfo] = useState(null);
   const [tripId, setTripId] = useState(null);
   const [journey, setJourney] = useState(null); // { currentStop, nextStop, progress }
+  const [driverInfo, setDriverInfo] = useState(null);
   const [eta, setEta] = useState(null);
+  const [busSpeed, setBusSpeed] = useState(0);
+  const [visitorCount, setVisitorCount] = useState(0);
+  const [sosAlert, setSosAlert] = useState(null);
   const [historyEvents, setHistoryEvents] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -187,6 +191,9 @@ const StudentDashboard = () => {
             nextStop: tripData.nextStop,
             progress: tripData.progress
           });
+          if (tripData.driver) {
+            setDriverInfo(tripData.driver);
+          }
         } else if (!resolvedTripId) {
           nextStatus = 'Waiting for a driver to start your trip.';
         }
@@ -329,8 +336,7 @@ const StudentDashboard = () => {
     []
   );
 
-  const [busSpeed, setBusSpeed] = useState(0);
-  const [sosAlert, setSosAlert] = useState(null);
+
 
   const speakStatus = () => {
     if (!('speechSynthesis' in window)) {
@@ -379,25 +385,45 @@ const StudentDashboard = () => {
           stopName: payload.message || 'Emergency Alert',
           timestamp: payload.timestamp || Date.now()
         }, ...prev].slice(0, 5));
+      },
+      'stats:live_visitors': (count) => setVisitorCount(count),
+      'bus:trip_started': (payload) => {
+        // If my assigned bus just started a trip, refresh everything immediately
+        if (profile?.bus && (profile.bus._id === payload.busId || profile.bus.id === payload.busId)) {
+          console.log('My bus started a trip! Refreshing...', payload);
+          toast.success('Your bus just started a trip!');
+          fetchProfile(); // Reload to get the new tripId and subscribe
+        }
       }
     }),
-    [handleEtaUpdate, handleLocationUpdate, handleStopEvent, handleSubscriptionAck, handleSubscriptionError]
+    [handleEtaUpdate, handleLocationUpdate, handleStopEvent, handleSubscriptionAck, handleSubscriptionError, profile, fetchProfile]
   );
 
 
   const { socket, isConnected, isAuthenticated } = useSocket(socketHandlers);
 
   useEffect(() => {
-    if (!socket || !tripId || !isAuthenticated) {
+    if (!socket || !isAuthenticated) {
       return undefined;
     }
 
-    socket.emit('student:subscribe', { tripId });
-    subscribedTripRef.current = tripId;
+    // Fallback: If no tripId, but we have a user bus, maybe try to fetch active trip again?
+    // For now, only subscribe if we have a valid ID.
+    if (!tripId) {
+      console.log('Waiting for tripId to subscribe...');
+      return undefined;
+    }
+
+    const targetId = typeof tripId === 'object' ? tripId._id || tripId.id : tripId;
+    console.log(`Subscribing to trip: ${targetId}`);
+
+    socket.emit('student:subscribe', { tripId: targetId });
+    subscribedTripRef.current = targetId;
 
     return () => {
-      socket.emit('student:unsubscribe', { tripId });
-      if (subscribedTripRef.current === tripId) {
+      console.log(`Unsubscribing from trip: ${targetId}`);
+      socket.emit('student:unsubscribe', { tripId: targetId });
+      if (subscribedTripRef.current === targetId) {
         subscribedTripRef.current = null;
       }
     };
@@ -467,7 +493,16 @@ const StudentDashboard = () => {
       <header className="flex items-center justify-between text-white">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/60">Welcome, {profile?.name || user?.name || user?.username || 'Student'}</p>
-          <h1 className="text-3xl font-semibold text-white">Track your bus</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-semibold text-white">Track your bus</h1>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              {visitorCount} Online
+            </span>
+          </div>
           <p className="text-sm text-white/70">Stay synced with your bus, stop ETA, and notifications.</p>
         </div>
         <div className="flex gap-2">
@@ -551,6 +586,22 @@ const StudentDashboard = () => {
               <p className="text-xs uppercase tracking-widest text-white/50">Status</p>
               <p className="text-base font-semibold">{statusMessage || 'Waiting for live data'}</p>
             </div>
+
+            {/* Driver Info - NEW */}
+            {driverInfo && (
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-white/60">Driver</p>
+                <p className="text-lg font-semibold">{driverInfo.name || 'Unknown'}</p>
+                {driverInfo.phone && (
+                  <a
+                    href={`tel:${driverInfo.phone}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-indigo-300 hover:text-indigo-200 transition"
+                  >
+                    📞 {driverInfo.phone}
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Notifications */}
             <div className="space-y-1">
