@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/constants');
+
+const SALT_ROUNDS = 10;
 
 const signToken = (user) =>
   jwt.sign(
@@ -22,33 +25,61 @@ const serializeUser = (user) => ({
   assignedStopId: user.assignedStopId
 });
 
-// Plain-text login as requested (testing/dev only)
+// Hash a password
+const hashPassword = async (password) => {
+  return bcrypt.hash(password, SALT_ROUNDS);
+};
+
+// Verify password against hash
+const verifyPassword = async (password, hash) => {
+  // Handle legacy plain-text passwords (migrate on successful login)
+  if (!hash.startsWith('$2')) {
+    return password === hash;
+  }
+  return bcrypt.compare(password, hash);
+};
+
+// Secure login with bcrypt password verification
 const login = async (req, res) => {
-  const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
-  const password = typeof req.body.password === 'string' ? req.body.password.trim() : '';
+  try {
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password.trim() : '';
 
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
-  }
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
 
-  let user = await User.findOne({ username });
+    let user = await User.findOne({ username });
 
-  if (!user && ['ad1', 'dr1'].includes(username)) {
-    await ensureDefaultAccounts();
-    user = await User.findOne({ username });
-  }
+    if (!user && ['ad1', 'dr1'].includes(username)) {
+      await ensureDefaultAccounts();
+      user = await User.findOne({ username });
+    }
 
-  if (!user || user.password !== password) {
-    return res.status(401).json({
-      message: 'Invalid credentials. Default admin is ad1/ad1. Run `cd backend && npm run seed` to recreate demo users.'
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isValid = await verifyPassword(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Migrate legacy plain-text password to bcrypt hash on successful login
+    if (!user.password.startsWith('$2')) {
+      user.password = await hashPassword(password);
+      await user.save();
+    }
+
+    const token = signToken(user);
+    res.json({
+      token,
+      user: serializeUser(user)
     });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Login failed' });
   }
-
-  const token = signToken(user);
-  res.json({
-    token,
-    user: serializeUser(user)
-  });
 };
 
 const getProfile = (req, res) => {
@@ -59,13 +90,15 @@ const getProfile = (req, res) => {
 const ensureDefaultAccounts = async () => {
   const admin = await User.findOne({ username: 'ad1' });
   if (!admin) {
-    await User.create({ username: 'ad1', password: 'ad1', role: 'admin', name: 'Admin One' });
+    const hashedPassword = await hashPassword('ad1');
+    await User.create({ username: 'ad1', password: hashedPassword, role: 'admin', name: 'Admin One' });
     console.log('Seeded default admin account (ad1/ad1)');
   }
 
   const driver = await User.findOne({ username: 'dr1' });
   if (!driver) {
-    await User.create({ username: 'dr1', password: 'dr1', role: 'driver', name: 'Driver One' });
+    const hashedPassword = await hashPassword('dr1');
+    await User.create({ username: 'dr1', password: hashedPassword, role: 'driver', name: 'Driver One' });
     console.log('Seeded default driver account (dr1/dr1)');
   }
 };
@@ -73,7 +106,7 @@ const ensureDefaultAccounts = async () => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, phone, password } = req.body;
+    const { name, phone, password, currentPassword } = req.body;
     const user = await User.findById(userId);
 
     if (!user) {
@@ -82,7 +115,20 @@ const updateProfile = async (req, res) => {
 
     if (name) user.name = name.trim();
     if (phone) user.phone = phone.trim();
-    if (password) user.password = password.trim();
+    
+    // Password change requires current password verification
+    if (password) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required to change password' });
+      }
+      
+      const isValid = await verifyPassword(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+      
+      user.password = await hashPassword(password.trim());
+    }
 
     await user.save();
     res.json(serializeUser(user));
@@ -92,4 +138,4 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts };
+module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts, hashPassword };

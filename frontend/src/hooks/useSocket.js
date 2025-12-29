@@ -128,9 +128,18 @@ export const useSocket = (handlers = {}) => {
       setIsAuthenticated(true);
     };
 
+    // Handle reconnection - re-authenticate when socket reconnects
+    const handleReconnect = () => {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (token) {
+        socket.emit('auth:token', { token });
+      }
+    };
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('auth:ready', handleAuthReady);
+    socket.io.on('reconnect', handleReconnect);
 
     if (!socket.connected) {
       socket.connect();
@@ -142,6 +151,7 @@ export const useSocket = (handlers = {}) => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('auth:ready', handleAuthReady);
+      socket.io.off('reconnect', handleReconnect);
     };
   }, []);
 

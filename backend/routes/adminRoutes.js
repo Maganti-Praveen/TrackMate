@@ -9,7 +9,8 @@ const {
   getActiveTrips,
   getEventHistory,
   getDashboardStats,
-  fixStudentData
+  fixStudentData,
+  clearEvents
 } = require('../controllers/adminController');
 const {
   createDriverAccount,
@@ -37,6 +38,7 @@ router.put('/assignments/:id', updateAssignment);
 router.delete('/assignments/:id', deleteAssignment);
 router.get('/trips', getActiveTrips);
 router.get('/events', getEventHistory);
+router.delete('/events', clearEvents);
 router.post('/drivers', createDriverAccount);
 router.get('/drivers', getDrivers);
 router.put('/drivers/:id', updateDriverAccount);

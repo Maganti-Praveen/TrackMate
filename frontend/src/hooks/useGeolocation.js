@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const MIN_INTERVAL_MS = Number(import.meta.env.VITE_MIN_UPDATE_INTERVAL_MS) || 1000;
+const SIMULATED_SPEED_MPS = 8.33; // ~30 km/h for realistic simulation
 const GEO_OPTIONS = {
   enableHighAccuracy: true,
   maximumAge: 5000,
@@ -15,7 +16,7 @@ const simulatePoint = (lat, lng, idx = 0) => ({
   lat,
   lng,
   accuracy: 15,
-  speed: null,
+  speed: SIMULATED_SPEED_MPS, // Provide realistic speed for ETA calculation
   heading: null,
   timestamp: Date.now() + idx * MIN_INTERVAL_MS
 });

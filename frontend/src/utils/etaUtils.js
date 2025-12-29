@@ -27,6 +27,12 @@ export const computeFallbackETA = (busPos, stopPos, speedMps = DEFAULT_SPEED_MPS
 export const formatETA = (ms) => {
   if (ms == null) return '—';
   const totalSeconds = Math.max(Math.round(ms / 1000), 0);
+  
+  // If less than 10 seconds, show "Arriving..."
+  if (totalSeconds < 10) {
+    return 'Arriving...';
+  }
+  
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   if (minutes > 0) {

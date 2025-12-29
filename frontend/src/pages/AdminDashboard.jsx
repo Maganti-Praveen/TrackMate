@@ -8,6 +8,23 @@ const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [sosAlert, setSosAlert] = useState(null);
   const [visitorCount, setVisitorCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearEvents = async () => {
+    if (!window.confirm('Are you sure you want to clear all stop events?')) return;
+    setClearing(true);
+    try {
+      await api.delete('/admin/events');
+      setEvents([]);
+    } catch (err) {
+      console.error('Failed to clear events:', err);
+      alert('Failed to clear events');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const socketHandlers = useMemo(() => ({
     'trip:sos': (payload) => setSosAlert(payload),
@@ -24,9 +41,26 @@ const AdminDashboard = () => {
   }, [socket, isConnected]);
 
   useEffect(() => {
-    api.get('/admin/dashboard').then((res) => setStats(res.data));
-    api.get('/admin/trips').then((res) => setTrips(res.data));
-    api.get('/admin/events').then((res) => setEvents(res.data));
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [statsRes, tripsRes, eventsRes] = await Promise.all([
+          api.get('/admin/dashboard'),
+          api.get('/admin/trips'),
+          api.get('/admin/events')
+        ]);
+        setStats(statsRes.data);
+        setTrips(tripsRes.data);
+        setEvents(eventsRes.data);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   return (
@@ -66,7 +100,31 @@ const AdminDashboard = () => {
             <span className="text-sm font-medium text-slate-600">{visitorCount} Live Visitors</span>
           </div>
         </div>
-        <section className="mt-6 grid gap-4 md:grid-cols-4">
+
+        {/* Loading State */}
+        {loading && (
+          <div className="mt-8 flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="mt-8 rounded-lg bg-red-50 border border-red-200 p-4 text-center">
+            <p className="text-red-600 font-medium">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 text-sm text-red-500 hover:underline"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Content - only show when not loading and no error */}
+        {!loading && !error && (
+          <>
+            <section className="mt-6 grid gap-4 md:grid-cols-4">
           {['busCount', 'driverCount', 'studentCount', 'activeTrips'].map((key) => (
             <div key={key} className="rounded border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-sm uppercase tracking-wide text-slate-500">{key}</p>
@@ -90,7 +148,18 @@ const AdminDashboard = () => {
             </ul>
           </div>
           <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-4 text-lg font-semibold text-slate-700">Recent Stop Events</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-700">Recent Stop Events</h3>
+              {events.length > 0 && (
+                <button
+                  onClick={handleClearEvents}
+                  disabled={clearing}
+                  className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 disabled:opacity-50"
+                >
+                  {clearing ? 'Clearing...' : 'Clear All'}
+                </button>
+              )}
+            </div>
             <ul className="space-y-3 text-sm">
               {events.map((event) => (
                 <li key={event._id} className="border-b border-slate-100 pb-2">
@@ -105,6 +174,8 @@ const AdminDashboard = () => {
             </ul>
           </div>
         </section>
+          </>
+        )}
       </div>
     </main>
   );

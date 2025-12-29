@@ -75,22 +75,32 @@ const Navbar = () => {
               <button
                 className="flex items-center text-orange-100 transition hover:text-white"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                aria-label="Open user menu"
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="true"
               >
-                <CircleUser className="h-8 w-8" />
+                <CircleUser className="h-8 w-8" aria-hidden="true" />
               </button>
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-white/10 bg-slate-900 py-2 shadow-xl ring-1 ring-black ring-opacity-5 backdrop-blur-xl">
+                <div 
+                  className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-white/10 bg-slate-900 py-2 shadow-xl ring-1 ring-black ring-opacity-5 backdrop-blur-xl"
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="user-menu"
+                >
                   <Link
                     to="/profile"
                     className="block px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                    role="menuitem"
                   >
                     View Profile
                   </Link>
                   <button
                     onClick={logout}
                     className="block w-full px-4 py-2 text-left text-sm text-rose-400 hover:bg-white/10 hover:text-rose-300"
+                    role="menuitem"
                   >
                     Logout
                   </button>

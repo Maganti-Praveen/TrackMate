@@ -64,9 +64,6 @@ const Login = () => {
             Sign in
           </button>
         </form>
-        <div className="mt-4 text-xs text-slate-300">
-          Admin: ad1/ad1 · Driver: dr1/dr1 · Student: RollNo (e.g. 22ME1A0501)
-        </div>
       </div>
     </main>
   );

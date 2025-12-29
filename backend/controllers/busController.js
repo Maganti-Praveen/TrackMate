@@ -1,5 +1,6 @@
 const Bus = require('../models/Bus');
 const User = require('../models/User');
+const Trip = require('../models/Trip');
 
 const assignDriverMeta = async (driverId, busId) => {
   if (!driverId) return;
@@ -33,10 +34,15 @@ const createBus = async (req, res) => {
 };
 
 const getBuses = async (_req, res) => {
-  const buses = await Bus.find()
-    .populate('driver', 'username name')
-    .populate('route', 'name');
-  res.json(buses);
+  try {
+    const buses = await Bus.find()
+      .populate('driver', 'username name')
+      .populate('route', 'name');
+    res.json(buses);
+  } catch (error) {
+    console.error('getBuses error:', error);
+    res.status(500).json({ message: 'Failed to fetch buses', error: error.message });
+  }
 };
 
 const updateBus = async (req, res) => {
@@ -62,11 +68,28 @@ const updateBus = async (req, res) => {
 };
 
 const deleteBus = async (req, res) => {
-  const bus = await Bus.findByIdAndDelete(req.params.id);
-  if (bus?.driver) {
-    await clearDriverMeta(bus.driver);
+  try {
+    // Check for active trips before deletion
+    const activeTrip = await Trip.findOne({ bus: req.params.id, status: 'ONGOING' });
+    if (activeTrip) {
+      return res.status(400).json({ 
+        message: 'Cannot delete bus with an active trip. End the trip first.' 
+      });
+    }
+
+    const bus = await Bus.findByIdAndDelete(req.params.id);
+    if (!bus) {
+      return res.status(404).json({ message: 'Bus not found' });
+    }
+    
+    if (bus.driver) {
+      await clearDriverMeta(bus.driver);
+    }
+    res.json({ message: 'Bus removed' });
+  } catch (error) {
+    console.error('deleteBus error:', error);
+    res.status(500).json({ message: 'Failed to delete bus', error: error.message });
   }
-  res.json({ message: 'Bus removed' });
 };
 
 module.exports = { createBus, getBuses, updateBus, deleteBus };

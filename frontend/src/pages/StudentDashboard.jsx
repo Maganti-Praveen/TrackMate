@@ -11,7 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const TOKEN_KEY = 'tm_token';
 const NOTIFICATION_PREF_KEY = 'tm_student_notifications';
-const VAPID_PUBLIC_KEY = 'BESvdNeBIH86BBPiukXJZ2ID1dQ9lACvMt_hCiBnRvvdQuxFi4AIHdSWPZU-UPqh251PYL57K0v0sy6cWEajAME';
+const VAPID_PUBLIC_KEY = 'BDXVEVzz8rwtAK895AB89T--U1VMZ6FvyLQLF7em-fp3tQTDih-cT5ONqt_4qG88i8iBdRHdzavUvVvk7nQOOH8';
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -251,12 +251,25 @@ const StudentDashboard = () => {
   const handleEtaUpdate = useCallback(
     (payload) => {
       if (!payload || !stopInfo) return;
+      
+      // Get all possible identifiers for our stop
       const targetStopId = stopInfo?._id || stopInfo?.id;
+      // PRIORITY: Use seq (backend's primary key) over sequence
+      const targetStopSeq = stopInfo?.seq ?? stopInfo?.sequence;
+      const targetStopSeqStr = targetStopSeq != null ? String(targetStopSeq) : null;
+
       const parseEta = (entry) => {
         if (!entry) return null;
-        const matches = !targetStopId ||
-          targetStopId === (entry.stopId || entry?.stop?._id || entry?.stopId);
-        if (!matches) return null;
+        const entryId = entry.stopId || entry?.stop?._id || entry?.stopId;
+        const entryIdStr = entryId != null ? String(entryId) : null;
+
+        // Match by Sequence FIRST (our standardized primary key)
+        // Then fall back to MongoDB _id matching
+        const matchesBySeq = targetStopSeqStr && entryIdStr === targetStopSeqStr;
+        const matchesById = targetStopId && entryIdStr === String(targetStopId);
+        
+        if (!matchesBySeq && !matchesById) return null;
+        
         const value =
           entry.etaMs ??
           (typeof entry.etaSeconds === 'number' ? entry.etaSeconds * 1000 : null) ??
@@ -265,11 +278,30 @@ const StudentDashboard = () => {
         return { value, stopName: entry?.stopName || entry?.stop?.name || stopInfo?.name };
       };
 
+      // Try direct payload first
       let nextEta = parseEta(payload);
+      
+      // Try etasMap (keyed by stopId/seq) for direct lookup
+      if (!nextEta && payload?.etasMap) {
+        // Check by sequence first (our primary key)
+        if (targetStopSeqStr && typeof payload.etasMap[targetStopSeqStr] === 'number') {
+          nextEta = { value: payload.etasMap[targetStopSeqStr], stopName: stopInfo?.name };
+        }
+        // Fallback to _id
+        if (!nextEta && targetStopId && typeof payload.etasMap[targetStopId] === 'number') {
+          nextEta = { value: payload.etasMap[targetStopId], stopName: stopInfo?.name };
+        }
+      }
+      
+      // Try etas array
       if (!nextEta && Array.isArray(payload?.etas)) {
         nextEta = payload.etas.reduce((acc, entry) => acc || parseEta(entry), null);
       }
-      if (!nextEta) return;
+      
+      if (!nextEta) {
+        console.log('[ETA] No match found for stop:', { targetStopSeqStr, targetStopId, payload });
+        return;
+      }
 
       setEta({ value: nextEta.value, source: 'server', updatedAt: Date.now() });
       setStatusMessage('ETA update received from server.');

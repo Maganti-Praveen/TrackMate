@@ -67,6 +67,9 @@ const advanceToNextStop = async (tripId) => {
   return trip;
 };
 
+// Auto-end stale trips older than 12 hours
+const STALE_TRIP_HOURS = 12;
+
 const getActiveTrip = async (req, res) => {
   try {
     const trip = await Trip.findOne({ driver: req.user._id, status: 'ONGOING' })
@@ -75,6 +78,19 @@ const getActiveTrip = async (req, res) => {
 
     if (!trip) {
       return res.status(404).json({ message: 'No active trip' });
+    }
+
+    // Check if trip is stale (older than 12 hours)
+    const tripAge = Date.now() - new Date(trip.startedAt || trip.createdAt).getTime();
+    const maxAge = STALE_TRIP_HOURS * 60 * 60 * 1000;
+    
+    if (tripAge > maxAge) {
+      // Auto-end stale trip
+      trip.status = 'COMPLETED';
+      trip.endedAt = new Date();
+      await trip.save();
+      console.log(`[Auto-End] Stale trip ${trip._id} ended (${Math.round(tripAge / 3600000)}h old)`);
+      return res.status(404).json({ message: 'Previous trip auto-ended (stale). Start a new trip.' });
     }
 
     res.json(trip);

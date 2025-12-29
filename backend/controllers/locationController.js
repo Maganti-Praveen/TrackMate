@@ -10,6 +10,7 @@ const {
 } = require('../utils/etaCalculator');
 const { updateSegmentStats } = require('../utils/segmentStats');
 const { getActiveTripState, resetInsideWindow } = require('../inMemory/activeTrips');
+const logger = require('../utils/logger');
 const {
   JWT_SECRET,
   RADIUS_METERS,
@@ -23,6 +24,22 @@ const {
 
 const driverThrottle = new Map();
 
+// Cleanup old entries from driverThrottle every 5 minutes to prevent memory leak
+const THROTTLE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const THROTTLE_EXPIRY_MS = 10 * 60 * 1000; // Remove entries older than 10 minutes
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of driverThrottle.entries()) {
+    if (now - timestamp > THROTTLE_EXPIRY_MS) {
+      driverThrottle.delete(key);
+    }
+  }
+}, THROTTLE_CLEANUP_INTERVAL_MS);
+
+/**
+ * Persist a stop event to the database
+ */
 const persistStopEvent = async ({ tripId, stopIndex, stopName, status, location, source }) =>
   StopEvent.create({
     trip: tripId,
@@ -39,16 +56,22 @@ const updateBusLocation = async (busId, coords) => {
   });
 };
 
+// Maximum number of location breadcrumbs to keep per trip
+const MAX_LOCATION_HISTORY = 1000;
+
 const pushLocationUpdate = async (tripId, { lat, lng, speed, heading, timestamp }) => {
   const Trip = require('../models/Trip');
   await Trip.findByIdAndUpdate(tripId, {
     $push: {
       locations: {
-        lat,
-        lng,
-        speed: speed || 0,
-        heading: heading || 0,
-        timestamp: timestamp || new Date()
+        $each: [{
+          lat,
+          lng,
+          speed: speed || 0,
+          heading: heading || 0,
+          timestamp: timestamp || new Date()
+        }],
+        $slice: -MAX_LOCATION_HISTORY // Keep only the last N entries
       }
     },
     $set: {
@@ -137,14 +160,14 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
   try {
     await updateBusLocation(state.trip.bus, { lat, lng });
   } catch (err) {
-    console.error('Bus Update Error:', err.message);
+    logger.error('Bus Update Error:', err.message);
   }
 
   // Persist Breadcrumb (History)
   try {
     await pushLocationUpdate(tripId, { lat, lng, speed, heading: payload?.heading, timestamp: now });
   } catch (err) {
-    console.error('Breadcrumb Error:', err.message);
+    logger.error('Breadcrumb Error:', err.message);
   }
 
   let forceEtaEmit = !Object.keys(state.etaCache || {}).length;
@@ -169,7 +192,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
   }
 
   if (detectedStop && detectedIndex > state.currentStopIndex) {
-    console.log(`[Jump Detected] Fast-forwarding from Stop ${state.currentStopIndex} to ${detectedIndex}`);
+    logger.debug(`[Jump Detected] Fast-forwarding from Stop ${state.currentStopIndex} to ${detectedIndex}`);
     state.currentStopIndex = detectedIndex;
     resetInsideWindow(state, detectedIndex);
   }
@@ -177,7 +200,6 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
   const nextStop = state.routeStops[state.currentStopIndex];
   if (nextStop) {
     const distance = distanceMeters({ lat, lng }, { lat: nextStop.lat, lng: nextStop.lng });
-    // console.log(`[Stop Check] ${nextStop.name}: ${Math.round(distance)}m (Radius: ${RADIUS_METERS}m)`);
 
     if (distance <= RADIUS_METERS) {
       state.insideWindow.timestamps.push(now);
@@ -219,14 +241,16 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
             // Fire and forget (async)
             (async () => {
               try {
-                const User = require('../models/User');
+                const StudentAssignment = require('../models/StudentAssignment');
                 const { sendPush } = require('./notificationController');
                 // Find students assigned to this bus (and theoretically this stop)
-                const studentsAtStop = await User.find({
-                  assignedBusId: state.trip.bus,
-                  role: 'student',
-                  pushSubscription: { $ne: null },
-                });
+                const assignmentsAtStop = await StudentAssignment.find({
+                  bus: state.trip.bus
+                }).populate('student');
+
+                const studentsAtStop = assignmentsAtStop
+                  .map(a => a.student)
+                  .filter(s => s && s.pushSubscription);
 
                 // Since I don't trust the assignment population model fully right now (User doesn't embed assignment directly?), 
                 // I will just broadcast "Bus at [StopName]" to ALL students on this bus for now to ensure delivery,
@@ -334,45 +358,51 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
   const checkPush = async () => {
     try {
       const { sendPush } = require('./notificationController');
-      const User = require('../models/User'); // delayed import to avoid circular dependency issues if any
+      const StudentAssignment = require('../models/StudentAssignment');
 
-      // Auto-Heal: Ensure sample student is assigned to bus for demo
-      const debugCount = await User.countDocuments({ assignedBusId: state.trip.bus, role: 'student' });
-      if (debugCount === 0) {
-        const sample = await User.findOne({ role: 'student' });
-        if (sample && !sample.assignedBusId && state.trip.bus) {
-          await User.findByIdAndUpdate(sample._id, {
-            assignedBusId: state.trip.bus,
-            stopCoordinates: { lat: 16.821302, lng: 80.996527 }
-          });
-          console.log(`[System] Auto-assigned ${sample.username} to active bus.`);
-        }
-      }
+      // Find students via StudentAssignment with their stop coordinates
+      const assignments = await StudentAssignment.find({
+        bus: state.trip.bus
+      })
+        .populate('student', 'pushSubscription stopCoordinates name')
+        .populate('stop', 'latitude longitude name sequence');
 
-      // Find students ensuring we have their push subscription and stop coordinates
-      // Optimization: In a real app, cache this list in state.activeTrips
-      const students = await User.find({
-        assignedBusId: state.trip.bus,
-        role: 'student',
-        pushSubscription: { $ne: null },
-        'stopCoordinates.lat': { $exists: true }
-      }).select('pushSubscription stopCoordinates name');
+      for (const assignment of assignments) {
+        const student = assignment.student;
+        if (!student || !student.pushSubscription) continue;
 
-      for (const student of students) {
         if (state.notifiedStudents.has(student._id.toString())) continue;
 
-        const stopCoords = student.stopCoordinates;
-        if (!stopCoords || !stopCoords.lat) continue;
+        // Try to get stop coordinates from multiple sources
+        let stopCoords = null;
+        
+        // Priority 1: Student's custom stopCoordinates (if set)
+        if (student.stopCoordinates?.lat && student.stopCoordinates?.lng) {
+          stopCoords = student.stopCoordinates;
+        }
+        // Priority 2: Assigned stop's coordinates from Stop collection
+        else if (assignment.stop?.latitude && assignment.stop?.longitude) {
+          stopCoords = { lat: assignment.stop.latitude, lng: assignment.stop.longitude };
+        }
+        // Priority 3: Try to find in route's embedded stops by matching sequence
+        else if (assignment.stop?.sequence != null && state.routeStops?.length) {
+          const matchingRouteStop = state.routeStops.find(
+            s => (s.seq ?? s.sequence) === assignment.stop.sequence
+          );
+          if (matchingRouteStop?.lat && matchingRouteStop?.lng) {
+            stopCoords = { lat: matchingRouteStop.lat, lng: matchingRouteStop.lng };
+          }
+        }
+
+        if (!stopCoords) continue;
 
         const dist = distanceMeters({ lat, lng }, stopCoords);
-        // console.log("Checking Student:", student.name, "Distance:", dist, "Threshold: 1000m");
-        // 1km = 1000 meters
+        // 1km = 1000 meters threshold for proximity alert
         if (dist <= 1000) {
           console.log(`Sending 1km Alert to student ${student.name}`);
 
-          // Calculate approximate ETA (Minutes)
-          // Speed is in m/s. Use current speed or assumed speed (e.g. 30km/h ~ 8m/s) if stuck
-          const currentSpeed = speedMps > 1 ? speedMps : 8.33;
+          // Calculate approximate ETA using current speed or conservative fallback
+          const currentSpeed = speedMps > 1 ? speedMps : ASSUMED_SPEED_MPS;
           const etaSeconds = dist / currentSpeed;
           const etaMinutes = Math.ceil(etaSeconds / 60);
 
@@ -381,7 +411,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
             body: `Bus is approx ${etaMinutes} min away (${Math.round(dist)}m). Get ready!`,
             url: '/student',
             tag: 'proximity-alert',
-            icon: '/icons/bus-icon.png'
+            icon: '/markers/bus.png'
           });
           state.notifiedStudents.add(student._id.toString());
         }
@@ -575,6 +605,40 @@ const registerLocationHandlers = (io) => {
       clearTimeout(authTimeout);
     });
   });
+
+  // --- HEARTBEAT ETA RECALCULATION ---
+  // Recalculate ETAs every 30 seconds for all active trips, even if no GPS update received
+  // This ensures students see updated ETAs based on time passing
+  const ETA_HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
+  
+  setInterval(async () => {
+    try {
+      const { activeTrips } = require('../inMemory/activeTrips');
+      const now = Date.now();
+      
+      for (const [tripId, state] of activeTrips.entries()) {
+        // Skip if no last position (trip just started, no GPS yet)
+        if (!state.lastPosition) continue;
+        
+        // Skip if we received a GPS update recently (within 15 seconds)
+        const lastUpdate = state.lastPosition.timestamp || 0;
+        if (now - lastUpdate < 15000) continue;
+        
+        // Recalculate ETAs based on last known position
+        const { lat, lng } = state.lastPosition;
+        
+        // Use a conservative speed since bus might be stationary
+        const rawEtas = await computeRawEtas(state, { lat, lng }, ASSUMED_SPEED_MPS);
+        
+        if (Object.keys(rawEtas).length > 0) {
+          // Emit updated ETAs to all subscribers
+          emitEtaUpdateIfNeeded(io, tripId, state, rawEtas, { force: false });
+        }
+      }
+    } catch (err) {
+      console.error('[ETA Heartbeat] Error:', err.message);
+    }
+  }, ETA_HEARTBEAT_INTERVAL_MS);
 };
 
 module.exports = { registerLocationHandlers };

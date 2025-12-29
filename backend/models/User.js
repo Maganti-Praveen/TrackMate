@@ -28,10 +28,10 @@ const userSchema = new mongoose.Schema(
     assignedBusId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bus'
-    },
+    }, // DEPRECATED: Use StudentAssignment model
     assignedStopId: {
       type: Number // sequence of stop in route.stops array
-    },
+    }, // DEPRECATED: Use StudentAssignment model
     driverMeta: {
       bus: {
         type: mongoose.Schema.Types.ObjectId,

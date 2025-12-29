@@ -10,6 +10,7 @@ const Profile = () => {
         role: '',
         name: '',
         phone: '',
+        currentPassword: '',
         password: ''
     });
     const [loading, setLoading] = useState(false);
@@ -21,6 +22,7 @@ const Profile = () => {
                 role: user.role || '',
                 name: user.name || '',
                 phone: user.phone || '',
+                currentPassword: '',
                 password: '' // Keep empty for security
             });
         }
@@ -34,11 +36,21 @@ const Profile = () => {
         e.preventDefault();
         setLoading(true);
 
+        // Validate: if changing password, current password is required
+        if (formData.password && !formData.currentPassword) {
+            toast.error('Current password is required to change password');
+            setLoading(false);
+            return;
+        }
+
         const payload = {
             name: formData.name,
             phone: formData.phone
         };
-        if (formData.password) payload.password = formData.password;
+        if (formData.password) {
+            payload.password = formData.password;
+            payload.currentPassword = formData.currentPassword;
+        }
 
         try {
             await api.put('/auth/profile', payload); // Note: Route path verified in backend
@@ -114,6 +126,20 @@ const Profile = () => {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 placeholder="Enter phone number"
+                                className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-white placeholder-slate-600 transition focus:border-indigo-500 focus:bg-indigo-500/5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-indigo-400">
+                                Current Password
+                            </label>
+                            <input
+                                type="password"
+                                name="currentPassword"
+                                value={formData.currentPassword}
+                                onChange={handleChange}
+                                placeholder="Required to change password"
                                 className="w-full rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-white placeholder-slate-600 transition focus:border-indigo-500 focus:bg-indigo-500/5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
                         </div>

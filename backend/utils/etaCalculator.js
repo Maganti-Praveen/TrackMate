@@ -8,16 +8,33 @@ const {
   OSRM_CACHE_TTL_MS
 } = require('../config/constants');
 const { distanceMeters, projectPointOnLineAndRemainingDistance } = require('./geoUtils');
+const logger = require('./logger');
 
+/**
+ * Resolve a consistent stop ID for ETA tracking
+ * Priority: seq > sequence > stopRef > _id > id
+ * @param {Object} stop - Stop object
+ * @returns {string|null} Resolved stop ID
+ */
 const resolveStopId = (stop) => {
   if (!stop) return null;
+  // PRIORITY: Use seq/sequence as primary key for consistent frontend/backend matching
+  if (typeof stop.seq === 'number') return String(stop.seq);
+  if (typeof stop.sequence === 'number') return String(stop.sequence);
+  // Fallback to MongoDB IDs if seq not available
   if (stop.stopRef) return stop.stopRef.toString();
   if (stop._id) return stop._id.toString();
   if (stop.id) return stop.id.toString();
-  if (typeof stop.seq !== 'undefined') return String(stop.seq);
   return null;
 };
 
+/**
+ * Calculate remaining distance from current position to a stop
+ * @param {Object} routeDoc - Route document with geojson
+ * @param {Object} position - Current position {lat, lng}
+ * @param {Object} stop - Target stop {lat, lng}
+ * @returns {number} Distance in meters
+ */
 const remainingDistanceToStop = (routeDoc, position, stop) => {
   if (!position || !stop) return Infinity;
   const geojson = routeDoc?.geojson;
@@ -39,6 +56,12 @@ const buildOsrmUrl = (coords) => {
   return `${OSRM_BASE_URL}/route/v1/driving/${points}?overview=false`;
 };
 
+/**
+ * Fetch driving durations from OSRM routing service
+ * @param {Array} stops - Array of stops with lat/lng
+ * @param {Object} currentPos - Current position {lat, lng}
+ * @returns {Promise<Array|null>} Array of leg durations in seconds, or null on failure
+ */
 const fetchOsrmDurations = async (stops, currentPos) => {
   try {
     const coords = [[currentPos.lng, currentPos.lat]];
@@ -47,16 +70,16 @@ const fetchOsrmDurations = async (stops, currentPos) => {
     const url = buildOsrmUrl(coords);
     if (!url) return null;
 
-    console.log("[OSRM] URL:", url);
+    logger.debug('[OSRM] Fetching route durations');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
 
     try {
       const resp = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (!resp.ok) {
-        console.warn(`OSRM Error: ${resp.statusText}`);
+        logger.warn(`OSRM Error: ${resp.statusText}`);
         return null;
       }
       const data = await resp.json();
@@ -65,16 +88,16 @@ const fetchOsrmDurations = async (stops, currentPos) => {
       return data.routes[0].legs.map(leg => leg.duration);
     } catch (fetchErr) {
       if (fetchErr.name === 'AbortError') {
-        console.warn('OSRM request timed out (1.5s). Falling back to linear estimates.');
+        logger.debug('OSRM request timed out, using linear estimates');
       } else {
-        console.error('OSRM Fetch Failed:', fetchErr.message);
+        logger.warn('OSRM Fetch Failed:', fetchErr.message);
       }
       return null;
     } finally {
       clearTimeout(timeoutId);
     }
   } catch (err) {
-    console.error('OSRM Setup Failed:', err.message);
+    logger.error('OSRM Setup Failed:', err.message);
     return null;
   }
 };
@@ -92,64 +115,75 @@ const computeRawEtas = async (state, position, speedMps = 0) => {
     return {};
   }
 
-  // 1. Immediate Next Stop (Local Physics)
-  const velocity = speedMps >= MIN_SPEED_MPS ? speedMps : ASSUMED_SPEED_MPS;
-  const distToNext = remainingDistanceToStop(state.route, position, nextStop) || 0;
-  const nextEtaMs = (distToNext / velocity) * 1000;
-
   const rawEtas = {};
-  const nextStopId = resolveStopId(nextStop);
-  rawEtas[nextStopId] = nextEtaMs;
-
-  // 2. Subsequent Stops (OSRM / Historical)
-  const subsequentStops = orderedStops.slice(upcomingIndex); // [NextStop, Next+1, ...]
-
-  // Check Cache
   const now = Date.now();
+  
+  // Use a more conservative speed when stationary or slow
+  const velocity = speedMps >= MIN_SPEED_MPS ? speedMps : ASSUMED_SPEED_MPS;
+
+  // Check/Refresh OSRM Cache - now includes CURRENT POSITION -> all remaining stops
   let osrmCache = state.osrmCache;
-  if (!osrmCache || (now - osrmCache.timestamp > OSRM_CACHE_TTL_MS)) {
-    // Cache stale or missing
-    state.osrmCache = { timestamp: now, durations: [] }; // Reset
-    // We only query OSRM for the sequence of *remaining* stops to be efficient
-    // Query: NextStop -> Next+1 -> Next+2 ...
-    // Note: The logic above calculated Current -> NextStop manually.
-    // OSRM is best for Stop -> Stop segments.
+  const cacheValid = osrmCache && 
+    (now - osrmCache.timestamp <= OSRM_CACHE_TTL_MS) && 
+    osrmCache.startIndex === upcomingIndex;
 
-    if (subsequentStops.length > 1) {
-      // We need durations for: Next -> Stop+1, Stop+1 -> Stop+2, etc.
-      const stopsForOsrm = subsequentStops.map(s => ({ lat: s.lat, lng: s.lng }));
-      // For the query, we can just pass the stops themselves.
-      // The 'currentPos' arg in fetchOsrmDurations usually implies Current -> FirstStop, 
-      // but here we want relations between stops.
-      // Let's modify fetch usage slightly:
-      // We'll ask OSRM for the path: [NextStop, Stop+1, Stop+2 ...]
-      const durations = await fetchOsrmDurations(subsequentStops.slice(1), { lat: nextStop.lat, lng: nextStop.lng });
-
-      if (durations) {
-        state.osrmCache.durations = durations;
-        state.osrmCache.startIndex = upcomingIndex; // Tie cache to specific stop index
+  if (!cacheValid) {
+    // Reset cache and query OSRM for: CurrentPosition -> NextStop -> Stop+1 -> ...
+    state.osrmCache = { timestamp: now, durations: [], firstSegmentDuration: null, startIndex: upcomingIndex };
+    
+    const remainingStops = orderedStops.slice(upcomingIndex);
+    if (remainingStops.length > 0) {
+      // Query OSRM: Current Position -> All Remaining Stops (includes first segment!)
+      const durations = await fetchOsrmDurations(remainingStops, position);
+      
+      if (durations && durations.length > 0) {
+        // durations[0] = CurrentPos -> NextStop (first segment, road distance!)
+        // durations[1] = NextStop -> Stop+1, etc.
+        state.osrmCache.firstSegmentDuration = durations[0]; // seconds
+        state.osrmCache.durations = durations.slice(1); // remaining segments
+        state.osrmCache.startIndex = upcomingIndex;
       }
     }
   }
 
-  // Use OSRM or Fallback
-  // matching logic: if cache is valid and matches our current sequence
+  // 1. Calculate ETA to NEXT stop
+  // Always compute real distance first - more accurate when close to stop
+  const distToNext = remainingDistanceToStop(state.route, position, nextStop) || 0;
+  
+  let nextEtaMs;
+  
+  // If within 100m of stop, use real-time distance calculation (not cached OSRM)
+  if (distToNext < 100) {
+    nextEtaMs = (distToNext / velocity) * 1000;
+  } else if (typeof state.osrmCache.firstSegmentDuration === 'number') {
+    // Use OSRM road distance for first segment when far from stop
+    nextEtaMs = state.osrmCache.firstSegmentDuration * 1000;
+  } else {
+    // Fallback: Use route projection or haversine
+    nextEtaMs = (distToNext / velocity) * 1000;
+  }
+  
+  // Ensure ETA doesn't go negative
+  nextEtaMs = Math.max(0, nextEtaMs);
+
+  const nextStopId = resolveStopId(nextStop);
+  rawEtas[nextStopId] = nextEtaMs;
+
+  // 2. Calculate ETAs for subsequent stops
+  const subsequentStops = orderedStops.slice(upcomingIndex); // [NextStop, Next+1, ...]
   const useOsrm = state.osrmCache?.durations?.length > 0 && state.osrmCache.startIndex === upcomingIndex;
 
   let cumulativeMs = nextEtaMs;
 
-  // existing loop updated
   for (let i = 0; i < subsequentStops.length - 1; i++) {
-    const currentS = subsequentStops[i];
-    const targetS = subsequentStops[i + 1]; // This correspond to orderedStops[upcomingIndex + 1 + i]
-
+    const targetS = subsequentStops[i + 1];
     let segmentDurationMs;
 
     if (useOsrm && typeof state.osrmCache.durations[i] === 'number') {
+      // OSRM segment duration (already in seconds, convert to ms)
       segmentDurationMs = state.osrmCache.durations[i] * 1000;
     } else {
-      // Fallback to Stats
-      // original idx logic:
+      // Fallback to historical stats or default
       const originalIdx = upcomingIndex + i;
       const segment = segStats[originalIdx] || {};
       const avgSec = typeof segment.avgSec === 'number' ? segment.avgSec : DEFAULT_SEG_SEC;

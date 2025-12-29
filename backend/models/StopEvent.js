@@ -5,11 +5,13 @@ const stopEventSchema = new mongoose.Schema(
     trip: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Trip',
-      required: true
+      required: true,
+      index: true
     },
     stop: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Stop'
+      ref: 'Stop',
+      index: true
     },
     stopIndex: {
       type: Number,
@@ -22,7 +24,8 @@ const stopEventSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['ARRIVED', 'LEFT', 'SOS'],
-      required: true
+      required: true,
+      index: true
     },
     message: {
       type: String

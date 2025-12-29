@@ -5,12 +5,14 @@ const tripSchema = new mongoose.Schema(
     bus: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bus',
-      required: true
+      required: true,
+      index: true
     },
     driver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: true,
+      index: true
     },
     route: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +22,8 @@ const tripSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['PENDING', 'ONGOING', 'COMPLETED'],
-      default: 'PENDING'
+      default: 'PENDING',
+      index: true
     },
     currentStopIndex: {
       type: Number,

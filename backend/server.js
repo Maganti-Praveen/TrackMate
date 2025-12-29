@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const { ensureDefaultAccounts } = require('./controllers/authController');
@@ -18,8 +19,30 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const { registerLocationHandlers } = require('./controllers/locationController');
 
 const app = express();
-app.use(cors({ origin: '*', credentials: true }));
+
+// CORS configuration - use specific origins in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 login attempts per window
+  message: { message: 'Too many login attempts, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply rate limiting to auth routes
+app.use('/api/auth/login', authLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/routes', routeRoutes);
@@ -29,12 +52,41 @@ app.use('/api/buses', busRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/stops', stopRoutes);
 app.use('/api/student', studentRoutes);
-app.use('/api/students', studentRoutes);
+app.use('/api/students', studentRoutes); // Alias for frontend compatibility
 app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (_req, res) => {
   res.json({ message: 'TrackMate backend is running' });
+});
+
+// Global error handler - must be last middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.stack);
+  
+  // Don't leak error details in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message;
+  
+  res.status(err.status || 500).json({ 
+    message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // In production, you might want to gracefully shut down
+  // For now, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Graceful shutdown
+  process.exit(1);
 });
 
 const server = http.createServer(app);

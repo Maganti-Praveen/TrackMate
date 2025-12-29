@@ -1,87 +1,114 @@
 const webPush = require('web-push');
 const StudentAssignment = require('../models/StudentAssignment');
+const logger = require('./logger');
 
 const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = require('../config/constants');
 
-webPush.setVapidDetails(
-  'mailto:admin@trackmate.com',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+// Only set VAPID details if keys are provided
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webPush.setVapidDetails(
+    process.env.VAPID_EMAIL || 'mailto:admin@trackmate.com',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+} else {
+  logger.warn('VAPID keys not configured. Push notifications will be disabled.');
+}
 
-// Helper to send push
+/**
+ * Send a web push notification to a subscription
+ * @param {Object} subscription - Web push subscription object
+ * @param {Object} payload - Notification payload
+ * @returns {Promise<boolean>} Success status
+ */
 const sendPush = async (subscription, payload) => {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    return false;
+  }
   try {
     await webPush.sendNotification(subscription, JSON.stringify(payload));
     return true;
   } catch (err) {
-    console.error('Push Send Error:', err);
+    logger.error('Push Send Error:', err.message);
     return false;
   }
 };
 
+/**
+ * Send push notification to all students assigned to a bus
+ * @param {Object} params - Notification parameters
+ * @param {string} params.busId - Bus ID
+ * @param {string} params.title - Notification title
+ * @param {string} params.body - Notification body
+ * @returns {Promise<number>} Number of notifications sent
+ */
 const sendPushNotification = async ({ busId, title, body }) => {
-  // Find all students assigned to this bus
   const assignments = await StudentAssignment.find({ bus: busId }).populate('student', 'username pushSubscription');
   let sentCount = 0;
 
   for (const assignment of assignments) {
-    // Check if student has a web push subscription saved
     const student = assignment.student;
     if (student?.pushSubscription) {
       const payload = { title, body, url: '/student' };
       const success = await sendPush(student.pushSubscription, payload);
       if (success) {
         sentCount++;
-        console.log(`📣 Push Sent -> ${student.username}`);
+        logger.debug(`Push sent to ${student.username}`);
       }
     }
   }
   return sentCount;
 };
 
+/**
+ * Send SOS emergency notification to all students on a trip's bus
+ * @param {Object} params - SOS parameters
+ * @param {string} params.tripId - Trip ID
+ * @param {string} params.message - Emergency message
+ * @param {Object} params.location - Current location
+ * @returns {Promise<boolean>} Success status
+ */
 const sendSOSNotification = async ({ tripId, message, location }) => {
   try {
     const Trip = require('../models/Trip');
-    const User = require('../models/User');
 
-    console.log(`🚨 SOS BROADCAST | Trip: ${tripId} | Msg: ${message}`);
+    logger.info(`SOS BROADCAST | Trip: ${tripId} | Msg: ${message}`);
 
     const trip = await Trip.findById(tripId);
     if (!trip || !trip.bus) {
-      console.error('SOS Error: Trip or Bus not found');
+      logger.error('SOS Error: Trip or Bus not found');
       return false;
     }
 
-    // Find all students assigned to this bus with a subscription
-    const students = await User.find({
-      assignedBusId: trip.bus,
-      role: 'student',
-      pushSubscription: { $ne: null }
-    }).select('username pushSubscription');
+    const assignments = await StudentAssignment.find({ bus: trip.bus })
+      .populate('student', 'username name pushSubscription');
 
-    console.log(`[SOS] Found ${students.length} students to alert.`);
+    const studentsWithPush = assignments
+      .map(a => a.student)
+      .filter(s => s && s.pushSubscription);
+
+    logger.info(`[SOS] Found ${studentsWithPush.length} students with push subscriptions`);
 
     let sentCount = 0;
-    for (const student of students) {
+    for (const student of studentsWithPush) {
       const payload = {
         title: '🚨 EMERGENCY ALERT',
         body: `Driver SOS: ${message}`,
-        icon: '/icons/sos-alert.png', // Ensure this exists or use default
+        icon: '/markers/bus.png',
         data: { url: '/student' },
         tag: 'sos-alert',
         renotify: true,
-        requireInteraction: true // Critical for SOS
+        requireInteraction: true
       };
 
       const success = await sendPush(student.pushSubscription, payload);
       if (success) sentCount++;
     }
 
-    console.log(`[SOS] Sent push to ${sentCount}/${students.length} students.`);
+    logger.info(`[SOS] Sent push to ${sentCount}/${studentsWithPush.length} students`);
     return true;
   } catch (err) {
-    console.error('SOS Push Error:', err);
+    logger.error('SOS Push Error:', err.message);
     return false;
   }
 };

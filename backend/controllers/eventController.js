@@ -1,7 +1,20 @@
 const StopEvent = require('../models/StopEvent');
 
-const createEventRecord = async ({ trip, stop, status, etaMinutes }) => {
-  return StopEvent.create({ trip, stop, status, etaMinutes });
+const createEventRecord = async ({ trip, stop, stopIndex, stopName, status, etaMinutes, location, source = 'manual' }) => {
+  // Ensure required fields are provided
+  const resolvedStopIndex = stopIndex ?? (stop?.sequence ?? stop?.seq ?? 0);
+  const resolvedStopName = stopName ?? stop?.name ?? `Stop ${resolvedStopIndex}`;
+  
+  return StopEvent.create({ 
+    trip, 
+    stop: stop?._id || stop,
+    stopIndex: resolvedStopIndex,
+    stopName: resolvedStopName,
+    status, 
+    etaMinutes,
+    location,
+    source
+  });
 };
 
 const listEvents = async (_req, res) => {
