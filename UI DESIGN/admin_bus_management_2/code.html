@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Bus Management - TrackMate</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4f44e9",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#121121",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e1c2e",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "2xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hide for horizontal scrolling areas */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased transition-colors duration-200">
+<div class="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden">
+<!-- Sticky Header -->
+<header class="sticky top-0 z-20 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 transition-colors duration-200">
+<div class="flex items-center justify-between px-4 py-3">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-slate-900 dark:text-white transition-colors">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Fleet Management</h1>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-slate-900 dark:text-white transition-colors relative">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-[#1e1c2e]"></span>
+</button>
+</div>
+</div>
+<!-- Search & Add Area -->
+<div class="px-4 pb-3 pt-1 space-y-3">
+<!-- Add Button -->
+<button class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">add</span>
+<span>Add New Bus</span>
+</button>
+<!-- Search Input -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="block w-full rounded-xl border-none bg-gray-100 dark:bg-gray-800 py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-surface-dark transition-all" placeholder="Search bus number or driver..." type="text"/>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar items-center">
+<button class="flex shrink-0 items-center justify-center px-4 py-2 rounded-full bg-primary text-white text-sm font-medium shadow-md transition-transform active:scale-95">
+                    All
+                </button>
+<button class="flex shrink-0 items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Active
+                </button>
+<button class="flex shrink-0 items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Parked
+                </button>
+<button class="flex shrink-0 items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-slate-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Maintenance
+                </button>
+</div>
+</header>
+<!-- Main Content: Bus List -->
+<main class="flex-1 px-4 py-6 space-y-4">
+<!-- Card 1: Active Bus -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">directions_bus</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Bus-102</h3>
+<p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Volvo 9700 • 2021 Model</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        Active
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">route</span>
+<span class="truncate">Route A: Campus Loop</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">airline_seat_recline_normal</span>
+<span>45/60 Seats</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300 col-span-2">
+<span class="material-symbols-outlined text-gray-400 text-lg">badge</span>
+<span>Driver: Michael Chen</span>
+</div>
+</div>
+<div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-900 dark:text-white text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+                        Edit
+                    </button>
+<button class="flex items-center justify-center h-9 w-9 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Maintenance -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined text-2xl">build</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Bus-404</h3>
+<p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Mercedes Sprinter • 2019</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                        Maintenance
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">route</span>
+<span class="truncate">Unassigned</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">airline_seat_recline_normal</span>
+<span>0/24 Seats</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300 col-span-2">
+<span class="material-symbols-outlined text-gray-400 text-lg">badge</span>
+<span>Mechanic: Garage B</span>
+</div>
+</div>
+<div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-900 dark:text-white text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+                        Edit Details
+                    </button>
+<button class="flex items-center justify-center h-9 w-9 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 3: Parked -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="h-12 w-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-2xl">garage</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Bus-205</h3>
+<p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Blue Bird • 2022 Model</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        Parked
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">route</span>
+<span class="truncate">Night Shuttle B</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">airline_seat_recline_normal</span>
+<span>0/40 Seats</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300 col-span-2">
+<span class="material-symbols-outlined text-gray-400 text-lg">badge</span>
+<span>Driver: Sarah Jenkins</span>
+</div>
+</div>
+<div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-900 dark:text-white text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+                        Edit
+                    </button>
+<button class="flex items-center justify-center h-9 w-9 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 4: Active Bus -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">directions_bus</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight">Bus-108</h3>
+<p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Volvo 9700 • 2020 Model</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        Active
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">route</span>
+<span class="truncate">Route C: Dorms</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-gray-400 text-lg">airline_seat_recline_normal</span>
+<span>12/60 Seats</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300 col-span-2">
+<span class="material-symbols-outlined text-gray-400 text-lg">badge</span>
+<span>Driver: John Doe</span>
+</div>
+</div>
+<div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-900 dark:text-white text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+                        Edit
+                    </button>
+<button class="flex items-center justify-center h-9 w-9 rounded-lg border border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Optional: Floating Nav (Simulating Tab Bar for Mobile context) -->
+<nav class="sticky bottom-0 bg-surface-light dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 py-2 px-6 flex justify-between items-center z-10">
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined fill-current">directions_bus</span>
+<span class="text-[10px] font-medium">Fleet</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-medium">Map</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</button>
+</nav>
+</div>
+</body></html>

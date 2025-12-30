@@ -1,6 +1,85 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useSocket } from '../hooks/useSocket';
+import { 
+  Bus, Users, UserCheck, Navigation, Clock, MapPin,
+  AlertTriangle, RefreshCw, Trash2, ChevronRight, Activity, Octagon
+} from 'lucide-react';
+
+// ===== COMPONENTS =====
+
+const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
+  const colors = {
+    indigo: 'bg-indigo-500/20 text-indigo-400',
+    emerald: 'bg-emerald-500/20 text-emerald-400',
+    orange: 'bg-orange-500/20 text-orange-400',
+    purple: 'bg-purple-500/20 text-purple-400',
+  };
+  
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-xl ${colors[color]}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+      <p className="text-3xl font-bold text-white mb-1">{value ?? '—'}</p>
+      <p className="text-sm text-slate-400">{label}</p>
+    </div>
+  );
+};
+
+const TripCard = ({ trip }) => (
+  <div className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition">
+    <div className="flex items-center gap-4">
+      <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+        <Bus className="w-6 h-6 text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-white truncate">{trip.bus?.name || 'Unknown Bus'}</p>
+        <p className="text-sm text-slate-400">
+          Driver: {trip.driver?.name || trip.driver?.username || 'Unknown'}
+        </p>
+        <p className="text-xs text-slate-500 mt-1">{trip.route?.name || 'No route'}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/20 text-xs text-emerald-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Live
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+const EventItem = ({ event }) => (
+  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg transition">
+    <div className={`p-2 rounded-lg ${event.status === 'ARRIVED' ? 'bg-emerald-500/20' : 'bg-orange-500/20'}`}>
+      <MapPin className={`w-4 h-4 ${event.status === 'ARRIVED' ? 'text-emerald-400' : 'text-orange-400'}`} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-sm text-white truncate">{event.stop?.name || `Stop ${event.stopIndex}`}</p>
+      <p className="text-xs text-slate-500">{event.status} · ETA: {event.etaMinutes ?? '—'} min</p>
+    </div>
+    <p className="text-xs text-slate-500">{new Date(event.timestamp).toLocaleTimeString()}</p>
+  </div>
+);
+
+const QuickLink = ({ to, icon: Icon, label }) => (
+  <Link
+    to={to}
+    className="flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition group"
+  >
+    <div className="p-2 rounded-lg bg-indigo-500/20">
+      <Icon className="w-5 h-5 text-indigo-400" />
+    </div>
+    <span className="flex-1 text-white font-medium">{label}</span>
+    <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition" />
+  </Link>
+);
+
+// ===== MAIN COMPONENT =====
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({});
@@ -12,170 +91,179 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [clearing, setClearing] = useState(false);
 
+  const socketHandlers = useMemo(() => ({
+    'trip:sos': setSosAlert,
+    'stats:live_visitors': setVisitorCount,
+    'admin:joined': () => console.log('Admin room joined')
+  }), []);
+
+  const { socket, isConnected } = useSocket(socketHandlers);
+
+  useEffect(() => {
+    if (socket && isConnected) socket.emit('admin:join');
+  }, [socket, isConnected]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [statsRes, tripsRes, eventsRes] = await Promise.all([
+        api.get('/admin/dashboard'),
+        api.get('/admin/trips'),
+        api.get('/admin/events')
+      ]);
+      setStats(statsRes.data);
+      setTrips(tripsRes.data);
+      setEvents(eventsRes.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
   const handleClearEvents = async () => {
-    if (!window.confirm('Are you sure you want to clear all stop events?')) return;
+    if (!confirm('Clear all stop events?')) return;
     setClearing(true);
     try {
       await api.delete('/admin/events');
       setEvents([]);
-    } catch (err) {
-      console.error('Failed to clear events:', err);
+    } catch {
       alert('Failed to clear events');
     } finally {
       setClearing(false);
     }
   };
 
-  const socketHandlers = useMemo(() => ({
-    'trip:sos': (payload) => setSosAlert(payload),
-    'stats:live_visitors': (count) => setVisitorCount(count),
-    'admin:joined': () => console.log('Joined admin socket room')
-  }), []);
+  // Loading
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Loading dashboard...</p>
+        </div>
+      </main>
+    );
+  }
 
-  const { socket, isConnected } = useSocket(socketHandlers);
-
-  useEffect(() => {
-    if (socket && isConnected) {
-      socket.emit('admin:join');
-    }
-  }, [socket, isConnected]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [statsRes, tripsRes, eventsRes] = await Promise.all([
-          api.get('/admin/dashboard'),
-          api.get('/admin/trips'),
-          api.get('/admin/events')
-        ]);
-        setStats(statsRes.data);
-        setTrips(tripsRes.data);
-        setEvents(eventsRes.data);
-      } catch (err) {
-        console.error('Dashboard fetch error:', err);
-        setError(err.response?.data?.message || 'Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // Error
+  if (error) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4">
+        <div className="card p-6 text-center max-w-sm">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-white font-medium mb-2">Failed to load</p>
+          <p className="text-slate-400 text-sm mb-4">{error}</p>
+          <button onClick={fetchData} className="px-6 py-2 bg-indigo-500 text-white rounded-xl font-medium">
+            Try Again
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8">
+    <main className="min-h-screen pb-8">
+      {/* SOS Alert */}
       {sosAlert && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-red-600 p-6 text-white shadow-2xl animate-pulse cursor-pointer">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="rounded-full bg-white/20 p-4">
-                <span className="text-4xl">🚨</span>
-              </div>
-              <h2 className="text-3xl font-bold uppercase tracking-widest">Emergency Alert</h2>
-              <p className="text-lg font-medium">{sosAlert.message}</p>
-              <p className="text-sm opacity-80">
-                Trip ID: {sosAlert.tripId}
-              </p>
-              <button
-                className="mt-4 rounded-lg bg-white px-6 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
-                onClick={() => setSosAlert(null)}
-              >
-                Dismiss
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="card-elevated p-6 max-w-sm w-full text-center bg-red-950 border-red-500/50">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
             </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Emergency Alert</h2>
+            <p className="text-red-200 mb-2">{sosAlert.message}</p>
+            <p className="text-red-300/60 text-xs mb-4">Trip: {sosAlert.tripId}</p>
+            <button onClick={() => setSosAlert(null)} className="w-full py-3 bg-white/10 rounded-xl text-white font-medium hover:bg-white/20 transition">
+              Dismiss
+            </button>
           </div>
         </div>
       )}
 
-      <div className="mx-auto max-w-6xl">
-
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-slate-800">Admin Dashboard</h2>
-          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm border border-slate-200">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-sm font-medium text-slate-600">{visitorCount} Live Visitors</span>
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <p className="text-slate-400 text-sm">Overview of your fleet</p>
           </div>
-        </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="mt-8 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && !loading && (
-          <div className="mt-8 rounded-lg bg-red-50 border border-red-200 p-4 text-center">
-            <p className="text-red-600 font-medium">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-2 text-sm text-red-500 hover:underline"
-            >
-              Try Again
+          <div className="flex items-center gap-3">
+            <button onClick={fetchData} className="p-2 rounded-xl bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition">
+              <RefreshCw className="w-5 h-5" />
             </button>
-          </div>
-        )}
-
-        {/* Content - only show when not loading and no error */}
-        {!loading && !error && (
-          <>
-            <section className="mt-6 grid gap-4 md:grid-cols-4">
-          {['busCount', 'driverCount', 'studentCount', 'activeTrips'].map((key) => (
-            <div key={key} className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-sm uppercase tracking-wide text-slate-500">{key}</p>
-              <p className="text-2xl font-bold text-brand">{stats[key] ?? '-'}</p>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">{visitorCount} Online</span>
             </div>
-          ))}
+          </div>
+        </header>
+
+        {/* Stats Grid */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard icon={Bus} label="Total Buses" value={stats.busCount} color="indigo" />
+          <StatCard icon={UserCheck} label="Drivers" value={stats.driverCount} color="emerald" />
+          <StatCard icon={Users} label="Students" value={stats.studentCount} color="orange" />
+          <StatCard icon={Navigation} label="Active Trips" value={stats.activeTrips} color="purple" />
         </section>
 
-        <section className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-4 text-lg font-semibold text-slate-700">Active Trips</h3>
-            <ul className="space-y-3 text-sm">
-              {trips.map((trip) => (
-                <li key={trip._id} className="rounded border border-slate-100 p-3">
-                  <p className="font-medium text-slate-800">{trip.bus?.name}</p>
-                  <p className="text-slate-500">Driver: {trip.driver?.name || trip.driver?.username}</p>
-                  <p className="text-xs text-slate-400">Route: {trip.route?.name}</p>
-                </li>
-              ))}
-              {!trips.length && <p className="text-slate-500">No active trips</p>}
-            </ul>
+        {/* Quick Links */}
+        <section className="card p-4">
+          <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <QuickLink to="/admin/buses" icon={Bus} label="Manage Buses" />
+            <QuickLink to="/admin/drivers" icon={UserCheck} label="Manage Drivers" />
+            <QuickLink to="/admin/routes" icon={Navigation} label="Manage Routes" />
+            <QuickLink to="/admin/stops" icon={Octagon} label="Manage Stops" />
+            <QuickLink to="/admin/students" icon={Users} label="Manage Students" />
+            <QuickLink to="/admin/assignments" icon={MapPin} label="Assignments" />
           </div>
-          <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
+        </section>
+
+        {/* Active Trips & Events */}
+        <section className="grid lg:grid-cols-2 gap-6">
+          {/* Active Trips */}
+          <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-700">Recent Stop Events</h3>
+              <h2 className="text-lg font-semibold text-white">Active Trips</h2>
+              <span className="text-xs text-slate-500">{trips.length} trips</span>
+            </div>
+            <div className="space-y-3">
+              {trips.length > 0 ? (
+                trips.map(trip => <TripCard key={trip._id} trip={trip} />)
+              ) : (
+                <p className="text-slate-500 text-center py-8">No active trips</p>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Events */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Recent Events</h2>
               {events.length > 0 && (
                 <button
                   onClick={handleClearEvents}
                   disabled={clearing}
-                  className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition disabled:opacity-50"
                 >
-                  {clearing ? 'Clearing...' : 'Clear All'}
+                  <Trash2 className="w-3 h-3" />
+                  {clearing ? 'Clearing...' : 'Clear'}
                 </button>
               )}
             </div>
-            <ul className="space-y-3 text-sm">
-              {events.map((event) => (
-                <li key={event._id} className="border-b border-slate-100 pb-2">
-                  <p className="font-medium text-slate-700">{event.stop?.name}</p>
-                  <p className="text-slate-500">
-                    Status: {event.status} · ETA snapshot: {event.etaMinutes} mins
-                  </p>
-                  <p className="text-xs text-slate-400">{new Date(event.timestamp).toLocaleString()}</p>
-                </li>
-              ))}
-              {!events.length && <p className="text-slate-500">No events</p>}
-            </ul>
+            <div className="space-y-1 max-h-80 overflow-y-auto">
+              {events.length > 0 ? (
+                events.slice(0, 10).map(event => <EventItem key={event._id} event={event} />)
+              ) : (
+                <p className="text-slate-500 text-center py-8">No events yet</p>
+              )}
+            </div>
           </div>
         </section>
-          </>
-        )}
       </div>
     </main>
   );

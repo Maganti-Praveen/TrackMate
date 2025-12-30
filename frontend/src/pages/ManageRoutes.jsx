@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Trash2 } from 'lucide-react';
+import { 
+  Trash2, Navigation, MapPin, Copy, RotateCcw, 
+  Route, Clock, Edit3, Layers, ChevronRight 
+} from 'lucide-react';
 import MapEditor from '../components/MapEditor';
 import { api } from '../utils/api';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -96,9 +99,9 @@ const ManageRoutes = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50">
-      {/* Column 1: Map Canvas (70% / Flex Grow) */}
-      <div className="relative flex-1 bg-slate-900">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-slate-900/50">
+      {/* Map Canvas */}
+      <div className="relative flex-1 min-h-[50vh] lg:min-h-0">
         <MapEditor
           key={editorKey}
           initialRoute={initialRoute}
@@ -106,109 +109,207 @@ const ManageRoutes = () => {
           onSave={handleSaveRoute}
           panelContainerRef={panelRef}
         />
+        
+        {/* Saving Overlay */}
         {saving && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] rounded-full bg-white/90 px-4 py-1 text-sm font-semibold text-slate-800 shadow-lg backdrop-blur">
-            Saving route...
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-800/95 backdrop-blur-xl border border-indigo-500/30 shadow-2xl">
+              <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-medium text-white">Saving route...</span>
+            </div>
           </div>
         )}
+
+        {/* Mode Indicator */}
+        <div className="absolute top-4 right-4 z-[500]">
+          <div className={`px-4 py-2 rounded-xl text-xs font-semibold backdrop-blur-xl border ${
+            selectedRoute 
+              ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' 
+              : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+          }`}>
+            {selectedRoute ? '✏️ Editing Mode' : '✨ Create Mode'}
+          </div>
+        </div>
       </div>
 
-      {/* Column 2: Sidebar (30% / Fixed 400px) */}
-      <aside className="w-[400px] flex flex-col border-l border-slate-200 bg-white shadow-xl z-10">
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-
-          {/* Section 1: Header & Route Name */}
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400 font-bold mb-1">Route Lab</p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Design the circuit</h1>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-                Sketch path, add stops, and publish. Updates drivers instantly.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">Route Name</label>
-              <input
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-0"
-                value={routeName}
-                onChange={(e) => setRouteName(e.target.value)}
-                placeholder="e.g. Sunrise Loop"
-              />
-              <div className="flex items-center justify-between px-1">
-                <button
-                  type="button"
-                  className="text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
-                  onClick={resetEditor}
-                >
-                  Clear map
-                </button>
-                {selectedRoute && (
-                  <button
-                    type="button"
-                    className="text-xs font-semibold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 transition-colors"
-                    onClick={() => duplicateRoute(selectedRoute)}
-                  >
-                    Clone Route
-                  </button>
-                )}
+      {/* Sidebar */}
+      <aside className="w-full lg:w-[400px] flex flex-col bg-slate-900/95 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-white/10 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-xl border-b border-white/5 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                <Route className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Route Designer</h1>
+                <p className="text-sm text-slate-400">
+                  Draw paths & manage stops
+                </p>
               </div>
             </div>
           </div>
 
-          <hr className="border-slate-100" />
+          <div className="p-5 space-y-6">
+            {/* Route Name Input */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-400 uppercase tracking-wider font-medium flex items-center gap-2">
+                  <Edit3 className="w-3.5 h-3.5" />
+                  Route Name
+                </label>
+                {selectedRoute && (
+                  <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                    Editing
+                  </span>
+                )}
+              </div>
+              
+              <div className="relative">
+                <input
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  value={routeName}
+                  onChange={(e) => setRouteName(e.target.value)}
+                  placeholder="Enter route name..."
+                />
+              </div>
 
-          {/* Section 2: Portal Target for Stops Panel */}
-          {/* This div is where MapEditor will render the "Stops" list */}
-          <div ref={panelRef} className="min-h-[100px]" />
-
-          <hr className="border-slate-100" />
-
-          {/* Section 3: Existing Routes */}
-          <div className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">Existing Routes</span>
-              <span className="text-xs font-medium text-slate-400">{routes.length} total</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={resetEditor}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 border border-white/5 hover:border-white/10 transition-all"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reset
+                </button>
+                {selectedRoute && (
+                  <button
+                    type="button"
+                    onClick={() => duplicateRoute(selectedRoute)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/30 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Duplicate
+                  </button>
+                )}
+              </div>
             </div>
 
-            {routes.length === 0 && <p className="text-sm text-slate-400 text-center py-4">No routes saved yet.</p>}
+            {/* Stops Portal Target */}
+            <div ref={panelRef} className="min-h-[80px]" />
 
-            <div className="space-y-3">
-              {routes.map((route) => (
-                <div key={route._id} className="group rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:bg-white hover:border-slate-200 hover:shadow-sm">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-700">{route.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1">{route.stops?.length || 0} stops • {new Date(route.updatedAt || route.createdAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
+            {/* Saved Routes Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs text-slate-400 uppercase tracking-wider font-medium flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5" />
+                  Saved Routes
+                </h2>
+                <span className="text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded-lg">
+                  {routes.length} {routes.length === 1 ? 'route' : 'routes'}
+                </span>
+              </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
-                      onClick={() => startEdit(route)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-500 hover:border-rose-100 transition"
-                      onClick={() => askDelete(route)}
-                      title="Delete Route"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+              {routes.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-slate-800/30 border border-dashed border-white/10 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="w-8 h-8 text-slate-600" />
                   </div>
+                  <p className="text-sm font-medium text-slate-400">No routes created yet</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Use the map tools to draw your first route
+                  </p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3">
+                  {routes.map((route) => (
+                    <div 
+                      key={route._id} 
+                      className={`group relative p-4 rounded-2xl transition-all duration-200 border ${
+                        selectedRoute?._id === route._id 
+                          ? 'bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10' 
+                          : 'bg-slate-800/40 border-white/5 hover:border-white/15 hover:bg-slate-800/60'
+                      }`}
+                    >
+                      {/* Active Indicator */}
+                      {selectedRoute?._id === route._id && (
+                        <div className="absolute -left-px top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-indigo-400 to-purple-500"></div>
+                      )}
+
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          selectedRoute?._id === route._id 
+                            ? 'bg-indigo-500/20' 
+                            : 'bg-slate-700/50'
+                        }`}>
+                          <Navigation className={`w-5 h-5 ${
+                            selectedRoute?._id === route._id ? 'text-indigo-400' : 'text-slate-400'
+                          }`} />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-white truncate mb-1">
+                            {route.name}
+                          </h3>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {route.stops?.length || 0} stops
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(route.updatedAt || route.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEdit(route)}
+                            className="p-2 rounded-lg text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 transition-all"
+                            title="Edit route"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => askDelete(route)}
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all"
+                            title="Delete route"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Edit Button */}
+                      {selectedRoute?._id !== route._id && (
+                        <button
+                          onClick={() => startEdit(route)}
+                          className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-700/30 hover:bg-slate-700/50 border border-white/5 hover:border-white/10 transition-all"
+                        >
+                          Open in Editor
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </aside>
 
+      {/* Confirm Dialog */}
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete route"
-        message={`This removes ${confirmState.target?.name} and its stops.`}
+        title="Delete Route"
+        message={`Are you sure you want to delete "${confirmState.target?.name}"? This will also remove all associated stops.`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}

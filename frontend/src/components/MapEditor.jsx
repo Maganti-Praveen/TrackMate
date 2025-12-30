@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, ArrowDown, Trash2, GripVertical } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, GripVertical, MapPin, X } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -29,10 +29,106 @@ const DEFAULT_CENTER = [ELURU_CENTER.lat, ELURU_CENTER.lng];
 
 const stopIcon = new L.Icon({
   iconUrl: '/markers/stop.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [30, 30],
-  iconAnchor: [15, 30]
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
 });
+
+// Custom Stop Name Modal Component
+const StopNameModal = ({ isOpen, defaultName, onConfirm, onCancel }) => {
+  const [name, setName] = useState(defaultName);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setName(defaultName);
+    if (isOpen && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 100);
+    }
+  }, [isOpen, defaultName]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onConfirm(name.trim() || defaultName);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4" onKeyDown={handleKeyDown}>
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      
+      {/* Modal */}
+      <div className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-white/10 shadow-2xl animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Name This Stop</h3>
+              <p className="text-xs text-slate-400">Enter a name for the stop location</p>
+            </div>
+          </div>
+          <button
+            onClick={onCancel}
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-slate-400 uppercase tracking-wider mb-2">
+              Stop Name
+            </label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Main Street Station"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-slate-800/50 border border-white/10 hover:bg-slate-700/50 hover:text-white transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/25 transition-all"
+            >
+              Add Stop
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const SortableStopRow = ({ stop, index, updateStopName, removeStop, moveStop }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
@@ -49,27 +145,27 @@ const SortableStopRow = ({ stop, index, updateStopName, removeStop, moveStop }) 
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition hover:border-indigo-300"
+      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-800/60 p-3 transition-all hover:border-indigo-500/30 hover:bg-slate-800/80"
     >
-      <div {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing">
+      <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-slate-300 active:cursor-grabbing transition-colors">
         <GripVertical size={16} />
       </div>
 
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-xs font-bold text-indigo-400 border border-indigo-500/20">
         {index + 1}
       </span>
 
       <input
-        className="flex-1 bg-transparent text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none"
+        className="flex-1 bg-transparent text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none"
         value={stop.name}
         onChange={(e) => updateStopName(stop.id, e.target.value)}
         placeholder="Name stop..."
       />
 
-      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1">
         <button
           type="button"
-          className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
           onClick={() => removeStop(stop.id)}
           title="Remove stop"
         >
@@ -89,8 +185,47 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
   const [stops, setStops] = useState(reindexStops(initialStops));
   const [nameEdits, setNameEdits] = useState({});
   const [error, setError] = useState('');
+  
+  // Modal state for stop naming
+  const [stopModal, setStopModal] = useState({ 
+    isOpen: false, 
+    defaultName: '', 
+    mode: 'create', // 'create' or 'edit'
+    stopId: null,
+    pendingLayer: null 
+  });
 
   const sortedStops = useMemo(() => reindexStops(stops), [stops]);
+
+  // Handle modal confirm for creating new stop
+  const handleStopNameConfirm = (name) => {
+    if (stopModal.mode === 'create' && stopModal.pendingLayer) {
+      const layer = stopModal.pendingLayer;
+      const stop = markerToStop(layer, stops.length, name);
+      layer.__stopId = stop.id;
+      stopMarkers.current.set(stop.id, layer);
+      attachMarkerHandlers(layer, stop.id);
+      setStops((prev) => reorderStopsAlongLine(routeGeom, [...prev, stop]));
+    } else if (stopModal.mode === 'edit' && stopModal.stopId) {
+      const stopId = stopModal.stopId;
+      setStops((prev) => prev.map((stop) => (stop.id === stopId ? { ...stop, name } : stop)));
+      setNameEdits((prevNames) => ({ ...prevNames, [stopId]: name }));
+      const marker = stopMarkers.current.get(stopId);
+      if (marker) {
+        marker.bindPopup(`<strong>${name}</strong>`);
+      }
+    }
+    setStopModal({ isOpen: false, defaultName: '', mode: 'create', stopId: null, pendingLayer: null });
+  };
+
+  // Handle modal cancel
+  const handleStopNameCancel = () => {
+    // If creating and cancelled, remove the pending layer
+    if (stopModal.mode === 'create' && stopModal.pendingLayer) {
+      stopModal.pendingLayer.remove();
+    }
+    setStopModal({ isOpen: false, defaultName: '', mode: 'create', stopId: null, pendingLayer: null });
+  };
 
   const attachMarkerHandlers = (marker, stopId) => {
     marker.on('pm:dragend', () => {
@@ -105,14 +240,17 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
     marker.on('pm:remove', () => removeStop(stopId));
 
     marker.on('click', () => {
+      // Use functional update pattern to get current stop name
       setStops((prev) => {
         const current = prev.find((stop) => stop.id === stopId);
-        const nextName = window.prompt('Stop name', current?.name || '') || current?.name;
-        if (!nextName) return prev;
-        const updated = prev.map((stop) => (stop.id === stopId ? { ...stop, name: nextName } : stop));
-        marker.bindPopup(`<strong>${nextName}</strong>`);
-        setNameEdits((prevNames) => ({ ...prevNames, [stopId]: nextName }));
-        return updated;
+        setStopModal({
+          isOpen: true,
+          defaultName: current?.name || '',
+          mode: 'edit',
+          stopId: stopId,
+          pendingLayer: null
+        });
+        return prev; // Return unchanged
       });
     });
   };
@@ -157,18 +295,20 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
 
   const handleMarkerCreate = (layer) => {
     layer.setIcon(stopIcon);
-    const name = window.prompt('Stop name', `Stop ${stops.length + 1}`) || `Stop ${stops.length + 1}`;
-    const stop = markerToStop(layer, stops.length, name);
-    layer.__stopId = stop.id;
-    stopMarkers.current.set(stop.id, layer);
-    attachMarkerHandlers(layer, stop.id);
-    setStops((prev) => reorderStopsAlongLine(routeGeom, [...prev, stop]));
+    // Open modal to get stop name
+    setStopModal({
+      isOpen: true,
+      defaultName: `Stop ${stops.length + 1}`,
+      mode: 'create',
+      stopId: null,
+      pendingLayer: layer
+    });
   };
 
   const initExistingData = () => {
     if (initialRoute && mapInstance.current) {
       const layer = L.polyline(initialRoute.coordinates.map(([lng, lat]) => [lat, lng]), {
-        color: '#2563eb',
+        color: '#6366f1',
         weight: 4
       }).addTo(mapInstance.current);
       layer.pm.enable();
@@ -303,7 +443,7 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
         const latlngs = newStops.map((s) => [s.lat, s.lng]);
         if (latlngs.length > 1) {
           const newPolyline = L.polyline(latlngs, {
-            color: '#2563eb',
+            color: '#6366f1',
             weight: 4
           }).addTo(mapInstance.current);
           newPolyline.pm.enable();
@@ -318,53 +458,77 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
 
   const panelContent = (
     <div className="map-editor__panel-content space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Stops ({sortedStops.length})</h3>
-        <div className="space-x-2 text-xs">
-          <button
-            type="button"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
-            onClick={handleSave}
-            disabled={sortedStops.length < 2}
-          >
-            Save Route
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm transition hover:bg-indigo-100 disabled:opacity-50"
-            onClick={() => {
-              setStops((prev) => {
-                const manualReindex = prev.slice().reverse().map((s, i) => ({ ...s, seq: i }));
-                // Trigger polyline update
-                if (polylineLayer.current) polylineLayer.current.remove();
-                if (manualReindex.length > 1) {
-                  const latlngs = manualReindex.map((s) => [s.lat, s.lng]);
-                  const newPolyline = L.polyline(latlngs, { color: '#2563eb', weight: 4 }).addTo(mapInstance.current);
-                  newPolyline.pm.enable();
-                  polylineLayer.current = newPolyline;
-                  setRouteGeom(lineToGeoJSON(newPolyline));
-                }
-                return manualReindex;
-              });
-            }}
-            disabled={sortedStops.length < 2}
-          >
-            Reverse Stops
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center border border-emerald-500/20">
+            <GripVertical size={14} className="text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Stops</h3>
+            <p className="text-xs text-slate-500">{sortedStops.length} stops added</p>
+          </div>
         </div>
       </div>
 
-      <p className="text-xs text-slate-400">
-        Drag <GripVertical size={12} className="inline" /> to reorder. Click line to add stops.
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSave}
+          disabled={sortedStops.length < 2}
+        >
+          Save Route
+        </button>
+        <button
+          type="button"
+          className="flex items-center justify-center gap-2 rounded-xl bg-slate-800/80 px-4 py-2.5 text-sm font-medium text-slate-300 border border-white/10 transition hover:bg-slate-700/80 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => {
+            setStops((prev) => {
+              const manualReindex = prev.slice().reverse().map((s, i) => ({ ...s, seq: i }));
+              // Trigger polyline update
+              if (polylineLayer.current) polylineLayer.current.remove();
+              if (manualReindex.length > 1) {
+                const latlngs = manualReindex.map((s) => [s.lat, s.lng]);
+                const newPolyline = L.polyline(latlngs, { color: '#6366f1', weight: 4 }).addTo(mapInstance.current);
+                newPolyline.pm.enable();
+                polylineLayer.current = newPolyline;
+                setRouteGeom(lineToGeoJSON(newPolyline));
+              }
+              return manualReindex;
+            });
+          }}
+          disabled={sortedStops.length < 2}
+        >
+          ↕️ Reverse
+        </button>
+      </div>
+
+      {/* Help Text */}
+      <p className="text-xs text-slate-500 flex items-center gap-1.5">
+        <GripVertical size={12} className="text-slate-400" />
+        Drag to reorder • Click map to add stops
       </p>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">
+          {error}
+        </div>
+      )}
 
+      {/* Stops List */}
       <div className="space-y-2">
-        {sortedStops.length === 0 && <div className="py-8 text-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50">
-          <p className="text-sm font-medium text-slate-500">No stops yet</p>
-          <p className="text-xs text-slate-400">Click on the route line to add stops</p>
-        </div>}
+        {sortedStops.length === 0 && (
+          <div className="py-10 text-center rounded-xl border-2 border-dashed border-white/10 bg-slate-800/30">
+            <div className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center mx-auto mb-3">
+              <GripVertical size={20} className="text-slate-600" />
+            </div>
+            <p className="text-sm font-medium text-slate-400">No stops yet</p>
+            <p className="text-xs text-slate-500 mt-1">Click on the map to add stops</p>
+          </div>
+        )}
 
         <DndContext
           sensors={sensors}
@@ -382,13 +546,12 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
                 index={index}
                 updateStopName={updateStopName}
                 removeStop={removeStop}
-              // Name map logic handled inside component via props
               />
             ))}
           </SortableContext>
         </DndContext>
       </div>
-    </div >
+    </div>
   );
 
   return (
@@ -398,6 +561,14 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
       {panelContainerRef && panelContainerRef.current
         ? createPortal(panelContent, panelContainerRef.current)
         : null}
+      
+      {/* Stop Name Modal */}
+      <StopNameModal
+        isOpen={stopModal.isOpen}
+        defaultName={stopModal.defaultName}
+        onConfirm={handleStopNameConfirm}
+        onCancel={handleStopNameCancel}
+      />
     </div>
   );
 };

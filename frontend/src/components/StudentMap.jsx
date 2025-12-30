@@ -5,14 +5,12 @@ import 'leaflet/dist/leaflet.css';
 import { ELURU_CENTER, TILE_LAYER_ATTRIBUTION, TILE_LAYER_URL } from '../constants/geo';
 
 const DEFAULT_CENTER = ELURU_CENTER;
-const MARKER_SHADOW = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
 const BUS_ICON_URL = '/markers/bus.png';
 const STOP_ICON_URL = '/markers/stop.png';
 
 const createIcon = (iconUrl, options = {}) =>
   new L.Icon({
     iconUrl,
-    shadowUrl: MARKER_SHADOW,
     iconSize: options.iconSize || [32, 48],
     iconAnchor: options.iconAnchor || [16, 46],
     popupAnchor: options.popupAnchor || [0, -36],

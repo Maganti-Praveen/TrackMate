@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Profile View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4b36e7",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131121",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1E1C28",
+                        "text-secondary-light": "#6b7280",
+                        "text-secondary-dark": "#a19db8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem", 
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-white transition-colors duration-200">
+<div class="max-w-md mx-auto relative flex flex-col min-h-screen overflow-hidden shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Top App Bar -->
+<header class="flex items-center px-4 py-3 justify-between sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/5">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] text-center flex-1">Profile</h2>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">more_vert</span>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto pb-24">
+<!-- Profile Header -->
+<section class="flex flex-col items-center pt-8 pb-6 px-4">
+<div class="relative mb-4 group cursor-pointer">
+<div class="h-28 w-28 rounded-full bg-cover bg-center border-4 border-surface-light dark:border-[#2b2938] shadow-lg relative z-0" data-alt="Portrait of student Alex Johnson smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQho3NMh6HhNkWiDjQrb8a1A2tgjL31ub2MhpT9kTv7SFqF0HakWMuPNKUOwSBCUyjQXIfF6ezdKCm6MfTxTI0voD7oh9T8Y6G4x0Phmlg4Zv5uKOiZMorAwbu0kYksIr1xrY_j1IxMVgKDGJsLHr0Ym1rXENZUKKthegpZebwwSwyXBWP7L_VTH5TQYlQLp5e4hyptNUzBYBGnpY9DPHQbtkxN3OStgszfOlHikqDcS9IJri_X3yMEQqRqY7ZP4t7bUY0Lq0Ke1U');"></div>
+<div class="absolute bottom-0 right-0 z-10 bg-primary text-white p-1.5 rounded-full shadow-md flex items-center justify-center border-2 border-background-light dark:border-background-dark">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</div>
+</div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Alex Johnson</h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm mb-6 font-medium">Student ID: 20248891</p>
+<div class="flex w-full gap-3 justify-center">
+<button class="flex-1 max-w-[160px] h-11 flex items-center justify-center gap-2 rounded-xl bg-slate-200 dark:bg-[#2b2938] text-slate-900 dark:text-white font-semibold text-sm hover:bg-slate-300 dark:hover:bg-[#3d3a4f] transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit_square</span>
+                        Edit Profile
+                    </button>
+<button class="flex-1 max-w-[160px] h-11 flex items-center justify-center gap-2 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+                        View ID Card
+                    </button>
+</div>
+</section>
+<!-- Active Routes Section -->
+<section class="px-4 mb-8">
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">My Active Routes</h3>
+<button class="text-primary text-sm font-semibold hover:underline">See All</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Route Item 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl flex items-center justify-between shadow-sm border border-gray-100 dark:border-white/5">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">directions_bus</span>
+</div>
+<div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-base leading-tight mb-1">Bus #42 - Engineering</h4>
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+<span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">On Time</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">chevron_right</span>
+</div>
+<!-- Route Item 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl flex items-center justify-between shadow-sm border border-gray-100 dark:border-white/5">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+<span class="material-symbols-outlined">airport_shuttle</span>
+</div>
+<div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-base leading-tight mb-1">Shuttle A - Dorms</h4>
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+<span class="text-xs font-medium text-orange-600 dark:text-orange-400">Arriving in 5m</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">chevron_right</span>
+</div>
+<!-- Add New Route Button -->
+<button class="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-text-secondary-light dark:text-text-secondary-dark font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+                        Add New Route
+                    </button>
+</div>
+</section>
+<!-- Settings Section -->
+<section class="px-4 mb-6">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3 px-1">Preferences</h3>
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/5 divide-y divide-gray-100 dark:divide-white/5">
+<!-- Setting Item: Notifications -->
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Arrival Alerts</span>
+</div>
+<div class="relative inline-flex h-6 w-11 items-center rounded-full bg-primary">
+<span class="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition"></span>
+</div>
+</div>
+<!-- Setting Item: Schedule Changes -->
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Schedule Changes</span>
+</div>
+<div class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-700">
+<span class="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition"></span>
+</div>
+</div>
+</div>
+</section>
+<!-- Account Management -->
+<section class="px-4 mb-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3 px-1">Account</h3>
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/5 divide-y divide-gray-100 dark:divide-white/5">
+<button class="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-gray-500/10 flex items-center justify-center text-gray-600 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Personal Details</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark text-[20px]">chevron_right</span>
+</button>
+<button class="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-gray-500/10 flex items-center justify-center text-gray-600 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">lock_reset</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Change Password</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark text-[20px]">chevron_right</span>
+</button>
+<button class="w-full p-4 flex items-center justify-between text-left hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+</div>
+<span class="font-medium text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">Log Out</span>
+</div>
+</button>
+</div>
+</section>
+</div>
+<!-- Bottom Navigation -->
+<nav class="absolute bottom-0 w-full bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-lg border-t border-gray-200 dark:border-white/5 pb-5 pt-3 px-6 z-20">
+<ul class="flex justify-between items-center">
+<li>
+<a class="flex flex-col items-center gap-1 text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">map</span>
+<span class="text-[10px] font-medium">Map</span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">schedule</span>
+<span class="text-[10px] font-medium">Schedule</span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-[24px] font-variation-settings-fill">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+<script>
+        // Simple dark mode toggle logic for preview purposes
+        // In a real app this would be handled by system preference or user settings
+        // To test light mode, remove 'dark' class from html tag
+    </script>
+</body></html>

@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import App from './App';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { registerServiceWorker } from './utils/notifications';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -26,9 +27,11 @@ const router = createBrowserRouter(
     {
       path: '/',
       element: (
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ThemeProvider>
       ),
       children: [
         { index: true, element: <Navigate to="/login" replace /> },

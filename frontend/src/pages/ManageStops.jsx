@@ -3,6 +3,10 @@ import { toast } from 'react-toastify';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { 
+  Octagon, Plus, Edit2, Trash2, MapPin, Clock, 
+  Navigation, ChevronDown
+} from 'lucide-react';
 
 const defaultStopForm = (routeId = '') => ({
   route: routeId,
@@ -13,6 +17,70 @@ const defaultStopForm = (routeId = '') => ({
   averageTravelMinutes: 2
 });
 
+/* Stat Card */
+const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
+  const colors = {
+    indigo: 'from-indigo-500 to-indigo-600',
+    emerald: 'from-emerald-500 to-emerald-600',
+    purple: 'from-purple-500 to-purple-600'
+  };
+  
+  return (
+    <div className="card p-4">
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center flex-shrink-0`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-400 uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold text-white mt-0.5">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* Stop Card */
+const StopCard = ({ stop, onEdit, onDelete }) => (
+  <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+    <div className="flex items-start gap-3">
+      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+        <span className="text-indigo-400 font-bold">{stop.sequence}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-white font-semibold truncate">{stop.name}</h3>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-slate-400">
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {Number.isFinite(Number(stop.latitude)) ? Number(stop.latitude).toFixed(4) : '—'}, 
+            {Number.isFinite(Number(stop.longitude)) ? Number(stop.longitude).toFixed(4) : '—'}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {stop.averageTravelMinutes} min
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onEdit(stop)}
+          className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+          title="Edit stop"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onDelete(stop)}
+          className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition"
+          title="Delete stop"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const ManageStops = () => {
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState('');
@@ -21,6 +89,7 @@ const ManageStops = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingStop, setEditingStop] = useState(null);
   const [confirmState, setConfirmState] = useState({ open: false, target: null });
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const loadRoutes = async () => {
     try {
@@ -72,6 +141,7 @@ const ManageStops = () => {
       toast.success('Stop created');
       setForm((prev) => ({ ...defaultStopForm(selectedRoute), sequence: Number(prev.sequence) + 1 }));
       selectRoute(selectedRoute);
+      setShowAddForm(false);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Unable to create stop');
     }
@@ -127,204 +197,238 @@ const ManageStops = () => {
     }
   };
 
+  const selectedRouteName = routes.find(r => r._id === selectedRoute)?.name || 'Select Route';
+  const totalTime = stops.reduce((sum, s) => sum + (s.averageTravelMinutes || 0), 0);
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+    <main className="min-h-screen pb-24 md:pb-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Stops Studio</p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Micro-manage pickup order</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              Build precise arrival estimates by editing coordinates, order and dwell time for each stop on a route.
-            </p>
+            <h1 className="text-2xl font-bold text-white">Stop Management</h1>
+            <p className="text-sm text-slate-400 mt-1">Manage pickup locations for routes</p>
           </div>
-          <label className="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Active route
-            <select
-              className="mt-2 min-w-[220px] rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900"
-              value={selectedRoute}
-              onChange={(e) => selectRoute(e.target.value)}
-            >
-              {routes.map((route) => (
-                <option key={route._id} value={route._id}>
-                  {route.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
+          >
+            <Plus className="w-5 h-5" />
+            Add Stop
+          </button>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">New stop</p>
-            <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-              <input
-                name="name"
-                placeholder="Stop name"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-                value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                required
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
+        {/* Route Selector */}
+        <div className="card p-4">
+          <label className="text-sm text-slate-300 mb-2 block">Active Route</label>
+          <div className="relative">
+            <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <select
+              value={selectedRoute}
+              onChange={(e) => selectRoute(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
+            >
+              {routes.map((route) => (
+                <option key={route._id} value={route._id}>{route.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <StatCard icon={Octagon} label="Total Stops" value={stops.length} color="indigo" />
+          <StatCard icon={Clock} label="Est. Time" value={`${totalTime} min`} color="emerald" />
+          <StatCard icon={Navigation} label="Route" value={selectedRouteName.substring(0, 12)} color="purple" />
+        </div>
+
+        {/* Add Stop Form */}
+        {showAddForm && (
+          <div className="card p-5 animate-fade-in">
+            <h2 className="text-lg font-semibold text-white mb-4">New Stop</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-300 mb-1.5 block">Stop Name</label>
                 <input
-                  name="latitude"
-                  placeholder="Latitude"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-                  value={form.latitude}
-                  onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
-                  required
-                />
-                <input
-                  name="longitude"
-                  placeholder="Longitude"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-                  value={form.longitude}
-                  onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                  placeholder="e.g., Main Street"
                   required
                 />
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  name="sequence"
-                  type="number"
-                  placeholder="Sequence"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-                  value={form.sequence}
-                  onChange={(e) => setForm((prev) => ({ ...prev, sequence: e.target.value }))}
-                  required
-                />
-                <input
-                  name="averageTravelMinutes"
-                  type="number"
-                  placeholder="Avg minutes"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-                  value={form.averageTravelMinutes}
-                  onChange={(e) => setForm((prev) => ({ ...prev, averageTravelMinutes: e.target.value }))}
-                />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300 mb-1.5 block">Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.latitude}
+                    onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    placeholder="e.g., 12.9716"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300 mb-1.5 block">Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.longitude}
+                    onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    placeholder="e.g., 77.5946"
+                    required
+                  />
+                </div>
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/30"
-              >
-                Add stop
-              </button>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300 mb-1.5 block">Sequence #</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.sequence}
+                    onChange={(e) => setForm((prev) => ({ ...prev, sequence: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300 mb-1.5 block">Avg. Minutes</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.averageTravelMinutes}
+                    onChange={(e) => setForm((prev) => ({ ...prev, averageTravelMinutes: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    placeholder="2"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+                >
+                  Add Stop
+                </button>
+              </div>
             </form>
           </div>
+        )}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Stops ({stops.length})</p>
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-left text-sm text-slate-700">
-                <thead className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                  <tr>
-                    <th className="py-2">#</th>
-                    <th>Name</th>
-                    <th>Coordinates</th>
-                    <th>ETA</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stops.map((stop) => (
-                    <tr key={stop._id} className="border-t border-slate-100">
-                      <td className="py-3 text-slate-500">{stop.sequence}</td>
-                      <td className="font-semibold">{stop.name}</td>
-                      <td className="text-xs text-slate-500">
-                        {Number.isFinite(Number(stop.latitude)) ? Number(stop.latitude).toFixed(4) : '—'},{' '}
-                        {Number.isFinite(Number(stop.longitude)) ? Number(stop.longitude).toFixed(4) : '—'}
-                      </td>
-                      <td className="text-xs text-slate-500">{stop.averageTravelMinutes} min</td>
-                      <td>
-                        <div className="flex gap-2 text-xs">
-                          <button className="text-brand" onClick={() => openEdit(stop)}>
-                            Edit
-                          </button>
-                          <button className="text-rose-500" onClick={() => askDelete(stop)}>
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {stops.length === 0 && <p className="py-6 text-center text-sm text-slate-500">No stops yet.</p>}
-            </div>
+        {/* Stops List */}
+        {stops.length > 0 ? (
+          <div className="space-y-2">
+            {stops.map((stop) => (
+              <StopCard key={stop._id} stop={stop} onEdit={openEdit} onDelete={askDelete} />
+            ))}
           </div>
-        </section>
+        ) : (
+          <div className="card p-12 text-center">
+            <Octagon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400">No stops on this route</p>
+            <p className="text-sm text-slate-500 mt-1">Add your first stop to get started</p>
+          </div>
+        )}
       </div>
 
+      {/* Edit Drawer */}
       <Drawer
         isOpen={drawerOpen}
-        title="Edit stop"
-        subtitle="Adjust order, coordinates or dwell time"
+        title="Edit Stop"
+        subtitle="Adjust location and timing"
         onClose={() => setDrawerOpen(false)}
         footer={
-          <div className="flex justify-end gap-3">
-            <button type="button" className="rounded-full px-4 py-2 text-sm text-slate-500" onClick={() => setDrawerOpen(false)}>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
+            >
               Cancel
             </button>
-            <button type="submit" form="stop-edit-form" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white">
-              Save stop
+            <button
+              type="submit"
+              form="stop-edit-form"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+            >
+              Save Changes
             </button>
           </div>
         }
       >
         <form id="stop-edit-form" className="space-y-4" onSubmit={handleUpdate}>
-          <label className="block text-sm font-semibold text-slate-600">
-            Name
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Stop Name</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Latitude
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Latitude</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              type="number"
+              step="any"
               value={form.latitude}
               onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Longitude
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Longitude</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              type="number"
+              step="any"
               value={form.longitude}
               onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Sequence
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Sequence</label>
             <input
               type="number"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              min="1"
               value={form.sequence}
               onChange={(e) => setForm((prev) => ({ ...prev, sequence: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Avg minutes
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Avg. Minutes</label>
             <input
               type="number"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              min="0"
               value={form.averageTravelMinutes}
               onChange={(e) => setForm((prev) => ({ ...prev, averageTravelMinutes: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
             />
-          </label>
+          </div>
         </form>
       </Drawer>
 
+      {/* Confirm Dialog */}
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete stop"
-        message={`Remove ${confirmState.target?.name} from this route?`}
+        title="Delete Stop"
+        message={`Are you sure you want to remove "${confirmState.target?.name}" from this route?`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}

@@ -6,16 +6,16 @@ import { ELURU_CENTER, TILE_LAYER_ATTRIBUTION, TILE_LAYER_URL } from '../constan
 
 const driverIcon = new L.Icon({
   iconUrl: '/markers/bus.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [40, 40],
-  iconAnchor: [20, 20]
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20]
 });
 
 const stopIcon = new L.Icon({
   iconUrl: '/markers/stop.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [30, 30],
-  iconAnchor: [15, 30]
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
 });
 
 const deriveStops = (route) => {

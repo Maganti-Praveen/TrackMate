@@ -3,8 +3,110 @@ import { toast } from 'react-toastify';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { 
+  Users, Plus, Search, Edit2, Trash2, Phone, 
+  User, X, Bus, MapPin, CheckCircle, Clock
+} from 'lucide-react';
 
 const blankForm = { username: '', password: '', name: '', phone: '' };
+
+/* Stat Card Component */
+const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
+  const colors = {
+    indigo: 'from-indigo-500 to-indigo-600',
+    emerald: 'from-emerald-500 to-emerald-600',
+    amber: 'from-amber-500 to-amber-600'
+  };
+  
+  return (
+    <div className="card p-4">
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center flex-shrink-0`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-400 uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold text-white mt-0.5">{value}</p>
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* Student Card Component */
+const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
+  const isAssigned = Boolean(assignment);
+  
+  return (
+    <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+            isAssigned ? 'bg-emerald-500/20' : 'bg-amber-500/20'
+          }`}>
+            <User className={`w-5 h-5 ${isAssigned ? 'text-emerald-400' : 'text-amber-400'}`} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-white font-semibold truncate">{student.name || 'Unnamed'}</h3>
+            <p className="text-xs text-slate-400">@{student.username}</p>
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+          isAssigned 
+            ? 'bg-emerald-500/20 text-emerald-400' 
+            : 'bg-amber-500/20 text-amber-400'
+        }`}>
+          {isAssigned ? 'Assigned' : 'Pending'}
+        </span>
+      </div>
+
+      {student.phone && (
+        <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
+          <Phone className="w-4 h-4" />
+          <span>{student.phone}</span>
+        </div>
+      )}
+
+      {assignment && (
+        <div className="bg-slate-800/50 rounded-lg p-3 space-y-1.5 mb-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Bus className="w-4 h-4 text-indigo-400" />
+            <span className="text-slate-300">{assignment.bus?.name || 'No bus'}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="w-4 h-4 text-indigo-400" />
+            <span className="text-slate-300 truncate">
+              {assignment.stop ? `${assignment.stop.sequence}. ${assignment.stop.name}` : 'No stop'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-1">
+        <button
+          onClick={() => onEdit(student)}
+          className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+          title="Edit student"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onDelete(student)}
+          disabled={isAssigned}
+          className={`p-2 rounded-lg transition ${
+            isAssigned 
+              ? 'text-slate-600 cursor-not-allowed' 
+              : 'text-red-400 hover:bg-red-500/20'
+          }`}
+          title={isAssigned ? 'Remove assignment first' : 'Delete student'}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const ManageStudents = () => {
   const [students, setStudents] = useState([]);
@@ -14,8 +116,10 @@ const ManageStudents = () => {
   const [editingStudent, setEditingStudent] = useState(null);
   const [form, setForm] = useState(blankForm);
   const [confirmState, setConfirmState] = useState({ open: false, target: null });
+  const [loading, setLoading] = useState(true);
 
   const loadStudents = async () => {
+    setLoading(true);
     try {
       const [studentsRes, assignmentsRes] = await Promise.all([api.get('/admin/students'), api.get('/admin/assignments')]);
       setStudents(studentsRes.data);
@@ -28,6 +132,8 @@ const ManageStudents = () => {
       setAssignments(assignmentMap);
     } catch (error) {
       toast.error('Unable to load students');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,159 +207,155 @@ const ManageStudents = () => {
   const unassigned = Math.max(students.length - assignedCount, 0);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+    <main className="min-h-screen pb-24 md:pb-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">People Hub</p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Student directory</h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-500">
-              Manage credentials and contact info before attaching riders to buses. Details sync instantly across the app.
-            </p>
+            <h1 className="text-2xl font-bold text-white">Student Directory</h1>
+            <p className="text-sm text-slate-400 mt-1">Manage student accounts and view assignments</p>
           </div>
           <button
-            type="button"
             onClick={openCreate}
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-slate-900/30 transition hover:-translate-y-0.5"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
           >
-            New student
+            <Plus className="w-5 h-5" />
+            Add Student
           </button>
         </header>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Students</p>
-            <p className="mt-2 text-4xl font-semibold text-slate-800">{students.length}</p>
-            <p className="text-sm text-slate-500">accounts created</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Assigned</p>
-            <p className="mt-2 text-4xl font-semibold text-slate-800">{assignedCount}</p>
-            <p className="text-sm text-slate-500">{unassigned} awaiting assignment</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Search</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <StatCard icon={Users} label="Total Students" value={students.length} subtitle="Registered" color="indigo" />
+          <StatCard icon={CheckCircle} label="Assigned" value={assignedCount} subtitle="To buses" color="emerald" />
+          <StatCard icon={Clock} label="Pending" value={unassigned} subtitle="Awaiting" color="amber" />
+        </div>
+
+        {/* Search */}
+        <div className="card p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
-              type="search"
-              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-              placeholder="Filter by roll or name"
+              type="text"
+              placeholder="Search by name or roll number..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          {filteredStudents.map((student) => {
-            const assignment = assignments[student._id];
-            return (
-              <div key={student._id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-slate-500">{student.username}</p>
-                    <h3 className="mt-2 text-2xl font-semibold text-slate-800">{student.name || 'Unnamed student'}</h3>
-                    <p className="text-sm text-slate-500">{student.phone || 'No phone added'}</p>
-                  </div>
-                  <span
-                    className={`badge ${assignment ? 'bg-success-subtle text-success-emphasis' : 'bg-warning-subtle text-warning-emphasis'}`}
-                  >
-                    {assignment ? 'Assigned' : 'Pending'}
-                  </span>
-                </div>
-                {assignment && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-                    <p>Bus: {assignment.bus?.name || '—'}</p>
-                    <p>Stop: {assignment.stop ? `${assignment.stop.sequence}. ${assignment.stop.name}` : '—'}</p>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <button
-                    type="button"
-                    className="rounded-full border border-slate-200 px-4 py-1 text-slate-600 transition hover:bg-slate-50"
-                    onClick={() => openEdit(student)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-full border border-rose-200 px-4 py-1 text-rose-500 transition hover:bg-rose-50"
-                    onClick={() => askDelete(student)}
-                    disabled={Boolean(assignment)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {filteredStudents.length === 0 && (
-            <div className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm text-center text-slate-500">
-              <p className="text-lg font-semibold text-slate-800">No students match your filters</p>
-              <p className="text-sm">Invite someone new or clear the search field.</p>
-            </div>
-          )}
-        </section>
+        {/* Students Grid */}
+        {loading ? (
+          <div className="card p-12 text-center">
+            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-slate-400 mt-3">Loading students...</p>
+          </div>
+        ) : filteredStudents.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredStudents.map((student) => (
+              <StudentCard
+                key={student._id}
+                student={student}
+                assignment={assignments[student._id]}
+                onEdit={openEdit}
+                onDelete={askDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="card p-12 text-center">
+            <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400">No students found</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {search ? 'Try a different search term' : 'Add your first student to get started'}
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Drawer */}
       <Drawer
         isOpen={drawerOpen}
-        title={editingStudent ? 'Edit student' : 'Create student'}
-        subtitle="Credentials sync with the mobile app"
+        title={editingStudent ? 'Edit Student' : 'Add New Student'}
+        subtitle="Student credentials for the mobile app"
         onClose={() => setDrawerOpen(false)}
         footer={
-          <div className="flex justify-end gap-3">
-            <button type="button" className="rounded-full px-4 py-2 text-sm text-slate-500" onClick={() => setDrawerOpen(false)}>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
+            >
               Cancel
             </button>
-            <button type="submit" form="student-form" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white">
-              {editingStudent ? 'Save changes' : 'Create student'}
+            <button
+              type="submit"
+              form="student-form"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+            >
+              {editingStudent ? 'Save Changes' : 'Add Student'}
             </button>
           </div>
         }
       >
         <form id="student-form" className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-semibold text-slate-600">
-            Roll / username
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Roll Number / Username</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.username}
               onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder="e.g., 21CS101"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Password
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Password</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              type="text"
               value={form.password}
-              placeholder={editingStudent ? 'Leave blank to keep current password' : ''}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder={editingStudent ? 'Leave blank to keep current' : 'Required'}
               required={!editingStudent}
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Name
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Full Name</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder="e.g., John Doe"
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Phone
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Phone Number</label>
             <input
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
+              type="tel"
               value={form.phone}
               onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder="e.g., +1 234 567 8900"
             />
-          </label>
+          </div>
         </form>
       </Drawer>
 
+      {/* Confirm Dialog */}
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete student"
-        message={`Remove ${confirmState.target?.name || confirmState.target?.username}? Their assignments will also be cleared.`}
+        title="Delete Student"
+        message={`Are you sure you want to remove ${confirmState.target?.name || confirmState.target?.username}?`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}

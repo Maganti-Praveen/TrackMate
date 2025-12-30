@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Bus Management</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4b36e7",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131121",
+                        "card-dark": "#1E1C2E",
+                        "card-light": "#FFFFFF",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white overflow-x-hidden min-h-screen relative pb-24">
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center px-4 h-16 justify-between">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Bus Management</h1>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</header>
+<div class="px-4 py-4 sticky top-16 z-40 bg-background-light dark:bg-background-dark">
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</div>
+<input class="block w-full pl-11 pr-4 py-3 rounded-xl border-none bg-white dark:bg-card-dark text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary shadow-sm" placeholder="Search bus number, plate or driver..." type="text"/>
+</div>
+</div>
+<div class="flex gap-3 px-4 pb-2 overflow-x-auto no-scrollbar snap-x">
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary px-5 snap-start shadow-md shadow-primary/20 transition-transform active:scale-95">
+<p class="text-white text-sm font-medium">All</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 px-5 snap-start hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Active</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 px-5 snap-start hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Parked</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 px-5 snap-start hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<p class="text-slate-600 dark:text-slate-300 text-sm font-medium">Inactive</p>
+</button>
+</div>
+<main class="flex flex-col gap-4 p-4">
+<div class="group relative flex flex-col gap-3 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Yellow school bus parked on a sunny day" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD-wQedgm1ZFkPZ85diMo7znnO3QWVLGVWvo1hg-cq4r6lgCEvrpW2Pm_c554FPcXD3A2LWrsX3GjpDW8o466ScTope7cFYgPe7bYmqSoCHy2JN_LMsGOV5YlWUM3s4yxwa86RB6mwTu92hcscwdo8kQZXrpN0d11xSk6rJ-y1Z0OrizCa5fg2_zHF9LzXITo2cY5F-MfNWli3eY7vdfHmz1XOCU4Q8r0kdwBPuqOh_IOE_93tXZtADiYkYAiv3jcHKPeOb_gyH8TM');"></div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-base font-bold text-slate-900 dark:text-white">Bus #101</h3>
+<span class="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">Active</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">KA-01-F-1234 • Tata Starbus</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="h-px w-full bg-slate-100 dark:bg-slate-700/50"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">airline_seat_recline_normal</span>
+<span>45/50 Seats</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span>On Time</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-primary text-sm font-semibold cursor-pointer hover:underline">
+<span>Track</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col gap-3 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Modern white transit bus side view" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZEux8sbHXj7hk4IGfqhl1vNX8BRXTy5C3Vlya4-D3fKBwcNVGvS7AC5M1olGIkrrTxPkgB9SnpizJ-JtIqlaTbs8I0kw1VC9Y2xgiStb6pwFw7g6_momh3zpYS0ZszP9r1KLYRwZ43EF8Y6SyQ2FpmXcmZ4cw9K_ZjAE8U_QhkSq2CFxiHVfqSnnCZWt1HgtfLa9_Vo4NL88e_1H1hykvIOiIZVN4OCx90TpjmQdxVd4YCu4wPDHQ4amju3XsinI7Y58USnpfjnY');"></div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-base font-bold text-slate-900 dark:text-white">Bus #104</h3>
+<span class="inline-flex items-center rounded-md bg-slate-500/10 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400 ring-1 ring-inset ring-slate-500/20">Parked</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">KA-05-C-9988 • Ashok Leyland</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="h-px w-full bg-slate-100 dark:bg-slate-700/50"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">airline_seat_recline_normal</span>
+<span>0/40 Seats</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-500">
+<span class="material-symbols-outlined text-lg">local_parking</span>
+<span>Garage</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-slate-400 text-sm font-semibold cursor-not-allowed">
+<span>Track</span>
+<span class="material-symbols-outlined text-sm">lock</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col gap-3 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+<div class="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center" data-alt="Abstract dark gradient representing inactive status">
+<span class="material-symbols-outlined text-slate-500">directions_bus</span>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-base font-bold text-slate-900 dark:text-white">Bus #108</h3>
+<span class="inline-flex items-center rounded-md bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20">Inactive</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">KA-02-B-4567 • Volvo 9400</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="h-px w-full bg-slate-100 dark:bg-slate-700/50"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">airline_seat_recline_normal</span>
+<span>--/50 Seats</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">person_off</span>
+<span>No Driver</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-slate-400 text-sm font-semibold cursor-not-allowed">
+<span>Track</span>
+<span class="material-symbols-outlined text-sm">lock</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col gap-3 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 dark:hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Blue city bus front view on street" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBQz7gXHLSDsdD3yuZBl8gHI_-2Soy-uJoeQ-PugY12u22yd8K1WUmjvwLFdgj_2NxB5MGmGLMiz6pCd5vVJfxkcteqzVkeYIDF3DxOO7ln6oiqelnKiNJAwtrocj8NGfzsofjrXIcR4d4hn-_7Gr6yrGRIIyKpKM9ZFvLU4Pmajp6Om9UJcqgsstA7It20QSO8UtJOs6HwPPMTjDL8VLqdfk0KUiTN7Hd1sYUQ5rFFOS8bdevW6TzdqhTRq3UiGC5LEn9nLFnmKGg');"></div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-base font-bold text-slate-900 dark:text-white">Bus #202</h3>
+<span class="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">Active</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">KA-08-M-7711 • Eicher Skyline</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="h-px w-full bg-slate-100 dark:bg-slate-700/50"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">airline_seat_recline_normal</span>
+<span>32/40 Seats</span>
+</div>
+<div class="flex items-center gap-1.5 text-emerald-500">
+<span class="material-symbols-outlined text-lg">speed</span>
+<span>Moving</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-primary text-sm font-semibold cursor-pointer hover:underline">
+<span>Track</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 z-50 w-full bg-card-light dark:bg-card-dark border-t border-slate-200 dark:border-slate-800 safe-pb">
+<div class="grid h-16 max-w-lg grid-cols-4 mx-auto font-medium">
+<button class="inline-flex flex-col items-center justify-center px-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 group" type="button">
+<span class="material-symbols-outlined text-2xl text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary mt-1">Dashboard</span>
+</button>
+<button class="inline-flex flex-col items-center justify-center px-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 group" type="button">
+<span class="material-symbols-outlined text-2xl text-primary mb-1">directions_bus</span>
+<span class="text-xs text-primary">Fleet</span>
+</button>
+<button class="inline-flex flex-col items-center justify-center px-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 group" type="button">
+<span class="material-symbols-outlined text-2xl text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary transition-colors">badge</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary mt-1">Drivers</span>
+</button>
+<button class="inline-flex flex-col items-center justify-center px-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 group" type="button">
+<span class="material-symbols-outlined text-2xl text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary transition-colors">settings</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-primary mt-1">Settings</span>
+</button>
+</div>
+</nav>
+<style>
+    .safe-pb {
+        padding-bottom: env(safe-area-inset-bottom);
+    }.no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }.no-scrollbar {
+        -ms-overflow-style: none;scrollbar-width: none;}
+</style>
+
+</body></html>

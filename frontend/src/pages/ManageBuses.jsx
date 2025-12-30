@@ -3,6 +3,10 @@ import { toast } from 'react-toastify';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { 
+  Bus, Plus, Search, Filter, Edit2, Trash2, Users, 
+  Navigation, UserCheck, X, ChevronDown
+} from 'lucide-react';
 
 const createEmptyBus = () => ({
   name: '',
@@ -11,6 +15,95 @@ const createEmptyBus = () => ({
   route: '',
   driver: ''
 });
+
+/* Stat Card Component */
+const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
+  const colors = {
+    indigo: 'from-indigo-500 to-indigo-600',
+    emerald: 'from-emerald-500 to-emerald-600',
+    amber: 'from-amber-500 to-amber-600',
+    purple: 'from-purple-500 to-purple-600'
+  };
+  
+  return (
+    <div className="card p-4">
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center flex-shrink-0`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-400 uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold text-white mt-0.5">{value}</p>
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* Bus Card Component */
+const BusCard = ({ bus, onEdit, onDelete }) => {
+  const hasRoute = Boolean(bus.route);
+  
+  return (
+    <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            hasRoute ? 'bg-indigo-500/20' : 'bg-slate-700'
+          }`}>
+            <Bus className={`w-5 h-5 ${hasRoute ? 'text-indigo-400' : 'text-slate-400'}`} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-white font-semibold truncate">{bus.name}</h3>
+            <p className="text-xs text-slate-400 font-mono">{bus.numberPlate}</p>
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+          hasRoute 
+            ? 'bg-emerald-500/20 text-emerald-400' 
+            : 'bg-amber-500/20 text-amber-400'
+        }`}>
+          {hasRoute ? 'Active' : 'Idle'}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-slate-800/50 rounded-lg p-2">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Route</p>
+          <p className="text-sm text-slate-300 truncate">{bus.route?.name || '—'}</p>
+        </div>
+        <div className="bg-slate-800/50 rounded-lg p-2">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Driver</p>
+          <p className="text-sm text-slate-300 truncate">{bus.driver?.name || bus.driver?.username || '—'}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <Users className="w-4 h-4" />
+          <span className="text-sm">{bus.capacity} seats</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onEdit(bus)}
+            className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+            title="Edit bus"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(bus)}
+            className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition"
+            title="Delete bus"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ManageBuses = () => {
   const [buses, setBuses] = useState([]);
@@ -23,6 +116,7 @@ const ManageBuses = () => {
   const [search, setSearch] = useState('');
   const [routeFilter, setRouteFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const loadBuses = async () => {
     try {
@@ -127,224 +221,221 @@ const ManageBuses = () => {
 
   const totalCapacity = buses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
   const activeBuses = buses.filter((bus) => bus.route).length;
+  const hasActiveFilters = routeFilter !== 'all' || statusFilter !== 'all';
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+    <main className="min-h-screen pb-24 md:pb-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Fleet Studio</p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Bus command board</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              Balance capacity, routes and drivers from a single glass dashboard. Every edit updates the realtime
-              locations and student assignments.
-            </p>
+            <h1 className="text-2xl font-bold text-white">Fleet Management</h1>
+            <p className="text-sm text-slate-400 mt-1">Manage buses, routes, and drivers</p>
           </div>
           <button
-            type="button"
             onClick={openCreate}
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-slate-900/30 transition hover:-translate-y-0.5"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
           >
-            New bus
+            <Plus className="w-5 h-5" />
+            Add Bus
           </button>
         </header>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Buses</p>
-            <p className="mt-2 text-4xl font-semibold text-slate-800">{buses.length}</p>
-            <p className="text-sm text-slate-500">{activeBuses} currently routed</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Capacity</p>
-            <p className="mt-2 text-4xl font-semibold text-slate-800">{totalCapacity}</p>
-            <p className="text-sm text-slate-500">total seats available</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.5em] text-slate-500">Search</p>
-            <input
-              type="search"
-              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
-              placeholder="Search by name, route or driver"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard icon={Bus} label="Total Buses" value={buses.length} subtitle="In fleet" color="indigo" />
+          <StatCard icon={Navigation} label="Active" value={activeBuses} subtitle="On routes" color="emerald" />
+          <StatCard icon={Bus} label="Idle" value={buses.length - activeBuses} subtitle="Available" color="amber" />
+          <StatCard icon={Users} label="Capacity" value={totalCapacity} subtitle="Total seats" color="purple" />
         </div>
 
-        <div className="grid gap-4 text-slate-900 lg:grid-cols-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <label className="text-sm">
-            <span className="text-xs uppercase tracking-[0.4em] text-slate-500">Route filter</span>
-            <select
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-slate-900"
-              value={routeFilter}
-              onChange={(e) => setRouteFilter(e.target.value)}
-            >
-              <option value="all">All routes</option>
-              {routes.map((route) => (
-                <option key={route._id} value={route._id}>
-                  {route.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="text-xs uppercase tracking-[0.4em] text-slate-500">Assignment</span>
-            <select
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-slate-900"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All buses</option>
-              <option value="assigned">Has route</option>
-              <option value="idle">Idle</option>
-            </select>
-          </label>
-          <div className="space-y-2 text-sm">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Quick actions</p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setRouteFilter('all');
-                  setStatusFilter('idle');
-                }}
-                className="rounded-full border border-slate-200 px-4 py-1 text-slate-600 transition hover:bg-slate-50"
-              >
-                Show idle
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setRouteFilter('all');
-                  setStatusFilter('assigned');
-                }}
-                className="rounded-full border border-slate-200 px-4 py-1 text-slate-600 transition hover:bg-slate-50"
-              >
-                Show routed
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <section className="grid gap-4 md:grid-cols-2">
-          {filteredBuses.map((bus) => (
-            <div key={bus._id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-500">{bus.numberPlate}</p>
-                  <h3 className="mt-2 text-3xl font-semibold text-slate-800">{bus.name}</h3>
-                  <p className="text-sm text-slate-500">Capacity {bus.capacity}</p>
-                </div>
-                <span
-                  className={`badge ${bus.route ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-warning-emphasis'}`}
+        {/* Search & Filters */}
+        <div className="card p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search buses..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                 >
-                  {bus.route ? 'On route' : 'Idle'}
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Filter Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition sm:w-auto w-full justify-center ${
+                hasActiveFilters 
+                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10' 
+                  : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">Filters</span>
+              {hasActiveFilters && (
+                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">
+                  {(routeFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
                 </span>
-              </div>
-              <div className="grid gap-2 text-sm md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Route</p>
-                  <p className="mt-1 text-base text-slate-900">{bus.route?.name || 'Unassigned'}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Driver</p>
-                  <p className="mt-1 text-base text-slate-900">{bus.driver?.name || bus.driver?.username || 'Unassigned'}</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-200 px-4 py-1 text-slate-600 transition hover:bg-slate-50"
-                  onClick={() => openEdit(bus)}
+              )}
+              <ChevronDown className={`w-4 h-4 transition ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Filter Options */}
+          {showFilters && (
+            <div className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-white/5 animate-fade-in">
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Route</label>
+                <select
+                  value={routeFilter}
+                  onChange={(e) => setRouteFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50"
                 >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-rose-200 px-4 py-1 text-rose-500 transition hover:bg-rose-50"
-                  onClick={() => askDelete(bus)}
-                >
-                  Delete
-                </button>
+                  <option value="all">All routes</option>
+                  {routes.map((route) => (
+                    <option key={route._id} value={route._id}>{route.name}</option>
+                  ))}
+                </select>
               </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="all">All buses</option>
+                  <option value="assigned">On route</option>
+                  <option value="idle">Idle</option>
+                </select>
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => { setRouteFilter('all'); setStatusFilter('all'); }}
+                  className="sm:col-span-2 text-sm text-indigo-400 hover:text-indigo-300 transition"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
-          ))}
-        </section>
+          )}
+        </div>
+
+        {/* Buses Grid */}
+        {filteredBuses.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBuses.map((bus) => (
+              <BusCard
+                key={bus._id}
+                bus={bus}
+                onEdit={openEdit}
+                onDelete={askDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="card p-12 text-center">
+            <Bus className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400">No buses found</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {search || hasActiveFilters ? 'Try adjusting your search or filters' : 'Add your first bus to get started'}
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Drawer */}
       <Drawer
         isOpen={drawerOpen}
-        title={editingBus ? 'Edit bus' : 'Add a new bus'}
-        subtitle="Attach routes and drivers in one step"
+        title={editingBus ? 'Edit Bus' : 'Add New Bus'}
+        subtitle="Configure bus details and assignments"
         onClose={() => setDrawerOpen(false)}
         footer={
-          <div className="flex justify-end gap-3">
-            <button type="button" className="rounded-full px-4 py-2 text-sm text-slate-500" onClick={() => setDrawerOpen(false)}>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
+            >
               Cancel
             </button>
-            <button type="submit" form="bus-form" className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white">
-              {editingBus ? 'Save changes' : 'Create bus'}
+            <button
+              type="submit"
+              form="bus-form"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+            >
+              {editingBus ? 'Save Changes' : 'Add Bus'}
             </button>
           </div>
         }
       >
         <form id="bus-form" className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-semibold text-slate-600">
-            Bus name
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Bus Name</label>
             <input
               name="name"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder="e.g., Bus Alpha"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Number plate
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Number Plate</label>
             <input
               name="numberPlate"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2 uppercase"
               value={form.numberPlate}
               onChange={(e) => setForm((prev) => ({ ...prev, numberPlate: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 uppercase"
+              placeholder="e.g., TN 01 AB 1234"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Capacity
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Capacity</label>
             <input
               name="capacity"
               type="number"
               min="1"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.capacity}
               onChange={(e) => setForm((prev) => ({ ...prev, capacity: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
               required
             />
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Route
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Route (Optional)</label>
             <select
               name="route"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.route}
               onChange={(e) => setForm((prev) => ({ ...prev, route: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
             >
               <option value="">Unassigned</option>
               {routes.map((route) => (
-                <option key={route._id} value={route._id}>
-                  {route.name}
-                </option>
+                <option key={route._id} value={route._id}>{route.name}</option>
               ))}
             </select>
-          </label>
-          <label className="block text-sm font-semibold text-slate-600">
-            Driver
+          </div>
+          <div>
+            <label className="text-sm text-slate-300 mb-1.5 block">Driver (Optional)</label>
             <select
               name="driver"
-              className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2"
               value={form.driver}
               onChange={(e) => setForm((prev) => ({ ...prev, driver: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
             >
               <option value="">Unassigned</option>
               {drivers.map((driver) => (
@@ -353,14 +444,15 @@ const ManageBuses = () => {
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </form>
       </Drawer>
 
+      {/* Confirm Dialog */}
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete bus"
-        message={`This will remove ${confirmState.target?.name} (${confirmState.target?.numberPlate}).`}
+        title="Delete Bus"
+        message={`Are you sure you want to remove "${confirmState.target?.name}" (${confirmState.target?.numberPlate})?`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}

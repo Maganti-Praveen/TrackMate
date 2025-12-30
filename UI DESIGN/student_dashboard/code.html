@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4b36e7",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131121",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e1c2e",
+                        "text-main-light": "#121118",
+                        "text-main-dark": "#f3f4f6",
+                        "text-sec-light": "#676388",
+                        "text-sec-dark": "#a09dbd",
+                        "success": "#10b981", // Emerald for On Time
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        /* Custom scrollbar hide for cleaner look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark min-h-screen flex flex-col overflow-x-hidden transition-colors duration-200">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md">
+<div class="flex items-center justify-between p-4 pb-2">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-white dark:border-surface-dark shadow-sm" data-alt="Student profile picture showing a young smiling person" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDXfPaPGFd5bguMIS_uHjfXRgOrGvKGrgJn1whG9NtgCYYwflT9UcDKtDgXA75DOAWTSVJInpCVMLeBrARzZdNDis7p-kGRuRTj2Kdkk3rjIc7M1ARYl9dUM3wlhpFPGykWOLxIAKIYxnt5tL_7HUFSvTu6xa-6YwLQ2gfC_ex5u4sAFKAthGurvtqcC0LgJY49mLXlK_faYZS-3zn_JfbLju1ZLpw4sBzodw8QuTtzZi-xDAQR_ZQWEH1DOTtSPqMc6Vw-xr_8l8c");'>
+</div>
+<div class="flex flex-col">
+<span class="text-text-sec-light dark:text-text-sec-dark text-xs font-medium uppercase tracking-wider">Welcome back</span>
+<h2 class="text-lg font-bold leading-tight">Alex</h2>
+</div>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-white dark:bg-surface-dark shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+<span class="material-symbols-outlined text-text-main-light dark:text-text-main-dark" style="font-size: 24px;">notifications</span>
+<span class="absolute top-2 right-2 size-2.5 bg-primary border-2 border-white dark:border-surface-dark rounded-full"></span>
+</button>
+</div>
+</header>
+<main class="flex-1 px-4 pb-24 space-y-6">
+<!-- My Route Hero Card -->
+<section class="mt-2">
+<div class="group relative overflow-hidden rounded-2xl bg-white dark:bg-surface-dark shadow-sm transition-all hover:shadow-md">
+<!-- Map Background Section -->
+<div class="h-32 w-full relative bg-gray-200 dark:bg-gray-700">
+<div class="absolute inset-0 bg-cover bg-center opacity-80" data-alt="Stylized map showing city streets and bus route path" data-location="College Campus Map" style='background-image: url("https://placeholder.pics/svg/300");'>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent dark:from-surface-dark"></div>
+<!-- Live Status Pill -->
+<div class="absolute top-3 right-3 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
+</span>
+<span class="text-xs font-bold text-success uppercase tracking-wide">Live</span>
+</div>
+</div>
+<!-- Card Content -->
+<div class="px-5 pb-5 pt-2 relative">
+<div class="flex justify-between items-start mb-1">
+<div>
+<p class="text-text-sec-light dark:text-text-sec-dark text-sm font-medium">Route A • North Campus</p>
+<h3 class="text-xl font-bold mt-1">Bus #402</h3>
+</div>
+<div class="flex flex-col items-end">
+<div class="flex items-center gap-1 text-success bg-success/10 px-2 py-1 rounded-lg">
+<span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+<span class="text-xs font-bold">On Time</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-text-sec-light dark:text-text-sec-dark text-sm mb-4">
+<span class="material-symbols-outlined" style="font-size: 18px;">group</span>
+<span>Seats Available</span>
+</div>
+<button class="w-full h-11 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined" style="font-size: 20px;">near_me</span>
+                        Track Live Location
+                    </button>
+</div>
+</div>
+</section>
+<!-- Stats & ETA Widget -->
+<section class="grid grid-cols-2 gap-4">
+<!-- ETA Card -->
+<div class="bg-primary text-white p-5 rounded-2xl shadow-lg shadow-primary/20 flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -top-4 bg-white/10 w-24 h-24 rounded-full blur-xl"></div>
+<div>
+<p class="text-white/80 text-sm font-medium">Arriving in</p>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-4xl font-bold tracking-tight">12</span>
+<span class="text-lg font-medium opacity-80">min</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-white/20">
+<p class="text-xs text-white/90 truncate flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                        Library Entrance
+                    </p>
+</div>
+</div>
+<!-- Quick Stats/Info -->
+<div class="flex flex-col gap-4">
+<div class="bg-white dark:bg-surface-dark p-4 rounded-2xl shadow-sm flex-1 flex flex-col justify-center items-start">
+<div class="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg mb-2">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+</div>
+<p class="text-xs text-text-sec-light dark:text-text-sec-dark font-medium">Next Departure</p>
+<p class="text-lg font-bold">11:30 AM</p>
+</div>
+</div>
+</section>
+<!-- Upcoming Stops Timeline -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-lg font-bold">Upcoming Stops</h3>
+<a class="text-primary text-sm font-semibold hover:underline" href="#">View Full Route</a>
+</div>
+<div class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm">
+<div class="relative pl-2">
+<!-- Vertical Line -->
+<div class="absolute left-[11px] top-2 bottom-6 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+<!-- Stop 1: Passed -->
+<div class="relative flex gap-4 pb-8 group">
+<div class="relative z-10 flex-shrink-0 mt-1">
+<div class="size-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-white dark:border-surface-dark">
+<span class="material-symbols-outlined text-gray-500 text-[14px]">check</span>
+</div>
+</div>
+<div class="flex-1">
+<h4 class="text-text-sec-light dark:text-text-sec-dark font-medium text-sm line-through">Science Block</h4>
+<p class="text-xs text-gray-400 dark:text-gray-600">10:45 AM • Passed</p>
+</div>
+</div>
+<!-- Stop 2: Next -->
+<div class="relative flex gap-4 pb-8">
+<div class="relative z-10 flex-shrink-0 mt-1">
+<div class="size-6 rounded-full bg-primary flex items-center justify-center border-4 border-indigo-100 dark:border-indigo-900/30 shadow-sm">
+<div class="size-2 bg-white rounded-full animate-pulse"></div>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="text-text-main-light dark:text-text-main-dark font-bold text-base">Dormitory B</h4>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Next</span>
+</div>
+<p class="text-sm text-text-sec-light dark:text-text-sec-dark mt-0.5">10:55 AM • Est. Arrival</p>
+</div>
+</div>
+<!-- Stop 3: Destination -->
+<div class="relative flex gap-4">
+<div class="relative z-10 flex-shrink-0 mt-1">
+<div class="size-6 rounded-full bg-white dark:bg-surface-dark border-2 border-text-sec-light dark:border-text-sec-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[14px]">location_on</span>
+</div>
+</div>
+<div class="flex-1">
+<h4 class="text-text-main-light dark:text-text-main-dark font-semibold text-base">Library (Your Stop)</h4>
+<p class="text-sm text-text-sec-light dark:text-text-sec-dark mt-0.5">11:05 AM</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions Grid -->
+<section>
+<h3 class="text-lg font-bold mb-3 px-1">Quick Actions</h3>
+<div class="grid grid-cols-3 gap-3">
+<button class="bg-white dark:bg-surface-dark p-3 rounded-xl shadow-sm flex flex-col items-center justify-center gap-2 aspect-square hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">calendar_month</span>
+<span class="text-xs font-medium text-center">Full Schedule</span>
+</button>
+<button class="bg-white dark:bg-surface-dark p-3 rounded-xl shadow-sm flex flex-col items-center justify-center gap-2 aspect-square hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-orange-500 text-3xl">warning</span>
+<span class="text-xs font-medium text-center">Report Issue</span>
+</button>
+<button class="bg-white dark:bg-surface-dark p-3 rounded-xl shadow-sm flex flex-col items-center justify-center gap-2 aspect-square hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-purple-500 text-3xl">swap_calls</span>
+<span class="text-xs font-medium text-center">Change Route</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 pb-safe pt-2 px-6 z-40">
+<div class="flex justify-between items-center h-16 max-w-lg mx-auto">
+<a class="flex flex-col items-center gap-1 w-16 text-primary" href="#">
+<span class="material-symbols-outlined fill-current" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-16 text-text-sec-light dark:text-text-sec-dark hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-medium">Map</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-16 text-text-sec-light dark:text-text-sec-dark hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="text-[10px] font-medium">Schedule</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-16 text-text-sec-light dark:text-text-sec-dark hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Safe area padding for iPhones without physical button -->
+<div class="h-6 w-full bg-white dark:bg-surface-dark fixed bottom-0 z-30"></div>
+</body></html>
