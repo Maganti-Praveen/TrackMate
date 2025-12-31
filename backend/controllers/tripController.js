@@ -77,7 +77,8 @@ const getActiveTrip = async (req, res) => {
       .populate({ path: 'route', populate: { path: 'stops' } });
 
     if (!trip) {
-      return res.status(404).json({ message: 'No active trip' });
+      // Return 200 with null to avoid console 404 errors on frontend
+      return res.json(null);
     }
 
     // Check if trip is stale (older than 12 hours)
@@ -90,7 +91,7 @@ const getActiveTrip = async (req, res) => {
       trip.endedAt = new Date();
       await trip.save();
       console.log(`[Auto-End] Stale trip ${trip._id} ended (${Math.round(tripAge / 3600000)}h old)`);
-      return res.status(404).json({ message: 'Previous trip auto-ended (stale). Start a new trip.' });
+      return res.json(null);
     }
 
     res.json(trip);
