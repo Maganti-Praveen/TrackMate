@@ -237,27 +237,32 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
             const Trip = require('../models/Trip');
             await Trip.findByIdAndUpdate(tripId, { currentStopIndex: state.currentStopIndex });
 
-            // NEW: Send "Bus Arrived" Push to students assigned to this stop
+            // NEW: Send "Bus Arrived" Push to students assigned to THIS stop only
             // Fire and forget (async)
             (async () => {
               try {
                 const StudentAssignment = require('../models/StudentAssignment');
                 const { sendPush } = require('./notificationController');
-                // Find students assigned to this bus (and theoretically this stop)
+
+                // Find students on this bus AND populate their stop to check sequence
                 const assignmentsAtStop = await StudentAssignment.find({
                   bus: state.trip.bus
-                }).populate('student');
+                })
+                  .populate('student')
+                  .populate('stop', 'sequence');
 
-                const studentsAtStop = assignmentsAtStop
-                  .map(a => a.student)
-                  .filter(s => s && s.pushSubscription);
+                // Filter to only students whose assigned stop matches the arriving stop
+                const arrivalSeq = nextStop.seq ?? nextStop.sequence;
+                const studentsAtThisStop = assignmentsAtStop
+                  .filter(a => {
+                    const assignedSeq = a.stop?.sequence;
+                    return assignedSeq === arrivalSeq && a.student?.pushSubscription;
+                  })
+                  .map(a => a.student);
 
-                // Since I don't trust the assignment population model fully right now (User doesn't embed assignment directly?), 
-                // I will just broadcast "Bus at [StopName]" to ALL students on this bus for now to ensure delivery,
-                // OR better, we check 'stopCoordinates' distance like before if assignment is tricky.
-                // But user specifically asked "bus at each stop".
-                // Let's iterate found students and send.
-                for (const stu of studentsAtStop) {
+                console.log(`[Push] Sending arrival notification to ${studentsAtThisStop.length} students at stop ${nextStop.name}`);
+
+                for (const stu of studentsAtThisStop) {
                   await sendPush(stu, {
                     title: 'Bus Arrived',
                     body: `Bus has reached ${event.stopName}`,
@@ -375,7 +380,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
 
         // Try to get stop coordinates from multiple sources
         let stopCoords = null;
-        
+
         // Priority 1: Student's custom stopCoordinates (if set)
         if (student.stopCoordinates?.lat && student.stopCoordinates?.lng) {
           stopCoords = student.stopCoordinates;
@@ -396,24 +401,47 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
 
         if (!stopCoords) continue;
 
-        const dist = distanceMeters({ lat, lng }, stopCoords);
-        // 1km = 1000 meters threshold for proximity alert
-        if (dist <= 1000) {
-          console.log(`Sending 1km Alert to student ${student.name}`);
+        // Get student's notification preferences
+        const prefs = assignment.notificationPreferences || {};
+        if (prefs.enabled === false) continue; // Notifications disabled
 
-          // Calculate approximate ETA using current speed or conservative fallback
-          const currentSpeed = speedMps > 1 ? speedMps : ASSUMED_SPEED_MPS;
-          const etaSeconds = dist / currentSpeed;
-          const etaMinutes = Math.ceil(etaSeconds / 60);
+        // Check if already sent proximity alert for this trip
+        if (prefs.lastProximityAlertTrip?.toString() === tripId.toString()) continue;
+
+        const dist = distanceMeters({ lat, lng }, stopCoords);
+
+        // Calculate ETA
+        const currentSpeed = speedMps > 1 ? speedMps : ASSUMED_SPEED_MPS;
+        const etaSeconds = dist / currentSpeed;
+        const etaMinutes = Math.ceil(etaSeconds / 60);
+
+        // Get thresholds (use defaults if not set)
+        const thresholdMeters = prefs.proximityMeters || 500;
+        const thresholdMinutes = prefs.proximityMinutes || 5;
+
+        // Trigger if within EITHER meters OR minutes threshold
+        const withinMeters = dist <= thresholdMeters;
+        const withinMinutes = etaMinutes <= thresholdMinutes;
+
+        if (withinMeters || withinMinutes) {
+          console.log(`[Proximity] Alert to ${student.name}: ${etaMinutes} min (${Math.round(dist)}m)`);
 
           await sendPush(student, {
             title: `Bus Arriving Soon!`,
-            body: `Bus is approx ${etaMinutes} min away (${Math.round(dist)}m). Get ready!`,
+            body: `Bus is ${etaMinutes} min away (${Math.round(dist)}m). Get ready!`,
             url: '/student',
             tag: 'proximity-alert',
             icon: '/markers/bus.png'
           });
+
+          // Mark as notified for this trip
           state.notifiedStudents.add(student._id.toString());
+
+          // Update assignment to prevent duplicate alerts this trip
+          await StudentAssignment.updateOne(
+            { _id: assignment._id },
+            { 'notificationPreferences.lastProximityAlertTrip': tripId }
+          );
         }
       }
     } catch (err) {
@@ -521,7 +549,7 @@ const registerLocationHandlers = (io) => {
       }
     });
 
-    socket.on('student:subscribe', ({ tripId } = {}) => {
+    socket.on('student:subscribe', async ({ tripId } = {}) => {
       if (!socket.user) {
         socket.emit('trip:subscription_error', { message: 'Authenticate before subscribing.' });
         return;
@@ -530,7 +558,37 @@ const registerLocationHandlers = (io) => {
         socket.emit('trip:subscription_error', { message: 'tripId is required.' });
         return;
       }
-      subscribeToTrip(tripId);
+
+      // Validate student is assigned to this trip's bus
+      try {
+        const Trip = require('../models/Trip');
+        const StudentAssignment = require('../models/StudentAssignment');
+
+        const trip = await Trip.findById(tripId, 'bus').lean();
+        if (!trip) {
+          socket.emit('trip:subscription_error', { message: 'Trip not found.' });
+          return;
+        }
+
+        // Only validate for students (drivers and admins can subscribe freely)
+        if (socket.user.role === 'student') {
+          const assignment = await StudentAssignment.findOne({
+            student: socket.user.id,
+            bus: trip.bus
+          }).lean();
+
+          if (!assignment) {
+            socket.emit('trip:subscription_error', { message: 'Not authorized for this trip.' });
+            return;
+          }
+        }
+
+        subscribeToTrip(tripId);
+      } catch (err) {
+        console.error('[Socket] Subscription validation error:', err.message);
+        // Fail open for now - allow subscription if validation errors
+        subscribeToTrip(tripId);
+      }
     });
 
     socket.on('student:unsubscribe', ({ tripId } = {}) => {
@@ -610,26 +668,26 @@ const registerLocationHandlers = (io) => {
   // Recalculate ETAs every 30 seconds for all active trips, even if no GPS update received
   // This ensures students see updated ETAs based on time passing
   const ETA_HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
-  
+
   setInterval(async () => {
     try {
       const { activeTrips } = require('../inMemory/activeTrips');
       const now = Date.now();
-      
+
       for (const [tripId, state] of activeTrips.entries()) {
         // Skip if no last position (trip just started, no GPS yet)
         if (!state.lastPosition) continue;
-        
+
         // Skip if we received a GPS update recently (within 15 seconds)
         const lastUpdate = state.lastPosition.timestamp || 0;
         if (now - lastUpdate < 15000) continue;
-        
+
         // Recalculate ETAs based on last known position
         const { lat, lng } = state.lastPosition;
-        
+
         // Use a conservative speed since bus might be stationary
         const rawEtas = await computeRawEtas(state, { lat, lng }, ASSUMED_SPEED_MPS);
-        
+
         if (Object.keys(rawEtas).length > 0) {
           // Emit updated ETAs to all subscribers
           emitEtaUpdateIfNeeded(io, tripId, state, rawEtas, { force: false });

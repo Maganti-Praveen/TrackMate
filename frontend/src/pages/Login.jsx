@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { api } from '../utils/api';
+import { Eye, EyeOff, Loader2, UserPlus, LogIn } from 'lucide-react';
 
 const Login = () => {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,13 +26,35 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
     try {
-      await login({ username, password });
+      if (isSignUp) {
+        // Register new student
+        await api.post('/auth/register', {
+          username,
+          password,
+          name: name || username
+        });
+        // Auto login after successful registration
+        await login({ username, password });
+      } else {
+        await login({ username, password });
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Auth error:', err);
+      const errorMsg = err.response?.data?.message
+        || err.response?.data?.error
+        || err.message
+        || (isSignUp ? 'Registration failed' : 'Login failed');
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setError('');
   };
 
   if (targetPath) {
@@ -51,20 +76,42 @@ const Login = () => {
           <p className="text-slate-400 text-sm">Real-time college bus tracking</p>
         </div>
 
-        {/* Login Card */}
+        {/* Login/Signup Card */}
         <div className="card-elevated p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white mb-1">Welcome back</h2>
-          <p className="text-slate-400 text-sm mb-6">Sign in to continue tracking</p>
+          <h2 className="text-xl font-semibold text-white mb-1">
+            {isSignUp ? 'Create Account' : 'Welcome back'}
+          </h2>
+          <p className="text-slate-400 text-sm mb-6">
+            {isSignUp ? 'Register to start tracking your bus' : 'Sign in to continue tracking'}
+          </p>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Name (signup only) */}
+            {isSignUp && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your full name"
+                  className="w-full"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
             {/* Username */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Username
+                {isSignUp ? 'Roll Number / Username' : 'Username'}
               </label>
               <input
                 type="text"
-                placeholder="Enter your username"
+                placeholder={isSignUp ? 'Enter your roll number' : 'Enter your username'}
                 className="w-full"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -82,12 +129,12 @@ const Login = () => {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
+                  placeholder={isSignUp ? 'Create a password' : 'Enter your password'}
                   className="w-full pr-12"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                   disabled={isLoading}
                 />
                 <button
@@ -117,18 +164,37 @@ const Login = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
+                  {isSignUp ? 'Creating account...' : 'Signing in...'}
                 </>
               ) : (
-                'Sign In'
+                <>
+                  {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                  {isSignUp ? 'Create Account' : 'Sign In'}
+                </>
               )}
             </button>
           </form>
+
+          {/* Toggle Sign up / Sign in */}
+          <div className="mt-6 pt-6 border-t border-white/10 text-center">
+            <p className="text-slate-400 text-sm">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="ml-2 text-indigo-400 hover:text-indigo-300 font-medium transition"
+              >
+                {isSignUp ? 'Sign In' : 'Create Account'}
+              </button>
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
         <p className="text-center text-slate-500 text-xs mt-6">
-          Contact your administrator if you need help
+          {isSignUp
+            ? 'Student accounts only. Admin/Driver accounts are created by administrators.'
+            : 'Contact your administrator if you need help'}
         </p>
       </div>
     </main>
@@ -136,3 +202,4 @@ const Login = () => {
 };
 
 export default Login;
+

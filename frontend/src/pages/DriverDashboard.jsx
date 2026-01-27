@@ -6,8 +6,8 @@ import { refreshSocketAuth, useSocket } from '../hooks/useSocket';
 import useGeolocation from '../hooks/useGeolocation';
 import DriverMap from '../components/DriverMap';
 import { ELURU_SIM_PATH } from '../constants/geo';
-import { 
-  Play, Square, MapPin, Wifi, WifiOff, Navigation, 
+import {
+  Play, Square, MapPin, Wifi, WifiOff, Navigation,
   AlertTriangle, Radio, Users, Gauge, Clock, Trash2,
   Crosshair, Send, RotateCcw
 } from 'lucide-react';
@@ -22,9 +22,8 @@ const MapClickSimulator = ({ onLocationUpdate }) => {
 // ===== COMPONENTS =====
 
 const StatusBadge = ({ connected, label }) => (
-  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-    connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
-  }`}>
+  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
+    }`}>
     <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
     {label}
   </span>
@@ -72,6 +71,7 @@ const DriverDashboard = () => {
   const [sosMessage, setSosMessage] = useState('Bus Breakdown');
   const [visitorCount, setVisitorCount] = useState(0);
   const [isSimulationMode, setIsSimulationMode] = useState(false);
+  const [simulatedPosition, setSimulatedPosition] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator?.onLine ?? true);
   const [showDebug, setShowDebug] = useState(false);
@@ -93,7 +93,7 @@ const DriverDashboard = () => {
     useGeolocation({
       onPosition: (position) => {
         if (isSimulationMode || !trip) return;
-        
+
         const payload = {
           driverId: user?.id || user?._id,
           tripId: trip._id || trip.id,
@@ -105,7 +105,7 @@ const DriverDashboard = () => {
           heading: position.heading,
           timestamp: position.timestamp
         };
-        
+
         const sent = emitLocation(payload);
         addLog(sent ? `📡 Sent: ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}` : '📦 Buffered (offline)');
         setStatusMessage(sent ? 'Broadcasting location...' : 'Offline - buffering');
@@ -130,7 +130,7 @@ const DriverDashboard = () => {
       try {
         const { data } = await api.get('/trips/active');
         if (data?._id) setTrip(data);
-      } catch {}
+      } catch { }
     };
     fetchTrip();
   }, []);
@@ -144,7 +144,7 @@ const DriverDashboard = () => {
       const { data } = await api.post('/trips/start', { busId: user.assignedBusId });
       setTrip(data);
       refreshSocketAuth();
-      
+
       // Only start GPS tracking if NOT in simulation mode
       if (!isSimulationMode) {
         startTracking();
@@ -162,7 +162,7 @@ const DriverDashboard = () => {
     if (!trip) return;
     stopTracking();
     try {
-      await api.post(`/trips/${trip._id || trip.id}/end`).catch(() => 
+      await api.post(`/trips/${trip._id || trip.id}/end`).catch(() =>
         api.post('/trips/end', { tripId: trip._id || trip.id })
       );
       setTrip(null);
@@ -176,7 +176,7 @@ const DriverDashboard = () => {
   const handleManualLocation = (latlng) => {
     if (!trip) return setStatusMessage('Start a trip first');
     if (!isSimulationMode) return setStatusMessage('Enable simulation mode to teleport');
-    
+
     const payload = {
       driverId: user?.id,
       tripId: trip._id || trip.id,
@@ -189,8 +189,17 @@ const DriverDashboard = () => {
       timestamp: Date.now(),
       force: true
     };
-    
+
     emitLocation(payload);
+
+    // Update local simulated position for UI
+    setSimulatedPosition({
+      lat: latlng.lat,
+      lng: latlng.lng,
+      speed: 12,
+      timestamp: Date.now()
+    });
+
     setStatusMessage(`Teleported to ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`);
     addLog(`🎯 Teleport: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`);
   };
@@ -211,7 +220,7 @@ const DriverDashboard = () => {
     try {
       const { data } = await api.delete('/trips/history/today');
       addLog(data.message);
-    } catch {}
+    } catch { }
   };
 
   const handleClearTrip = async () => {
@@ -219,17 +228,17 @@ const DriverDashboard = () => {
     try {
       // First stop tracking if active
       stopTracking();
-      
+
       // End active trip if exists
       if (trip) {
-        await api.post(`/trips/${trip._id || trip.id}/end`).catch(() => 
+        await api.post(`/trips/${trip._id || trip.id}/end`).catch(() =>
           api.post('/trips/end', { tripId: trip._id || trip.id })
         );
       }
-      
+
       // Clear today's history
-      await api.delete('/trips/history/today').catch(() => {});
-      
+      await api.delete('/trips/history/today').catch(() => { });
+
       // Reset local state
       setTrip(null);
       setStatusMessage('Trip cleared. Ready to start fresh!');
@@ -242,7 +251,7 @@ const DriverDashboard = () => {
   return (
     <main className="min-h-screen pb-24 md:pb-8">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        
+
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
@@ -261,9 +270,8 @@ const DriverDashboard = () => {
         {/* Trip Control Card */}
         <div className="card-elevated p-6">
           <div className="text-center mb-6">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
-              trip ? 'bg-emerald-500/20' : 'bg-slate-700'
-            }`}>
+            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${trip ? 'bg-emerald-500/20' : 'bg-slate-700'
+              }`}>
               {trip ? (
                 <Radio className="w-10 h-10 text-emerald-400 animate-pulse" />
               ) : (
@@ -328,9 +336,12 @@ const DriverDashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-2">
           <StatItem icon={Wifi} label="Socket" value={isConnected ? 'Connected' : 'Disconnected'} highlight={isConnected} />
-          <StatItem icon={MapPin} label="GPS" value={permissionStatus} highlight={permissionStatus === 'granted'} />
+          <StatItem icon={MapPin} label="Mode" value={isSimulationMode ? 'Simulation' : 'GPS'} highlight={!isSimulationMode && permissionStatus === 'granted'} />
           <StatItem icon={Send} label="Pings Sent" value={pingsSent} />
-          <StatItem icon={Gauge} label="Speed" value={lastPosition?.speed ? `${Math.round(lastPosition.speed * 3.6)} km/h` : '0 km/h'} />
+          <StatItem icon={Gauge} label="Speed" value={(() => {
+            const pos = isSimulationMode ? simulatedPosition : lastPosition;
+            return pos?.speed ? `${Math.round(pos.speed * 3.6)} km/h` : '0 km/h';
+          })()} />
         </div>
 
         {/* Simulation Toggle */}
@@ -346,7 +357,7 @@ const DriverDashboard = () => {
               onClick={() => {
                 const newSimMode = !isSimulationMode;
                 setIsSimulationMode(newSimMode);
-                
+
                 if (newSimMode) {
                   // Turning simulation ON - stop GPS tracking
                   stopTracking();
@@ -361,24 +372,21 @@ const DriverDashboard = () => {
                   addLog('📍 Simulation mode OFF - GPS enabled');
                 }
               }}
-              className={`relative w-14 h-8 rounded-full transition-colors ${
-                isSimulationMode ? 'bg-indigo-500' : 'bg-slate-700'
-              }`}
+              className={`relative w-14 h-8 rounded-full transition-colors ${isSimulationMode ? 'bg-indigo-500' : 'bg-slate-700'
+                }`}
             >
-              <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white transition-transform ${
-                isSimulationMode ? 'translate-x-6' : ''
-              }`} />
+              <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white transition-transform ${isSimulationMode ? 'translate-x-6' : ''
+                }`} />
             </button>
           </div>
-          
+
           {/* Mode indicator */}
-          <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${
-            isSimulationMode 
-              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' 
-              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-          }`}>
-            {isSimulationMode 
-              ? '🎮 Manual teleport active - GPS is disabled' 
+          <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium ${isSimulationMode
+            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+            }`}>
+            {isSimulationMode
+              ? '🎮 Manual teleport active - GPS is disabled'
               : '📍 GPS tracking active - Real-time location'}
           </div>
         </div>
@@ -386,7 +394,11 @@ const DriverDashboard = () => {
         {/* Map */}
         <div className="card overflow-hidden">
           <div className="h-64 md:h-80">
-            <DriverMap lastPosition={lastPosition} busId={trip?.bus?._id || trip?.bus} route={trip?.route}>
+            <DriverMap
+              lastPosition={isSimulationMode ? simulatedPosition : lastPosition}
+              busId={trip?.bus?._id || trip?.bus}
+              route={trip?.route}
+            >
               {isSimulationMode && <MapClickSimulator onLocationUpdate={handleManualLocation} />}
             </DriverMap>
           </div>

@@ -51,7 +51,7 @@ const login = async (req, res) => {
 
     let user = await User.findOne({ username });
 
-    if (!user && ['ad1', 'dr1'].includes(username)) {
+    if (!user && username === 'ad1') {
       await ensureDefaultAccounts();
       user = await User.findOne({ username });
     }
@@ -86,20 +86,13 @@ const getProfile = (req, res) => {
   res.json(serializeUser(req.user));
 };
 
-// Ensures there is at least one admin and one driver as per spec
+// Ensures there is at least one admin as per spec
 const ensureDefaultAccounts = async () => {
   const admin = await User.findOne({ username: 'ad1' });
   if (!admin) {
     const hashedPassword = await hashPassword('ad1');
-    await User.create({ username: 'ad1', password: hashedPassword, role: 'admin', name: 'Admin One' });
+    await User.create({ username: 'ad1', password: hashedPassword, role: 'admin', name: 'TrackMate Admin' });
     console.log('Seeded default admin account (ad1/ad1)');
-  }
-
-  const driver = await User.findOne({ username: 'dr1' });
-  if (!driver) {
-    const hashedPassword = await hashPassword('dr1');
-    await User.create({ username: 'dr1', password: hashedPassword, role: 'driver', name: 'Driver One' });
-    console.log('Seeded default driver account (dr1/dr1)');
   }
 };
 
@@ -115,18 +108,18 @@ const updateProfile = async (req, res) => {
 
     if (name) user.name = name.trim();
     if (phone) user.phone = phone.trim();
-    
+
     // Password change requires current password verification
     if (password) {
       if (!currentPassword) {
         return res.status(400).json({ message: 'Current password is required to change password' });
       }
-      
+
       const isValid = await verifyPassword(currentPassword, user.password);
       if (!isValid) {
         return res.status(401).json({ message: 'Current password is incorrect' });
       }
-      
+
       user.password = await hashPassword(password.trim());
     }
 
@@ -138,4 +131,47 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts, hashPassword };
+// Register student account (students only - no admin/driver self-registration)
+const registerUser = async (req, res) => {
+  try {
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password.trim() : '';
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Username already taken' });
+    }
+
+    // Create student account
+    const hashedPassword = await hashPassword(password);
+    const user = await User.create({
+      username,
+      password: hashedPassword,
+      role: 'student',
+      name: name || username,
+      phone
+    });
+
+    // Auto-login after registration
+    const token = signToken(user);
+    res.status(201).json({
+      message: 'Account created successfully',
+      token,
+      user: serializeUser(user)
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Registration failed' });
+  }
+};
+
+module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts, hashPassword, registerStudent: registerUser };
+
+

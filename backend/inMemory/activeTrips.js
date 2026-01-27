@@ -106,6 +106,46 @@ const resetInsideWindow = (state, index) => {
   state.insideWindow = buildInsideWindow(nextIndex);
 };
 
+// --- PERIODIC CLEANUP ---
+// Remove completed/stale trips from in-memory cache every 10 minutes
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const STALE_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+const cleanupStaleTrips = async () => {
+  const now = Date.now();
+  let cleaned = 0;
+
+  for (const [tripId, state] of activeTrips.entries()) {
+    try {
+      // Check if trip is still active in DB
+      const trip = await Trip.findById(tripId, 'status startedAt').lean();
+
+      // Remove if trip doesn't exist or is completed
+      if (!trip || trip.status === 'COMPLETED') {
+        activeTrips.delete(tripId);
+        cleaned++;
+        continue;
+      }
+
+      // Remove if trip is stale (older than 12 hours)
+      const tripAge = now - new Date(trip.startedAt || state.trip?.startedAt).getTime();
+      if (tripAge > STALE_THRESHOLD_MS) {
+        activeTrips.delete(tripId);
+        cleaned++;
+      }
+    } catch (err) {
+      // If DB query fails, skip this iteration
+      console.error(`[Cleanup] Error checking trip ${tripId}:`, err.message);
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[Cleanup] Removed ${cleaned} stale/completed trips from memory. Active: ${activeTrips.size}`);
+  }
+};
+
+setInterval(cleanupStaleTrips, CLEANUP_INTERVAL_MS);
+
 module.exports = {
   activeTrips,
   getActiveTripState,

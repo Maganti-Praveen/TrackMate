@@ -8,8 +8,8 @@ if (missingVars.length > 0 && process.env.NODE_ENV === 'production') {
 }
 
 module.exports = {
-  RADIUS_METERS: 1000,
-  SUSTAIN_TIME_MS: 0,
+  RADIUS_METERS: 75,           // Realistic stop detection radius (~75 meters)
+  SUSTAIN_TIME_MS: 3000,       // 3 seconds dwell time to confirm arrival
   LEAVE_RADIUS_METERS: 80,
   MIN_UPDATE_INTERVAL_MS: 1000,
   ETA_ALPHA: 0.25,

@@ -17,11 +17,23 @@ const studentAssignmentSchema = new mongoose.Schema(
     stop: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Stop',
-      required: true,
+      default: null,
       index: true
     },
     notificationToken: {
       type: String
+    },
+    // Push notification preferences
+    notificationPreferences: {
+      enabled: { type: Boolean, default: true },
+      // Alert when bus is X minutes away
+      proximityMinutes: { type: Number, default: 5, min: 1, max: 30 },
+      // Alert when bus is X meters away
+      proximityMeters: { type: Number, default: 500, min: 100, max: 2000 },
+      // Whether proximity alert was already sent for current trip
+      lastProximityAlertTrip: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip' },
+      // Arrival alert preference
+      arrivalAlert: { type: Boolean, default: true }
     }
   },
   { timestamps: true }

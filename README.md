@@ -73,3 +73,41 @@ VAPID_PRIVATE_KEY=your_web_push_private_key
 | Driver Simulation | Route Lab | Student View |
 |:---:|:---:|:---:|
 | ![Driver Sim](Screenshots/god_mode.png) | ![Route Lab](Screenshots/route%20table.png) | ![Mobile View](Screenshots/student_mobile1.jpg) |
+
+## 👤 User Accounts
+
+### Default Admin Account
+
+On first login, the system auto-creates a default admin:
+
+| Username | Password | Role |
+|----------|----------|------|
+| `ad1` | `ad1` | Admin |
+
+> Just try logging in with `ad1/ad1` and the account will be created automatically.
+
+### User Registration
+
+Students can self-register via the login page:
+
+1. Click **"Create Account"** on the login page
+2. Enter name, username (roll number), and password
+3. Click **Create Account** → Auto-login to student dashboard
+
+> **Note:** Only student accounts can self-register. Admin and Driver accounts must be created by administrators.
+
+### Profile Management
+
+Students can update their profile including:
+* **Name and Phone**
+* **Bus Assignment** - Select their assigned bus
+* **Stop Selection** - Choose their pickup/drop-off stop
+* **Push Notification Preferences** - Customize proximity alerts
+
+## 🔐 Role-Based Access
+
+| Role | Access |
+|------|--------|
+| **Admin** | Full access: Route Designer, Bus Management, Fleet Map, Analytics |
+| **Driver** | Dashboard, Trip Start/End, SOS, Simulation Mode |
+| **Student** | Dashboard, ETA, Notifications, Profile Settings |

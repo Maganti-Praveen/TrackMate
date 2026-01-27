@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useSocket } from '../hooks/useSocket';
-import { 
+import {
   Bus, Users, UserCheck, Navigation, Clock, MapPin,
-  AlertTriangle, RefreshCw, Trash2, ChevronRight, Activity, Octagon
+  AlertTriangle, RefreshCw, Trash2, ChevronRight, Activity, Octagon, Map, Download
 } from 'lucide-react';
+import AdminMap from '../components/AdminMap';
 
 // ===== COMPONENTS =====
 
@@ -16,7 +17,7 @@ const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
     orange: 'bg-orange-500/20 text-orange-400',
     purple: 'bg-purple-500/20 text-purple-400',
   };
-  
+
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
@@ -90,6 +91,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [clearing, setClearing] = useState(false);
+  const [liveBuses, setLiveBuses] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
 
   const socketHandlers = useMemo(() => ({
     'trip:sos': setSosAlert,
@@ -107,14 +110,16 @@ const AdminDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, tripsRes, eventsRes] = await Promise.all([
+      const [statsRes, tripsRes, eventsRes, analyticsRes] = await Promise.all([
         api.get('/admin/dashboard'),
         api.get('/admin/trips'),
-        api.get('/admin/events')
+        api.get('/admin/events'),
+        api.get('/admin/analytics').catch(() => ({ data: null }))
       ]);
       setStats(statsRes.data);
       setTrips(tripsRes.data);
       setEvents(eventsRes.data);
+      if (analyticsRes.data) setAnalytics(analyticsRes.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load dashboard');
     } finally {
@@ -123,6 +128,19 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Fetch live bus positions every 5 seconds
+  useEffect(() => {
+    const fetchLiveBuses = async () => {
+      try {
+        const res = await api.get('/admin/live-buses');
+        setLiveBuses(res.data);
+      } catch { }
+    };
+    fetchLiveBuses();
+    const interval = setInterval(fetchLiveBuses, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleClearEvents = async () => {
     if (!confirm('Clear all stop events?')) return;
@@ -208,6 +226,12 @@ const AdminDashboard = () => {
           <StatCard icon={UserCheck} label="Drivers" value={stats.driverCount} color="emerald" />
           <StatCard icon={Users} label="Students" value={stats.studentCount} color="orange" />
           <StatCard icon={Navigation} label="Active Trips" value={stats.activeTrips} color="purple" />
+          {analytics && (
+            <>
+              <StatCard icon={Clock} label="Avg Trip Duration" value={`${analytics.averageDurationMinutes} min`} color="emerald" />
+              <StatCard icon={MapPin} label="Today's Events" value={analytics.todayEvents} color="orange" />
+            </>
+          )}
         </section>
 
         {/* Quick Links */}
@@ -220,6 +244,41 @@ const AdminDashboard = () => {
             <QuickLink to="/admin/stops" icon={Octagon} label="Manage Stops" />
             <QuickLink to="/admin/students" icon={Users} label="Manage Students" />
             <QuickLink to="/admin/assignments" icon={MapPin} label="Assignments" />
+          </div>
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <button
+              onClick={() => {
+                const token = sessionStorage.getItem('tm_token');
+                // Use direct URL to backend, bypassing React Router
+                const baseUrl = window.location.hostname === 'localhost'
+                  ? 'http://localhost:5000'
+                  : window.location.hostname.startsWith('192.168')
+                    ? `http://${window.location.hostname}:5000`
+                    : 'https://trackmate-backend-ew4v.onrender.com';
+                window.open(`${baseUrl}/api/admin/export-trips?days=30&token=${token}`, '_blank');
+              }}
+              className="w-full flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition group"
+            >
+              <div className="p-2 rounded-lg bg-emerald-500/20">
+                <Download className="w-5 h-5 text-emerald-400" />
+              </div>
+              <span className="flex-1 text-left text-white font-medium">Export Trip History (CSV)</span>
+              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition" />
+            </button>
+          </div>
+        </section>
+
+        {/* Live Fleet Map */}
+        <section className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Map className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-lg font-semibold text-white">Live Fleet Map</h2>
+            </div>
+            <span className="text-xs text-slate-500">{liveBuses.length} buses active</span>
+          </div>
+          <div className="h-80 rounded-xl overflow-hidden">
+            <AdminMap buses={liveBuses} sosTrips={sosAlert ? [sosAlert] : []} />
           </div>
         </section>
 

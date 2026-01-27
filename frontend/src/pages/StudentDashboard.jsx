@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { 
-  MapPin, Navigation, Bell, BellOff, RefreshCw, Phone, 
-  ChevronRight, AlertTriangle, Gauge, Clock, Bus, Volume2
+import {
+  MapPin, Navigation, Bell, BellOff, RefreshCw, Phone,
+  ChevronRight, AlertTriangle, Gauge, Clock, Bus, Volume2, Settings
 } from 'lucide-react';
 import StudentMap from '../components/StudentMap';
 import { useSocket } from '../hooks/useSocket';
@@ -110,14 +110,24 @@ const StudentDashboard = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() => 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
     localStorage.getItem(NOTIFICATION_PREF_KEY) === 'true'
   );
-  const [permission, setPermission] = useState(() => 
+  const [permission, setPermission] = useState(() =>
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
+  const [showSettings, setShowSettings] = useState(false);
+  const [preferences, setPreferences] = useState({
+    enabled: true,
+    proximityMinutes: 5,
+    proximityMeters: 500,
+    arrivalAlert: true
+  });
+  // Track when bus has departed from student's stop
+  const [stopDepartedInfo, setStopDepartedInfo] = useState(null);
 
   const subscribedTripRef = useRef(null);
+  const previousTripIdRef = useRef(null);
 
   // Socket handlers
   const handleLocationUpdate = useCallback((payload) => {
@@ -132,13 +142,13 @@ const StudentDashboard = () => {
   const handleEtaUpdate = useCallback((payload) => {
     if (!payload || !stopInfo) return;
     const targetSeq = String(stopInfo?.seq ?? stopInfo?.sequence ?? '');
-    
+
     // Try etasMap first
     if (payload?.etasMap && typeof payload.etasMap[targetSeq] === 'number') {
       setEta({ value: payload.etasMap[targetSeq], source: 'server', updatedAt: Date.now() });
       return;
     }
-    
+
     // Try etas array
     if (Array.isArray(payload?.etas)) {
       const match = payload.etas.find(e => String(e.stopId) === targetSeq);
@@ -152,15 +162,42 @@ const StudentDashboard = () => {
     const event = {
       type,
       stopName: payload?.stopName || `Stop ${payload?.stopIndex ?? ''}`,
+      stopIndex: payload?.stopIndex,
       timestamp: payload?.timestamp || Date.now()
     };
     setHistoryEvents(prev => [event, ...prev].slice(0, 5));
-    toast[type === 'ARRIVED' ? 'success' : 'custom'](
-      `Bus ${type === 'ARRIVED' ? 'arrived at' : 'left'} ${event.stopName}`,
-      { icon: type === 'ARRIVED' ? '📍' : '🚌' }
-    );
+
+    // Check if this is the student's stop
+    const studentStopSeq = stopInfo?.seq ?? stopInfo?.sequence;
+    const isMyStop = studentStopSeq != null && payload?.stopIndex === studentStopSeq;
+
+    if (isMyStop) {
+      if (type === 'ARRIVED') {
+        // Bus arrived at student's stop
+        setStopDepartedInfo(prev => ({
+          ...prev,
+          arrivedAt: event.timestamp,
+          stopName: event.stopName
+        }));
+        toast.success(`Bus has arrived at your stop!`, { icon: '🎉', duration: 5000 });
+      } else if (type === 'LEFT') {
+        // Bus left student's stop - switch to departed mode
+        setStopDepartedInfo(prev => ({
+          ...prev,
+          departedAt: event.timestamp,
+          stopName: event.stopName,
+          hasDeparted: true
+        }));
+        toast('Bus has departed from your stop', { icon: '🚌', duration: 5000 });
+      }
+    } else {
+      toast[type === 'ARRIVED' ? 'success' : 'custom'](
+        `Bus ${type === 'ARRIVED' ? 'arrived at' : 'left'} ${event.stopName}`,
+        { icon: type === 'ARRIVED' ? '📍' : '🚌' }
+      );
+    }
     fetchProfile();
-  }, []);
+  }, [stopInfo]);
 
   const socketHandlers = useMemo(() => ({
     'trip:location_update': handleLocationUpdate,
@@ -180,14 +217,23 @@ const StudentDashboard = () => {
     try {
       const response = await api.get('/students/me').catch(() => api.get('/auth/me'));
       const data = response.data;
-      
+
       setProfile({ ...user, ...data });
       setStopInfo(normalizeStop(data));
       setBusPosition(normalizeLocation(normalizeBus(data)?.lastKnownLocation));
 
       const tripRes = await api.get('/students/trip').catch(() => ({ data: null }));
       if (tripRes.data) {
-        setTripId(tripRes.data._id);
+        const newTripId = tripRes.data._id;
+
+        // Reset departed state if this is a new/different trip
+        if (newTripId !== previousTripIdRef.current) {
+          setStopDepartedInfo(null);
+          setHistoryEvents([]);
+        }
+
+        previousTripIdRef.current = newTripId;
+        setTripId(newTripId);
         setJourney({
           currentStop: tripRes.data.currentStop,
           nextStop: tripRes.data.nextStop,
@@ -196,15 +242,29 @@ const StudentDashboard = () => {
         if (tripRes.data.driver) setDriverInfo(tripRes.data.driver);
         const livePos = normalizeLocation(tripRes.data?.bus?.lastKnownLocation);
         if (livePos) setBusPosition(livePos);
+
+        setStatusMessage('Live tracking active');
+      } else {
+        // No active trip - reset all trip-related state
+        if (previousTripIdRef.current) {
+          previousTripIdRef.current = null;
+          setTripId(null);
+          setStopDepartedInfo(null);
+          setHistoryEvents([]);
+          setEta(null);
+          setBusPosition(null);
+          setJourney(null);
+        }
+        setStatusMessage('Waiting for driver to start trip');
       }
 
-      // Fetch ETA
-      const etaRes = await api.get('/students/eta').catch(() => ({ data: {} }));
-      if (typeof etaRes.data?.etaMinutes === 'number') {
-        setEta({ value: etaRes.data.etaMinutes * 60 * 1000, source: 'server', updatedAt: Date.now() });
+      // Fetch ETA only if there's an active trip
+      if (tripRes.data) {
+        const etaRes = await api.get('/students/eta').catch(() => ({ data: {} }));
+        if (typeof etaRes.data?.etaMinutes === 'number') {
+          setEta({ value: etaRes.data.etaMinutes * 60 * 1000, source: 'server', updatedAt: Date.now() });
+        }
       }
-
-      setStatusMessage(tripRes.data ? 'Live tracking active' : 'Waiting for trip to start');
     } catch (err) {
       setError('Failed to load dashboard');
     } finally {
@@ -249,7 +309,7 @@ const StudentDashboard = () => {
       const reg = await navigator.serviceWorker.ready;
       const existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
-      
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -268,11 +328,31 @@ const StudentDashboard = () => {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) await sub.unsubscribe();
-    } catch {}
+    } catch { }
     setNotificationsEnabled(false);
     localStorage.setItem(NOTIFICATION_PREF_KEY, 'false');
     toast('Notifications disabled', { icon: '🔕' });
   };
+
+  // Fetch and save notification preferences
+  const fetchPreferences = async () => {
+    try {
+      const res = await api.get('/students/preferences');
+      setPreferences(res.data);
+    } catch { }
+  };
+
+  const savePreferences = async (newPrefs) => {
+    try {
+      await api.put('/students/preferences', newPrefs);
+      setPreferences(prev => ({ ...prev, ...newPrefs }));
+      toast.success('Preferences saved');
+    } catch {
+      toast.error('Failed to save preferences');
+    }
+  };
+
+  useEffect(() => { fetchPreferences(); }, []);
 
   const speakStatus = () => {
     if (!('speechSynthesis' in window)) return;
@@ -330,6 +410,74 @@ const StudentDashboard = () => {
         </div>
       )}
 
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="card-elevated p-6 max-w-sm w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Alert Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Proximity Minutes */}
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">
+                  Alert when bus is within: <span className="text-indigo-400 font-bold">{preferences.proximityMinutes} min</span>
+                </label>
+                <input
+                  type="range"
+                  min="1" max="30"
+                  value={preferences.proximityMinutes}
+                  onChange={(e) => setPreferences(p => ({ ...p, proximityMinutes: Number(e.target.value) }))}
+                  className="w-full accent-indigo-500"
+                />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>1 min</span><span>15 min</span><span>30 min</span>
+                </div>
+              </div>
+
+              {/* Proximity Meters */}
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">
+                  Or within: <span className="text-indigo-400 font-bold">{preferences.proximityMeters}m</span>
+                </label>
+                <input
+                  type="range"
+                  min="100" max="2000" step="100"
+                  value={preferences.proximityMeters}
+                  onChange={(e) => setPreferences(p => ({ ...p, proximityMeters: Number(e.target.value) }))}
+                  className="w-full accent-indigo-500"
+                />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>100m</span><span>1km</span><span>2km</span>
+                </div>
+              </div>
+
+              {/* Arrival Alert Toggle */}
+              <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                <span className="text-white">Arrival alerts</span>
+                <button
+                  onClick={() => setPreferences(p => ({ ...p, arrivalAlert: !p.arrivalAlert }))}
+                  className={`w-12 h-7 rounded-full transition-colors ${preferences.arrivalAlert ? 'bg-indigo-500' : 'bg-slate-700'}`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${preferences.arrivalAlert ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { savePreferences(preferences); setShowSettings(false); }}
+              className="w-full mt-6 py-3 bg-indigo-500 text-white font-medium rounded-xl hover:bg-indigo-600 transition"
+            >
+              Save Preferences
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
@@ -349,77 +497,142 @@ const StudentDashboard = () => {
         <div className="card-elevated p-6 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10" />
           <div className="relative">
-            <p className="text-slate-400 text-sm mb-2">Estimated Arrival</p>
-            <p className="text-4xl md:text-5xl font-bold text-white mb-2">{formattedEta}</p>
-            <p className="text-slate-400 text-sm">
-              to <span className="text-indigo-400 font-medium">{stopInfo?.name || 'your stop'}</span>
-            </p>
-            {tripId && (
-              <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-center gap-4 text-sm">
-                <span className="text-slate-400">Progress:</span>
-                <div className="flex-1 max-w-32 h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                    style={{ width: `${journey?.progress?.percentage || 0}%` }}
-                  />
+            {!tripId ? (
+              /* No active trip - waiting for driver */
+              <>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <span className="px-3 py-1 rounded-full bg-slate-500/20 text-slate-400 text-xs font-medium">
+                    Waiting
+                  </span>
                 </div>
-                <span className="text-white font-medium">{journey?.progress?.percentage || 0}%</span>
-              </div>
+                <p className="text-2xl md:text-3xl font-bold text-slate-400 mb-2">
+                  🚌 No Active Trip
+                </p>
+                <p className="text-slate-500 text-sm mb-4">
+                  Waiting for driver to start the trip
+                </p>
+                <div className="p-4 rounded-xl bg-white/5 text-center">
+                  <p className="text-slate-400 text-sm">
+                    Your bus will appear here once the driver begins the route
+                  </p>
+                </div>
+              </>
+            ) : stopDepartedInfo?.hasDeparted ? (
+              /* Bus has departed - show post-event state */
+              <>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <span className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-medium">
+                    Departed
+                  </span>
+                </div>
+                <p className="text-2xl md:text-3xl font-bold text-white mb-2">
+                  🚌 Bus has departed
+                </p>
+                <p className="text-slate-400 text-sm mb-4">
+                  from <span className="text-orange-400 font-medium">{stopDepartedInfo.stopName || stopInfo?.name}</span>
+                </p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {stopDepartedInfo.arrivedAt && (
+                    <div className="p-3 rounded-xl bg-white/5">
+                      <p className="text-slate-400 text-xs mb-1">Arrived at</p>
+                      <p className="text-white font-medium">
+                        {new Date(stopDepartedInfo.arrivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  )}
+                  {stopDepartedInfo.departedAt && (
+                    <div className="p-3 rounded-xl bg-white/5">
+                      <p className="text-slate-400 text-xs mb-1">Departed at</p>
+                      <p className="text-white font-medium">
+                        {new Date(stopDepartedInfo.departedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-slate-500 text-xs mt-4 text-center">
+                  📍 Bus is continuing on route — see map below
+                </p>
+              </>
+            ) : (
+              /* Normal ETA display */
+              <>
+                <p className="text-slate-400 text-sm mb-2">Estimated Arrival</p>
+                <p className="text-4xl md:text-5xl font-bold text-white mb-2">{formattedEta}</p>
+                <p className="text-slate-400 text-sm">
+                  to <span className="text-indigo-400 font-medium">{stopInfo?.name || 'your stop'}</span>
+                </p>
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-center gap-4 text-sm">
+                  <span className="text-slate-400">Progress:</span>
+                  <div className="flex-1 max-w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                      style={{ width: `${journey?.progress?.percentage || 0}%` }}
+                    />
+                  </div>
+                  <span className="text-white font-medium">{journey?.progress?.percentage || 0}%</span>
+                </div>
+              </>
             )}
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard 
-            icon={Bus} 
-            label="Bus" 
-            value={profile?.bus?.name || 'N/A'} 
+          <StatCard
+            icon={Bus}
+            label="Bus"
+            value={profile?.bus?.name || 'N/A'}
             subtext={profile?.bus?.numberPlate}
           />
-          <StatCard 
-            icon={Gauge} 
-            label="Speed" 
-            value={`${Math.round(busSpeed * 3.6)} km/h`} 
+          <StatCard
+            icon={Gauge}
+            label="Speed"
+            value={`${Math.round(busSpeed * 3.6)} km/h`}
             subtext="Real-time"
             highlight={busSpeed > 0}
           />
-          <StatCard 
-            icon={MapPin} 
-            label="Your Stop" 
-            value={stopInfo?.name || 'Not assigned'} 
+          <StatCard
+            icon={MapPin}
+            label="Your Stop"
+            value={stopInfo?.name || 'Not assigned'}
             subtext={`Stop #${stopInfo?.seq || '—'}`}
           />
-          <StatCard 
-            icon={Clock} 
-            label="Status" 
-            value={tripId ? 'Active' : 'Waiting'} 
-            subtext={statusMessage}
+          <StatCard
+            icon={Clock}
+            label="Status"
+            value={stopDepartedInfo?.hasDeparted ? 'Departed' : tripId ? 'Active' : 'Waiting'}
+            subtext={stopDepartedInfo?.hasDeparted ? 'Bus passed your stop' : statusMessage}
+            highlight={stopDepartedInfo?.hasDeparted}
           />
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-4 gap-2">
-          <QuickAction 
-            icon={RefreshCw} 
-            label="Refresh" 
+          <QuickAction
+            icon={RefreshCw}
+            label="Refresh"
             onClick={fetchProfile}
           />
-          <QuickAction 
-            icon={Volume2} 
-            label="Speak" 
+          <QuickAction
+            icon={Volume2}
+            label="Speak"
             onClick={speakStatus}
           />
-          <QuickAction 
-            icon={notificationsEnabled ? Bell : BellOff} 
+          <QuickAction
+            icon={notificationsEnabled ? Bell : BellOff}
             label={notificationsEnabled ? 'Alerts On' : 'Alerts Off'}
             onClick={notificationsEnabled ? disableNotifications : enableNotifications}
             variant={notificationsEnabled ? 'primary' : 'default'}
           />
+          <QuickAction
+            icon={Settings}
+            label="Settings"
+            onClick={() => setShowSettings(true)}
+          />
           {driverInfo?.phone && (
-            <QuickAction 
-              icon={Phone} 
-              label="Call" 
+            <QuickAction
+              icon={Phone}
+              label="Call"
               onClick={() => window.location.href = `tel:${driverInfo.phone}`}
               variant="primary"
             />
@@ -445,7 +658,7 @@ const StudentDashboard = () => {
                 <p className="text-slate-400 text-sm">Your Driver</p>
               </div>
               {driverInfo.phone && (
-                <a 
+                <a
                   href={`tel:${driverInfo.phone}`}
                   className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition"
                 >

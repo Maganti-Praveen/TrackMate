@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
-import { 
-  User, Phone, Lock, Shield, Save, Eye, EyeOff, 
-  CheckCircle, AlertCircle
+import {
+  User, Phone, Lock, Shield, Save, Eye, EyeOff,
+  Bus, MapPin
 } from 'lucide-react';
 import NotificationToggle from '../components/NotificationToggle';
 
@@ -22,6 +22,12 @@ const Profile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Bus/Stop selection state (students only)
+  const [buses, setBuses] = useState([]);
+  const [selectedBusId, setSelectedBusId] = useState('');
+  const [selectedStopSeq, setSelectedStopSeq] = useState('');
+  const [currentAssignment, setCurrentAssignment] = useState(null);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -32,11 +38,40 @@ const Profile = () => {
         currentPassword: '',
         password: ''
       });
+
+      // Fetch buses and current assignment for students
+      if (user.role === 'student') {
+        fetchBusesAndAssignment();
+      }
     }
   }, [user]);
 
+  const fetchBusesAndAssignment = async () => {
+    try {
+      const [busesRes, assignmentRes] = await Promise.all([
+        api.get('/students/buses'),
+        api.get('/students/assignment')
+      ]);
+
+      setBuses(busesRes.data || []);
+
+      if (assignmentRes.data) {
+        setCurrentAssignment(assignmentRes.data);
+        setSelectedBusId(assignmentRes.data.bus?._id || '');
+        setSelectedStopSeq(assignmentRes.data.stop?.seq?.toString() || assignmentRes.data.stop?.sequence?.toString() || '');
+      }
+    } catch (err) {
+      console.error('Failed to fetch buses:', err);
+    }
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleBusChange = (e) => {
+    setSelectedBusId(e.target.value);
+    setSelectedStopSeq(''); // Reset stop when bus changes
   };
 
   const handleSubmit = async (e) => {
@@ -59,7 +94,17 @@ const Profile = () => {
     }
 
     try {
+      // Update profile
       await api.put('/auth/profile', payload);
+
+      // Update bus assignment for students
+      if (formData.role === 'student' && selectedBusId) {
+        await api.put('/students/assignment', {
+          busId: selectedBusId,
+          stopSeq: selectedStopSeq ? parseInt(selectedStopSeq) : null
+        });
+      }
+
       toast.success('Profile updated successfully!');
       setFormData(prev => ({ ...prev, currentPassword: '', password: '' }));
     } catch (error) {
@@ -78,6 +123,10 @@ const Profile = () => {
     };
     return styles[role] || 'bg-slate-500/20 text-slate-400';
   };
+
+  // Get stops for selected bus
+  const selectedBus = buses.find(b => b._id === selectedBusId);
+  const availableStops = selectedBus?.route?.stops || [];
 
   return (
     <main className="min-h-screen pb-24 md:pb-8">
@@ -113,7 +162,7 @@ const Profile = () => {
           {/* Personal Info */}
           <div className="card p-5 space-y-4">
             <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Personal Information</h2>
-            
+
             <div>
               <label className="text-sm text-slate-300 mb-1.5 block">Full Name</label>
               <div className="relative">
@@ -145,13 +194,72 @@ const Profile = () => {
             </div>
           </div>
 
+          {/* Bus & Stop Selection - Students Only */}
+          {formData.role === 'student' && (
+            <div className="card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Bus className="w-4 h-4 text-indigo-400" />
+                <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Bus Assignment</h2>
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-300 mb-1.5 block">Select Bus</label>
+                <div className="relative">
+                  <Bus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    value={selectedBusId}
+                    onChange={handleBusChange}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
+                  >
+                    <option value="">Select a bus...</option>
+                    {buses.map(bus => (
+                      <option key={bus._id} value={bus._id}>
+                        {bus.name} ({bus.numberPlate}) {bus.route ? `- ${bus.route.name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {availableStops.length > 0 && (
+                <div>
+                  <label className="text-sm text-slate-300 mb-1.5 block">Select Your Stop</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <select
+                      value={selectedStopSeq}
+                      onChange={(e) => setSelectedStopSeq(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
+                    >
+                      <option value="">Select your stop...</option>
+                      {availableStops.map(stop => (
+                        <option key={stop._id} value={stop.seq}>
+                          Stop #{stop.seq}: {stop.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {currentAssignment && (
+                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                  <p className="text-xs text-indigo-300">
+                    Current: <strong>{currentAssignment.bus?.name}</strong>
+                    {currentAssignment.stop?.name && ` → ${currentAssignment.stop.name}`}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Change Password */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-slate-400" />
               <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Change Password</h2>
             </div>
-            
+
             <div>
               <label className="text-sm text-slate-300 mb-1.5 block">Current Password</label>
               <div className="relative">
@@ -231,3 +339,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

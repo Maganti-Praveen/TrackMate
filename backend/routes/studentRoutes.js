@@ -5,7 +5,11 @@ const {
   getAssignment,
   getEta,
   registerNotificationToken,
-  getLiveTrip
+  getLiveTrip,
+  updateNotificationPreferences,
+  getNotificationPreferences,
+  updateMyAssignment,
+  getBusesWithRoutes
 } = require('../controllers/studentController');
 
 const router = express.Router();
@@ -17,5 +21,9 @@ router.get('/me', getAssignment);
 router.get('/eta', getEta);
 router.get('/trip', getLiveTrip);
 router.post('/notifications', registerNotificationToken);
+router.get('/preferences', getNotificationPreferences);
+router.put('/preferences', updateNotificationPreferences);
+router.get('/buses', getBusesWithRoutes);
+router.put('/assignment', updateMyAssignment);
 
 module.exports = router;

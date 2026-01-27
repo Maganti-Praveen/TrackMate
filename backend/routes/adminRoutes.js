@@ -28,6 +28,8 @@ const {
 const router = express.Router();
 
 router.get('/fix-data', fixStudentData);
+// Export route before auth middleware - handles its own token auth for browser downloads
+router.get('/export-trips', require('../controllers/adminController').exportTripsCSV);
 
 router.use(authMiddleware, roleMiddleware('admin'));
 
@@ -37,6 +39,8 @@ router.get('/assignments', getAssignments);
 router.put('/assignments/:id', updateAssignment);
 router.delete('/assignments/:id', deleteAssignment);
 router.get('/trips', getActiveTrips);
+router.get('/live-buses', require('../controllers/adminController').getLiveBusPositions);
+router.get('/analytics', require('../controllers/adminController').getTripAnalytics);
 router.get('/events', getEventHistory);
 router.delete('/events', clearEvents);
 router.post('/drivers', createDriverAccount);
