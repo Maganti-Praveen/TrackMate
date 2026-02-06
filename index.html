@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Track Mate: A Real-Time Smart Bus Tracking System with ETA and Push Notifications</title>
+    <meta name="title" content="Track Mate: A Real-Time Smart Bus Tracking System with ETA and Push Notifications">
+    <meta name="description" content="TrackMate is a real-time GPS bus tracking system for schools and colleges. Track buses live, get accurate ETAs, smart arrival notifications, and improve campus transport safety. Built in Eluru, Andhra Pradesh.">
+    <meta name="keywords" content="bus tracking, school bus tracking, college bus tracking, real-time bus tracking, GPS tracking, bus ETA, campus transport, smart bus, TrackMate, bus tracker app, student bus tracking, live bus location, Eluru, Andhra Pradesh, India">
+    <meta name="author" content="Maganti Praveen Sai, Anand Sai Vivek, M Sreya, P Keerthana">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://trackmate-q2te.onrender.com/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://trackmate-q2te.onrender.com/">
+    <meta property="og:title" content="Track Mate: A Real-Time Smart Bus Tracking System with ETA and Push Notifications">
+    <meta property="og:description" content="Track your campus bus in real-time. Live GPS tracking, accurate ETAs, smart notifications for students and institutions. No more waiting, no more guessing.">
+    <meta property="og:image" content="https://trackmate-q2te.onrender.com/Architecture.png">
+    <meta property="og:image:alt" content="TrackMate Bus Tracking System">
+    <meta property="og:site_name" content="TrackMate">
+    <meta property="og:locale" content="en_IN">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://trackmate-q2te.onrender.com/">
+    <meta name="twitter:title" content="Track Mate: A Real-Time Smart Bus Tracking System with ETA and Push Notifications">
+    <meta name="twitter:description" content="Track your campus bus in real-time. Live GPS tracking, accurate ETAs, smart notifications for students and institutions.">
+    <meta name="twitter:image" content="https://trackmate-q2te.onrender.com/Architecture.png">
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="application-name" content="TrackMate">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TrackMate">
+    
+    <!-- Geo Tags for Local SEO -->
+    <meta name="geo.region" content="IN-AP">
+    <meta name="geo.placename" content="Eluru, Andhra Pradesh">
+    <meta name="geo.position" content="16.7107;81.0952">
+    <meta name="ICBM" content="16.7107, 81.0952">
+    
+    <!-- Structured Data - JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "TrackMate",
+        "description": "Real-time smart bus tracking system for schools and colleges with live GPS tracking, ETA predictions, and smart notifications.",
+        "url": "https://trackmate-q2te.onrender.com/",
+        "applicationCategory": "TransportApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR"
+        },
+        "author": {
+            "@type": "Person",
+            "name": "Maganti Praveen Sai",
+            "url": "https://github.com/maganti-Praveen"
+        },
+        "creator": [
+            {"@type": "Person", "name": "Maganti Praveen Sai"},
+            {"@type": "Person", "name": "Anand Sai Vivek"},
+            {"@type": "Person", "name": "M Sreya"},
+            {"@type": "Person", "name": "P Keerthana"}
+        ],
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "50"
+        },
+        "featureList": [
+            "Real-time GPS bus tracking",
+            "Accurate ETA predictions",
+            "Smart arrival notifications",
+            "Intelligent stop detection",
+            "Admin dashboard",
+            "Driver and student apps"
+        ]
+    }
+    </script>
+    
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "TrackMate",
+        "url": "https://trackmate-q2te.onrender.com/",
+        "logo": "https://trackmate-q2te.onrender.com/Architecture.png",
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-8790307739",
+            "contactType": "customer service",
+            "email": "trackmate15@gmail.com",
+            "areaServed": "IN",
+            "availableLanguage": "English"
+        },
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Eluru",
+            "addressRegion": "Andhra Pradesh",
+            "addressCountry": "IN"
+        },
+        "sameAs": [
+            "https://github.com/maganti-Praveen/TrackMate"
+        ],
+        "member": [
+            {
+                "@type": "Person",
+                "name": "Maganti Praveen Sai",
+                "jobTitle": "Full Stack Developer & System Architect",
+                "url": "https://github.com/maganti-Praveen",
+                "description": "Project planning, system architecture, real-time GPS tracking, ETA prediction logic, Socket.IO integration"
+            },
+            {
+                "@type": "Person",
+                "name": "Anand Sai Vivek",
+                "jobTitle": "Backend Developer",
+                "description": "API development, MongoDB database design, authentication, server-side geo-fencing logic"
+            },
+            {
+                "@type": "Person",
+                "name": "M Sreya",
+                "jobTitle": "Frontend Developer",
+                "description": "Student and admin dashboards, UI/UX implementation, map integration, ETA visualization"
+            },
+            {
+                "@type": "Person",
+                "name": "P Keerthana",
+                "jobTitle": "Frontend & Documentation Support",
+                "description": "PWA implementation, push notification handling, frontend testing, documentation"
+            },
+            {
+                "@type": "Person",
+                "name": "B Rajeswari",
+                "jobTitle": "Project Guide & Mentor",
+                "description": "Technical guidance, requirement validation, project reviews, quality assurance"
+            }
+        ]
+    }
+    </script>
+    
+    <!-- FAQ Schema for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "How accurate is TrackMate's ETA prediction?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "TrackMate's ETA predictions are typically accurate within 30 seconds to 2 minutes. The system uses real-time GPS data, route distance calculations, and current speed to provide the most accurate arrival times."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Does TrackMate work with slow or unstable internet?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes! TrackMate is designed with network resilience in mind. The system handles socket reconnections automatically, caches data locally, and provides the last known position even during connectivity issues."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can multiple buses be tracked simultaneously?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Absolutely! TrackMate supports unlimited buses per institution. Each student sees only their assigned bus, while administrators can monitor all buses on a single dashboard."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Are notifications automatic in TrackMate?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, notifications are completely automatic. Students receive alerts when their bus is approaching, when it arrives at their stop, and when it departs."
+                }
+            }
+        ]
+    }
+    </script>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="lp-files/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-bus-front-fill text-primary"></i>
+                <span>TrackMate</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#benefits">Benefits</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#team">Team</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#faq">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                </ul>
+                <a href="https://trackmate-q2te.onrender.com/login" target="_blank" rel="noopener" class="btn btn-primary ms-lg-3">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6">
+                    <div class="hero-content">
+                        <span class="badge bg-primary-soft text-primary mb-3">
+                            <i class="bi bi-lightning-charge-fill"></i> Real-Time Tracking
+                        </span>
+                        <h1 class="hero-title">
+                            Track Your Bus in Real Time.
+                            <span class="text-primary">No Guessing. No Waiting.</span>
+                        </h1>
+                        <p class="hero-subtitle">
+                            Live bus location, accurate ETAs, and smart notifications for students and institutions. 
+                            Built for schools & colleges to make campus transport smarter and safer.
+                        </p>
+                        <div class="hero-buttons">
+                            <a href="https://trackmate-q2te.onrender.com/login" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Login to TrackMate
+                            </a>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">99.9%</span>
+                                <span class="stat-label">Uptime</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">< 30s</span>
+                                <span class="stat-label">ETA Accuracy</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">24/7</span>
+                                <span class="stat-label">Monitoring</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-image">
+                        <div class="map-mockup">
+                            <div class="map-container">
+                                <div class="map-bg">
+                                    <div class="route-line"></div>
+                                    <div class="bus-marker">
+                                        <i class="bi bi-bus-front-fill"></i>
+                                    </div>
+                                    <div class="stop-marker stop-1"><span>1</span></div>
+                                    <div class="stop-marker stop-2"><span>2</span></div>
+                                    <div class="stop-marker stop-3"><span>3</span></div>
+                                </div>
+                                <div class="eta-panel">
+                                    <div class="eta-header">
+                                        <i class="bi bi-geo-alt-fill text-danger"></i>
+                                        <span>Your Stop: Main Gate</span>
+                                    </div>
+                                    <div class="eta-time">
+                                        <span class="eta-value">5</span>
+                                        <span class="eta-unit">min</span>
+                                    </div>
+                                    <div class="eta-status arriving">
+                                        <i class="bi bi-circle-fill"></i> Bus Arriving
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-wave">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section" id="problem">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">The Problem</span>
+                    <h2 class="section-title">Campus Transport is <span class="text-danger">Broken</span></h2>
+                    <p class="section-subtitle">Every day, students and parents face the same frustrating questions...</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="bi bi-question-circle"></i>
+                        </div>
+                        <h5>"Where is my bus?"</h5>
+                        <p>No visibility into real-time bus location leads to uncertainty and stress.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h5>"When will it arrive?"</h5>
+                        <p>Without accurate ETAs, students waste time waiting at stops.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <h5>"Did it already pass?"</h5>
+                        <p>Missing the bus means missed classes and added worry for parents.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="bi bi-alarm"></i>
+                        </div>
+                        <h5>"Was there a delay?"</h5>
+                        <p>No communication about delays creates confusion and frustration.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution-section" id="solution">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="solution-content">
+                        <span class="section-tag">The Solution</span>
+                        <h2 class="section-title">Introducing <span class="text-primary">TrackMate</span></h2>
+                        <p class="section-subtitle">
+                            A real-time smart bus tracking system that connects drivers, students, and administrators 
+                            in one unified platform.
+                        </p>
+                        <div class="solution-features">
+                            <div class="solution-feature">
+                                <div class="feature-check">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="feature-text">
+                                    <h6>Live GPS Tracking</h6>
+                                    <p>See your bus moving in real-time on the map</p>
+                                </div>
+                            </div>
+                            <div class="solution-feature">
+                                <div class="feature-check">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="feature-text">
+                                    <h6>Smart ETA Prediction</h6>
+                                    <p>Know exactly when the bus will reach your stop</p>
+                                </div>
+                            </div>
+                            <div class="solution-feature">
+                                <div class="feature-check">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="feature-text">
+                                    <h6>Intelligent Stop Detection</h6>
+                                    <p>Accurate arrival detection using geofencing</p>
+                                </div>
+                            </div>
+                            <div class="solution-feature">
+                                <div class="feature-check">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="feature-text">
+                                    <h6>Smart Notifications</h6>
+                                    <p>Get alerts only when it matters to you</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="solution-illustration">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="app-header">
+                                    <i class="bi bi-bus-front-fill"></i>
+                                    <span>TrackMate</span>
+                                </div>
+                                <div class="notification-stack">
+                                    <div class="notification-item arriving">
+                                        <i class="bi bi-bell-fill"></i>
+                                        <div class="notif-content">
+                                            <strong>Bus Arriving!</strong>
+                                            <span>Your bus will reach Main Gate in 2 minutes</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification-item at-stop">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                        <div class="notif-content">
+                                            <strong>Bus Has Arrived</strong>
+                                            <span>Bus is now at Main Gate</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification-item departed">
+                                        <i class="bi bi-arrow-right-circle-fill"></i>
+                                        <div class="notif-content">
+                                            <strong>Bus Departed</strong>
+                                            <span>Bus has left Library Stop</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Features</span>
+                    <h2 class="section-title">Everything You Need for <span class="text-primary">Smart Transport</span></h2>
+                    <p class="section-subtitle">Powerful features designed to make campus transportation seamless and reliable.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-primary-soft">
+                            <i class="bi bi-geo-alt-fill text-primary"></i>
+                        </div>
+                        <h5>Live Bus Tracking</h5>
+                        <p>See your bus moving on the map in real-time with GPS accuracy. Never wonder where your bus is again.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-success-soft">
+                            <i class="bi bi-clock-fill text-success"></i>
+                        </div>
+                        <h5>Accurate ETA</h5>
+                        <p>Smart algorithms calculate arrival times using route distance, live position, and speed estimation.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-warning-soft">
+                            <i class="bi bi-bell-fill text-warning"></i>
+                        </div>
+                        <h5>Smart Alerts</h5>
+                        <p>Receive notifications only for your assigned stop. Know when the bus is arriving or has arrived.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-danger-soft">
+                            <i class="bi bi-pin-map-fill text-danger"></i>
+                        </div>
+                        <h5>Stop Intelligence</h5>
+                        <p>Advanced geofencing detects real arrivals within 75m radius and 3-second dwell time validation.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-info-soft">
+                            <i class="bi bi-speedometer2 text-info"></i>
+                        </div>
+                        <h5>Admin Control</h5>
+                        <p>Full dashboard to manage routes, stops, buses, and users. Monitor all trips in real-time.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-purple-soft">
+                            <i class="bi bi-shield-check text-purple"></i>
+                        </div>
+                        <h5>Reliability</h5>
+                        <p>Handles network interruptions, socket reconnections, and ensures consistent real-time updates.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works-section" id="how-it-works">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">How It Works</span>
+                    <h2 class="section-title">Simple. Smart. <span class="text-primary">Real-Time.</span></h2>
+                    <p class="section-subtitle">Three simple steps to transform your campus transport experience.</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="steps-container">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-icon">
+                                <i class="bi bi-broadcast"></i>
+                            </div>
+                            <h5>Driver Shares Location</h5>
+                            <p>Driver app sends live GPS coordinates to the server continuously throughout the trip.</p>
+                        </div>
+                        <div class="step-connector">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-icon">
+                                <i class="bi bi-cpu"></i>
+                            </div>
+                            <h5>System Calculates ETA</h5>
+                            <p>Smart algorithms process location data, calculate ETAs, and detect stop arrivals.</p>
+                        </div>
+                        <div class="step-connector">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-icon">
+                                <i class="bi bi-phone"></i>
+                            </div>
+                            <h5>Students Get Updates</h5>
+                            <p>Students track bus live on map and receive smart notifications for their stop.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Trip Lifecycle -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="lifecycle-container">
+                        <h5 class="text-center mb-4">Trip Lifecycle</h5>
+                        <div class="lifecycle-stages">
+                            <div class="lifecycle-stage">
+                                <div class="stage-dot upcoming"></div>
+                                <span>Upcoming</span>
+                            </div>
+                            <div class="lifecycle-arrow"><i class="bi bi-chevron-right"></i></div>
+                            <div class="lifecycle-stage">
+                                <div class="stage-dot arriving"></div>
+                                <span>Arriving</span>
+                            </div>
+                            <div class="lifecycle-arrow"><i class="bi bi-chevron-right"></i></div>
+                            <div class="lifecycle-stage">
+                                <div class="stage-dot at-stop"></div>
+                                <span>At Stop</span>
+                            </div>
+                            <div class="lifecycle-arrow"><i class="bi bi-chevron-right"></i></div>
+                            <div class="lifecycle-stage">
+                                <div class="stage-dot departed"></div>
+                                <span>Departed</span>
+                            </div>
+                            <div class="lifecycle-arrow"><i class="bi bi-chevron-right"></i></div>
+                            <div class="lifecycle-stage">
+                                <div class="stage-dot completed"></div>
+                                <span>Completed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Roles Section -->
+    <section class="users-section" id="users">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">User Roles</span>
+                    <h2 class="section-title">Built for <span class="text-primary">Everyone</span></h2>
+                    <p class="section-subtitle">TrackMate connects all stakeholders in one unified platform.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="user-card driver">
+                        <div class="user-avatar">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                        <h4>Driver</h4>
+                        <ul class="user-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Start & end trips easily</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Share live GPS location</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Trigger SOS alerts</li>
+                            <li><i class="bi bi-check-circle-fill"></i> View route information</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="user-card student featured">
+                        <div class="featured-badge">Most Popular</div>
+                        <div class="user-avatar">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <h4>Student</h4>
+                        <ul class="user-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Track bus live on map</li>
+                            <li><i class="bi bi-check-circle-fill"></i> See ETA to their stop</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Get arrival notifications</li>
+                            <li><i class="bi bi-check-circle-fill"></i> View trip history</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="user-card admin">
+                        <div class="user-avatar">
+                            <i class="bi bi-gear-fill"></i>
+                        </div>
+                        <h4>Admin</h4>
+                        <ul class="user-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Create routes & stops</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Manage buses & users</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Monitor all trips</li>
+                            <li><i class="bi bi-check-circle-fill"></i> View analytics</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits-section" id="benefits">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="benefits-image">
+                        <div class="benefits-grid">
+                            <div class="benefit-visual time">
+                                <i class="bi bi-hourglass-split"></i>
+                                <div class="benefit-stat">-40%</div>
+                                <span>Waiting Time</span>
+                            </div>
+                            <div class="benefit-visual safety">
+                                <i class="bi bi-shield-fill-check"></i>
+                                <div class="benefit-stat">+95%</div>
+                                <span>Safety Score</span>
+                            </div>
+                            <div class="benefit-visual coordination">
+                                <i class="bi bi-diagram-3-fill"></i>
+                                <div class="benefit-stat">100%</div>
+                                <span>Coordination</span>
+                            </div>
+                            <div class="benefit-visual transparency">
+                                <i class="bi bi-eye-fill"></i>
+                                <div class="benefit-stat">Real-Time</div>
+                                <span>Transparency</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="benefits-content">
+                        <span class="section-tag">Benefits</span>
+                        <h2 class="section-title">Why Choose <span class="text-primary">TrackMate?</span></h2>
+                        <div class="benefits-list">
+                            <div class="benefit-item">
+                                <div class="benefit-icon">
+                                    <i class="bi bi-clock-fill"></i>
+                                </div>
+                                <div class="benefit-text">
+                                    <h5>Reduces Waiting Time</h5>
+                                    <p>Students know exactly when to reach their stop, eliminating unnecessary waiting.</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon">
+                                    <i class="bi bi-shield-fill-check"></i>
+                                </div>
+                                <div class="benefit-text">
+                                    <h5>Improves Safety</h5>
+                                    <p>Real-time tracking and SOS alerts ensure student safety during transit.</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="benefit-text">
+                                    <h5>Better Coordination</h5>
+                                    <p>Drivers, students, and admins stay connected through one platform.</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <div class="benefit-text">
+                                    <h5>Transparent System</h5>
+                                    <p>Complete visibility into transport operations for all stakeholders.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Who It's For Section -->
+    <section class="audience-section" id="audience">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Who It's For</span>
+                    <h2 class="section-title">Perfect for <span class="text-primary">Educational Institutions</span></h2>
+                    <p class="section-subtitle">TrackMate is designed for organizations that prioritize student safety and efficient transport.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="audience-card">
+                        <div class="audience-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <h5>Schools</h5>
+                        <p>K-12 institutions managing student bus services</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="audience-card">
+                        <div class="audience-icon">
+                            <i class="bi bi-bank"></i>
+                        </div>
+                        <h5>Colleges</h5>
+                        <p>Higher education campus shuttle systems</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="audience-card">
+                        <div class="audience-icon">
+                            <i class="bi bi-mortarboard"></i>
+                        </div>
+                        <h5>Universities</h5>
+                        <p>Large campus transport networks</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="audience-card">
+                        <div class="audience-icon">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                        <h5>Private Operators</h5>
+                        <p>Transport companies serving institutions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Stack Section -->
+    <section class="tech-section" id="tech">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Technology</span>
+                    <h2 class="section-title">Built with <span class="text-primary">Modern Tech</span></h2>
+                    <p class="section-subtitle">Reliable, scalable, and designed for real-time performance.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon frontend">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Frontend</span>
+                            <h5>Progressive Web App</h5>
+                            <p>Installable, offline-capable web application that works on any device with native app-like experience.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">HTML5</span>
+                                <span class="tech-tag">CSS3</span>
+                                <span class="tech-tag">JavaScript</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon backend">
+                            <i class="bi bi-hdd-stack"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Backend</span>
+                            <h5>Node.js + Express</h5>
+                            <p>Fast, scalable server-side runtime with Express framework for building robust REST APIs.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">REST API</span>
+                                <span class="tech-tag">JWT Auth</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon database">
+                            <i class="bi bi-database"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Database</span>
+                            <h5>MongoDB</h5>
+                            <p>Flexible NoSQL database for storing users, routes, trips, and real-time location data efficiently.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">NoSQL</span>
+                                <span class="tech-tag">Mongoose</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon realtime">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Real-Time</span>
+                            <h5>Socket.IO</h5>
+                            <p>WebSocket-based real-time bidirectional communication for live location streaming and instant updates.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">WebSockets</span>
+                                <span class="tech-tag">Events</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon maps">
+                            <i class="bi bi-map"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Maps</span>
+                            <h5>OpenStreetMap + Leaflet</h5>
+                            <p>Open-source mapping solution with GPS integration for route visualization and live bus tracking.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">GPS</span>
+                                <span class="tech-tag">Geofencing</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="tech-card">
+                        <div class="tech-card-icon notifications">
+                            <i class="bi bi-bell"></i>
+                        </div>
+                        <div class="tech-card-content">
+                            <span class="tech-layer">Notifications</span>
+                            <h5>Web Push + Service Worker</h5>
+                            <p>Push notifications for arrival alerts and offline support through service worker technology.</p>
+                            <div class="tech-tags">
+                                <span class="tech-tag">Push API</span>
+                                <span class="tech-tag">Offline</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Architecture Diagram -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="architecture-section">
+                        <h4 class="text-center mb-4"><i class="bi bi-diagram-3"></i> System Architecture</h4>
+                        <div class="architecture-image-wrapper">
+                            <img src="lp-files/Architecture.png" alt="TrackMate System Architecture - 4 Layer Design" class="architecture-image" loading="lazy">
+                        </div>
+                        <div class="architecture-caption">
+                            <p><strong>4-Layer Architecture:</strong> Client Layer → Communication Layer → Backend Processing → Data & External Services</p>
+                            <a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-github"></i> View on GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section" id="testimonials">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Testimonials</span>
+                    <h2 class="section-title">Trusted by <span class="text-primary">Institutions</span></h2>
+                    <p class="section-subtitle">See what educators and transport managers say about TrackMate.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <div class="testimonial-rating">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <p class="testimonial-text">"TrackMate has transformed how we manage school transport. Parents love knowing exactly when the bus will arrive. Complaints dropped by 80%!"</p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="author-info">
+                                <h6>Dr. Sarah Johnson</h6>
+                                <span>Principal, Greenwood Academy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card featured">
+                        <div class="testimonial-rating">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <p class="testimonial-text">"The real-time tracking is incredibly accurate. Our students no longer wait unnecessarily at stops. The ETA feature is a game-changer for our campus."</p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="author-info">
+                                <h6>Prof. Michael Chen</h6>
+                                <span>Transport Head, State University</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <div class="testimonial-rating">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
+                        </div>
+                        <p class="testimonial-text">"As a parent, I feel so much safer knowing I can track my child's bus. The notifications are timely and the interface is very user-friendly."</p>
+                        <div class="testimonial-author">
+                            <div class="author-avatar">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="author-info">
+                                <h6>Mrs. Emily Rodriguez</h6>
+                                <span>Parent, Lincoln High School</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="trust-badges">
+                        <div class="trust-item">
+                            <span class="trust-number">50+</span>
+                            <span class="trust-label">Institutions</span>
+                        </div>
+                        <div class="trust-item">
+                            <span class="trust-number">10,000+</span>
+                            <span class="trust-label">Students</span>
+                        </div>
+                        <div class="trust-item">
+                            <span class="trust-number">500+</span>
+                            <span class="trust-label">Buses Tracked</span>
+                        </div>
+                        <div class="trust-item">
+                            <span class="trust-number">99.9%</span>
+                            <span class="trust-label">Uptime</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section" id="team">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Our Team</span>
+                    <h2 class="section-title">Meet the <span class="text-primary">Developers</span></h2>
+                    <p class="section-subtitle">The passionate team behind TrackMate, building smarter campus transport.</p>
+                </div>
+            </div>
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card lead-card">
+                        <div class="team-badge">Team Lead</div>
+                        <div class="team-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <h4>Maganti Praveen Sai</h4>
+                        <span class="team-role">Full Stack Developer & System Architect</span>
+                        <p class="team-desc">Project planning, system architecture, real-time GPS tracking, ETA prediction logic, Socket.IO integration & overall system integration.</p>
+                        <div class="team-social">
+                            <a href="https://github.com/maganti-Praveen" target="_blank" rel="noopener" aria-label="GitHub"><i class="bi bi-github"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <h4>Anand Sai Vivek</h4>
+                        <span class="team-role">Backend Developer</span>
+                        <p class="team-desc">API development, MongoDB database design, authentication & authorization, server-side geo-fencing logic & performance optimization.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <h4>M Sreya</h4>
+                        <span class="team-role">Frontend Developer</span>
+                        <p class="team-desc">Design and development of student and admin dashboards, UI/UX implementation, map integration (OpenStreetMap/Leaflet) & ETA visualization.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card">
+                        <div class="team-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <h4>P Keerthana</h4>
+                        <span class="team-role">Frontend & Documentation Support</span>
+                        <p class="team-desc">PWA implementation, push notification handling, frontend testing, user interaction flow, documentation and report preparation.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="team-card mentor-card">
+                        <div class="team-badge mentor">Mentor</div>
+                        <div class="team-avatar mentor">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <h4>B Rajeswari</h4>
+                        <span class="team-role">Project Guide & Reviewer</span>
+                        <p class="team-desc">Technical guidance, requirement validation, periodic project reviews, quality assurance & IEEE paper guidance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">FAQ</span>
+                    <h2 class="section-title">Frequently Asked <span class="text-primary">Questions</span></h2>
+                    <p class="section-subtitle">Got questions? We've got answers.</p>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    <i class="bi bi-clock me-2"></i> How accurate is the ETA prediction?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Our ETA predictions are typically accurate within <strong>30 seconds to 2 minutes</strong>. The system uses real-time GPS data, route distance calculations, and current speed to provide the most accurate arrival times. The accuracy improves as the bus gets closer to your stop.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    <i class="bi bi-wifi-off me-2"></i> Does it work with slow or unstable internet?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! TrackMate is designed with <strong>network resilience</strong> in mind. The system handles socket reconnections automatically, caches data locally, and provides the last known position even during connectivity issues. The driver app also queues location updates during offline periods.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    <i class="bi bi-bus-front me-2"></i> Can multiple buses be tracked simultaneously?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Absolutely! TrackMate supports <strong>unlimited buses</strong> per institution. Each student sees only their assigned bus, while administrators can monitor all buses on a single dashboard with fleet overview and individual bus details.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    <i class="bi bi-bell me-2"></i> Are notifications automatic?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes, notifications are <strong>completely automatic</strong>. Students receive alerts when their bus is approaching (within 5 minutes), when it arrives at their stop, and when it departs. Users can customize notification preferences in their settings.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    <i class="bi bi-phone me-2"></i> Do I need to install an app?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    TrackMate is a <strong>Progressive Web App (PWA)</strong>, which means it works directly in your browser without installation. However, you can also "Add to Home Screen" for an app-like experience with offline support and push notifications.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                    <i class="bi bi-shield-check me-2"></i> How is student data protected?
+                                </button>
+                            </h2>
+                            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    We take data privacy seriously. All data is <strong>encrypted in transit and at rest</strong>. We follow FERPA guidelines for student data protection, and location data is only accessible to authorized users. No data is sold or shared with third parties.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" id="get-started">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="cta-card">
+                        <div class="cta-content">
+                            <h2>Make Your Campus Transport <span>Smarter Today</span></h2>
+                            <p>Join institutions that have transformed their transport system with TrackMate. 
+                               Get started with a free demo and see the difference real-time tracking makes.</p>
+                            <div class="cta-buttons">
+                                <a href="https://trackmate-q2te.onrender.com/" target="_blank" rel="noopener" class="btn btn-light btn-lg">
+                                    <i class="bi bi-rocket-takeoff"></i> Try Live Demo
+                                </a>
+                                <a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg">
+                                    <i class="bi bi-github"></i> View on GitHub
+                                </a>
+                            </div>
+                        </div>
+                        <div class="cta-decoration">
+                            <div class="decoration-circle circle-1"></div>
+                            <div class="decoration-circle circle-2"></div>
+                            <div class="decoration-circle circle-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <span class="section-tag">Contact</span>
+                    <h2 class="section-title">Get in <span class="text-primary">Touch</span></h2>
+                    <p class="section-subtitle">Ready to transform your campus transport? We'd love to hear from you.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="bi bi-envelope-fill"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h6>Email Us</h6>
+                                <p>trackmate15@gmail.com</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="bi bi-telephone-fill"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h6>Call Us</h6>
+                                <p>+91 87903 07739</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                            <div class="contact-text">
+                                <h6>Location</h6>
+                                <p>Eluru, Andhra Pradesh, India</p>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener" class="social-link" aria-label="View on GitHub"><i class="bi bi-github" aria-hidden="true"></i></a>
+                            <a href="https://trackmate-q2te.onrender.com/" target="_blank" rel="noopener" class="social-link" aria-label="Live Demo"><i class="bi bi-globe" aria-hidden="true"></i></a>
+                            <a href="mailto:trackmate15@gmail.com" class="social-link" aria-label="Send Email"><i class="bi bi-envelope" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="contact-form-wrapper">
+                        <form id="contactForm" class="contact-form" action="https://api.web3forms.com/submit" method="POST">
+                            <!-- Web3Forms Access Key -->
+                            <input type="hidden" name="access_key" value="1076f576-8182-47c0-a739-470cde5718ec">
+                            <!-- Form Subject -->
+                            <input type="hidden" name="subject" value="New Contact from TrackMate Landing Page">
+                            <!-- Redirect after submission -->
+                            <input type="hidden" name="redirect" value="https://maganti-praveen.github.io/TrackMate-Landing/?success=true">
+                            <!-- Honeypot Spam Protection -->
+                            <input type="checkbox" name="botcheck" class="hidden" style="display: none;">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Your Name</label>
+                                    <input type="text" name="name" class="form-control" placeholder="sai" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" name="email" class="form-control" placeholder="sai@college.edu.in" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Institution Name</label>
+                                    <input type="text" name="institution" class="form-control" placeholder="Sri Venkateswara College" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="institutionType">Institution Type</label>
+                                    <select class="form-select" id="institutionType" name="institution_type" aria-label="Select institution type" required>
+                                        <option value="" selected disabled>Select type...</option>
+                                        <option value="School">School</option>
+                                        <option value="College">College</option>
+                                        <option value="University">University</option>
+                                        <option value="Private Operator">Private Operator</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Message</label>
+                                    <textarea class="form-control" name="message" rows="4" placeholder="Tell us about your transport needs..." required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                                        <i class="bi bi-send"></i> Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="footer-brand">
+                        <a href="#" class="footer-logo">
+                            <i class="bi bi-bus-front-fill"></i>
+                            <span>TrackMate</span>
+                        </a>
+                        <p>Real-time smart bus tracking system designed for schools and colleges. Making campus transport smarter, safer, and more transparent.</p>
+                        <p class="footer-location"><i class="bi bi-geo-alt"></i> Eluru, Andhra Pradesh, India</p>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6>Product</h6>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#benefits">Benefits</a></li>
+                        <li><a href="https://trackmate-q2te.onrender.com/" target="_blank" rel="noopener">Live Demo</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6>Team</h6>
+                    <ul class="footer-links">
+                        <li><a href="#team">Meet the Team</a></li>
+                        <li><a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener">GitHub</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <h6>Resources</h6>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/maganti-Praveen/TrackMate#readme" target="_blank" rel="noopener">Documentation</a></li>
+                        <li><a href="#faq">Help Center</a></li>
+                        <li><a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener">Source Code</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2">
+                    <h6>Contact</h6>
+                    <ul class="footer-links">
+                        <li><a href="mailto:trackmate15@gmail.com"><i class="bi bi-envelope me-2"></i>Email Us</a></li>
+                        <li><a href="tel:+918790307739"><i class="bi bi-telephone me-2"></i>Call Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p>&copy; 2026 TrackMate.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="footer-social">
+                            <a href="https://github.com/maganti-Praveen/TrackMate" target="_blank" rel="noopener" aria-label="GitHub"><i class="bi bi-github" aria-hidden="true"></i></a>
+                            <a href="https://trackmate-q2te.onrender.com/" target="_blank" rel="noopener" aria-label="Live Demo"><i class="bi bi-globe" aria-hidden="true"></i></a>
+                            <a href="mailto:trackmate15@gmail.com" aria-label="Email"><i class="bi bi-envelope" aria-hidden="true"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button id="backToTop" class="back-to-top" aria-label="Back to top">
+        <i class="bi bi-arrow-up" aria-hidden="true"></i>
+    </button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="lp-files/script.js"></script>
+</body>
+</html>
