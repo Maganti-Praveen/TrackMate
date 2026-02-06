@@ -1,11 +1,11 @@
-# TrackMate - Robots.txt
+﻿# TrackMate - Robots.txt
 # Allow all search engines to crawl the site
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://trackmate-q2te.onrender.com/sitemap.xml
+Sitemap: https://trackmaterce.onrender.com/sitemap.xml
 
 # Allow important pages
 Allow: /index.html
