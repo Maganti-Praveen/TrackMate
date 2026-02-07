@@ -6,7 +6,9 @@ const EMAIL_CONFIG = {
   auth: {
     user: process.env.EMAIL_USER || 'trackmate15@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'sbkh vnco zcuq kyfg'
-  }
+  },
+  // Force IPv4 — Render's free tier doesn't support IPv6 outbound
+  tls: { family: 4 }
 };
 
 // Create reusable transporter
@@ -181,7 +183,89 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
   }
 };
 
+/**
+ * Send password reset email
+ * @param {Object} params - Email parameters
+ * @param {string} params.email - User email address
+ * @param {string} params.fullName - User full name
+ * @param {string} params.username - Username/roll number (also the reset password)
+ * @returns {Promise<boolean>} Success status
+ */
+const sendPasswordResetEmail = async ({ email, fullName, username }) => {
+  try {
+    const mailOptions = {
+      from: `"TrackMate Team" <${EMAIL_CONFIG.auth.user}>`,
+      to: email,
+      subject: 'TrackMate – Password Reset',
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+    .details { background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0; }
+    .detail-row { margin: 10px 0; }
+    .detail-label { font-weight: bold; color: #667eea; }
+    .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 28px;">🔑 Password Reset</h1>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">TrackMate – Smart Bus Tracking</p>
+    </div>
+    
+    <div class="content">
+      <p>Hello <strong>${fullName}</strong>,</p>
+      
+      <p>Your password has been reset successfully. Here are your updated login credentials:</p>
+      
+      <div class="details">
+        <h3 style="margin-top: 0; color: #667eea;">📋 Login Credentials:</h3>
+        <div class="detail-row">
+          <span class="detail-label">Username:</span> ${username}
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">New Password:</span> ${username}
+        </div>
+      </div>
+      
+      <div class="warning">
+        <h3 style="margin-top: 0; color: #856404;">🔒 Important:</h3>
+        <p style="margin: 0;">Please change your password immediately after logging in. Your password has been reset to your roll number (<strong>${username}</strong>) for security purposes.</p>
+      </div>
+      
+      <p>If you did not request this password reset, please contact the TrackMate administrator immediately.</p>
+      
+      <div class="footer">
+        <p><strong>Best Regards,</strong><br>
+        <strong>TrackMate Team</strong><br>
+        Smart Campus Transportation System</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `
+    };
+
+    const transport = getTransporter();
+    await transport.sendMail(mailOptions);
+    console.log(`✅ Password reset email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send password reset email:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendWelcomeEmail,
-  sendStopArrivalEmail
+  sendStopArrivalEmail,
+  sendPasswordResetEmail
 };

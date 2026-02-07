@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../utils/api';
-import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound } from 'lucide-react';
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,6 +14,10 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotResult, setForgotResult] = useState(null); // { type: 'success'|'error', message }
   const { login, user } = useAuth();
 
   const targetPath = useMemo(() => {
@@ -64,6 +68,36 @@ const Login = () => {
     setIsSignUp(!isSignUp);
     setError('');
     setRegistrationSuccess(false);
+  };
+
+  const openForgotPassword = () => {
+    setShowForgotPassword(true);
+    setForgotIdentifier('');
+    setForgotResult(null);
+  };
+
+  const closeForgotPassword = () => {
+    setShowForgotPassword(false);
+    setForgotIdentifier('');
+    setForgotResult(null);
+    setForgotLoading(false);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotIdentifier.trim()) return;
+    setForgotLoading(true);
+    setForgotResult(null);
+
+    try {
+      const res = await api.post('/auth/forgot-password', { identifier: forgotIdentifier.trim() });
+      setForgotResult({ type: 'success', message: res.data.message || 'Check your email for the password.' });
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Try again.';
+      setForgotResult({ type: 'error', message: msg });
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   if (targetPath) {
@@ -152,9 +186,6 @@ const Login = () => {
                   autoComplete="username"
                   disabled={isLoading}
                 />
-                {isSignUp && (
-                  <p className="text-xs text-slate-400 mt-1">This will also be your initial password</p>
-                )}
               </div>
             )}
 
@@ -204,6 +235,13 @@ const Login = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={openForgotPassword}
+                  className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 transition float-right"
+                >
+                  Forgot Password?
+                </button>
               </div>
             )}
 
@@ -258,6 +296,93 @@ const Login = () => {
             : 'Contact your administrator if you need help'}
         </p>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={closeForgotPassword}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-sm card-elevated p-6 animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={closeForgotPassword}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Forgot Password</h3>
+                <p className="text-xs text-slate-400">We&apos;ll reset and email your credentials</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Roll Number or Email
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your roll number or email"
+                  className="w-full"
+                  value={forgotIdentifier}
+                  onChange={(e) => setForgotIdentifier(e.target.value)}
+                  required
+                  autoFocus
+                  disabled={forgotLoading}
+                />
+              </div>
+
+              {/* Result message */}
+              {forgotResult && (
+                <div
+                  className={`rounded-xl px-4 py-3 text-sm animate-fade-in ${
+                    forgotResult.type === 'success'
+                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                      : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                  }`}
+                >
+                  {forgotResult.message}
+                </div>
+              )}
+
+              {/* Submit / Close */}
+              {forgotResult?.type === 'success' ? (
+                <button
+                  type="button"
+                  onClick={closeForgotPassword}
+                  className="w-full rounded-xl bg-slate-700 py-3 text-white font-semibold hover:bg-slate-600 transition active:scale-[0.98]"
+                >
+                  Back to Login
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={forgotLoading || !forgotIdentifier.trim()}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 py-3 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                >
+                  {forgotLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Reset Password'
+                  )}
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

@@ -197,6 +197,48 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts, hashPassword, registerStudent: registerUser };
+// Forgot password — reset to roll number and email it
+const forgotPassword = async (req, res) => {
+  try {
+    const identifier = typeof req.body.identifier === 'string' ? req.body.identifier.trim().toLowerCase() : '';
+
+    if (!identifier) {
+      return res.status(400).json({ message: 'Roll number or email is required' });
+    }
+
+    // Look up by username (roll number) or email
+    const user = await User.findOne({
+      $or: [{ username: identifier }, { email: identifier }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.email) {
+      return res.status(400).json({ message: 'No email associated with this account. Contact admin.' });
+    }
+
+    // Reset password to the username (roll number)
+    user.password = await hashPassword(user.username);
+    user.firstLogin = true; // Force password change on next login
+    await user.save();
+
+    // Send password reset email
+    const { sendPasswordResetEmail } = require('../utils/emailService');
+    sendPasswordResetEmail({
+      email: user.email,
+      fullName: user.name || user.username,
+      username: user.username
+    }).catch(err => console.error('Password reset email failed:', err.message));
+
+    res.json({ message: 'Password reset successful. Check your email for login credentials.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Failed to reset password' });
+  }
+};
+
+module.exports = { login, getProfile, updateProfile, ensureDefaultAccounts, hashPassword, registerStudent: registerUser, forgotPassword };
 
 

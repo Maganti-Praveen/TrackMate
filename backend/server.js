@@ -20,6 +20,9 @@ const { registerLocationHandlers } = require('./controllers/locationController')
 
 const app = express();
 
+// Trust proxy on hosted platforms (Render, Heroku, etc.) — required for rate limiting
+app.set('trust proxy', 1);
+
 // CORS configuration - use specific origins in production
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',')

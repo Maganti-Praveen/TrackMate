@@ -127,10 +127,11 @@ document.addEventListener('DOMContentLoaded', function() {
         entries.forEach(entry => {
             if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
                 entry.target.classList.add('animated');
-                const text = entry.target.textContent;
+                const text = entry.target.textContent.trim();
                 const number = parseInt(text.replace(/\D/g, ''));
                 
-                if (number && !text.includes('%') && !text.includes('Real')) {
+                // Skip non-numeric stats like "24/7", "< 30s", percentages, etc.
+                if (number && !text.includes('%') && !text.includes('Real') && !text.includes('/') && !text.includes('<')) {
                     animateCounter(entry.target, number);
                 }
             }
