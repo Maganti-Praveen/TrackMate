@@ -1,14 +1,22 @@
 const nodemailer = require('nodemailer');
 
-// Email configuration
+// Email configuration — explicit SMTP settings with IPv4 forced
 const EMAIL_CONFIG = {
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER || 'trackmate15@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'sbkh vnco zcuq kyfg'
   },
-  // Force IPv4 — Render's free tier doesn't support IPv6 outbound
-  tls: { family: 4 }
+  tls: {
+    // Force IPv4 — Render free tier doesn't support IPv6 outbound
+    // 'family' is passed through to the underlying net.connect/tls.connect
+    family: 4,
+    rejectUnauthorized: true
+  },
+  connectionTimeout: 30000,
+  socketTimeout: 30000
 };
 
 // Create reusable transporter
@@ -17,6 +25,10 @@ let transporter = null;
 const getTransporter = () => {
   if (!transporter) {
     transporter = nodemailer.createTransport(EMAIL_CONFIG);
+    // Verify connection on first use (logs to console, doesn't block)
+    transporter.verify()
+      .then(() => console.log('✅ Email transporter ready (smtp.gmail.com:465 IPv4)'))
+      .catch(err => console.error('❌ Email transporter verification failed:', err.message));
   }
   return transporter;
 };
