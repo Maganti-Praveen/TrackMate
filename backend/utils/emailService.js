@@ -1,6 +1,11 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 
-// Email configuration — explicit SMTP settings with IPv4 forced
+// Force IPv4-first DNS resolution — Render free tier doesn't support IPv6 outbound
+// This prevents ENETUNREACH errors when smtp.gmail.com resolves to IPv6
+dns.setDefaultResultOrder('ipv4first');
+
+// Email configuration — explicit SMTP settings
 const EMAIL_CONFIG = {
   host: 'smtp.gmail.com',
   port: 465,
@@ -8,12 +13,6 @@ const EMAIL_CONFIG = {
   auth: {
     user: process.env.EMAIL_USER || 'trackmate15@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'sbkh vnco zcuq kyfg'
-  },
-  tls: {
-    // Force IPv4 — Render free tier doesn't support IPv6 outbound
-    // 'family' is passed through to the underlying net.connect/tls.connect
-    family: 4,
-    rejectUnauthorized: true
   },
   connectionTimeout: 30000,
   socketTimeout: 30000
