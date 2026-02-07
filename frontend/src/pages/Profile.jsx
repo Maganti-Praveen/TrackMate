@@ -7,7 +7,6 @@ import {
   User, Phone, Lock, Shield, Save, Eye, EyeOff,
   Bus, MapPin, AlertCircle
 } from 'lucide-react';
-import NotificationToggle from '../components/NotificationToggle';
 
 const roleRedirect = {
   admin: '/admin',
@@ -188,6 +187,12 @@ const Profile = () => {
               <p className="text-xs text-slate-500 mb-1">Role</p>
               <p className="text-white font-medium capitalize">{formData.role}</p>
             </div>
+            {formData.phone && (
+              <div className="bg-slate-800/50 rounded-xl p-3 col-span-2">
+                <p className="text-xs text-slate-500 mb-1">Phone</p>
+                <p className="text-white font-medium">{formData.phone}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -339,14 +344,6 @@ const Profile = () => {
               <p className="mt-2 text-xs text-slate-500">Only fill this if you want to change your password.</p>
             </div>
           </div>
-
-          {/* Notifications - Only for students */}
-          {formData.role === 'student' && (
-            <div className="card p-5">
-              <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4">Push Notifications</h2>
-              <NotificationToggle />
-            </div>
-          )}
 
           {/* Submit Button */}
           <button

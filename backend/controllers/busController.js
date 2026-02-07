@@ -37,7 +37,7 @@ const getBuses = async (_req, res) => {
   try {
     const buses = await Bus.find()
       .populate('driver', 'username name')
-      .populate('route', 'name');
+      .populate('route', 'name stops');
     res.json(buses);
   } catch (error) {
     console.error('getBuses error:', error);

@@ -28,11 +28,20 @@ const createStudent = async (req, res) => {
       return res.status(400).json({ message: 'email is required' });
     }
 
-    const plainPassword = (password || username).trim();
+    const normalizedUsername = username.trim().toUpperCase();
+    const plainPassword = (password || normalizedUsername).trim();
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
+    // Case-insensitive duplicate check
+    const existingUser = await User.findOne({
+      username: { $regex: new RegExp(`^${normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Roll number already registered' });
+    }
+
     const student = await User.create({
-      username: username.trim(),
+      username: normalizedUsername,
       password: hashedPassword,
       role: 'student',
       name,
@@ -41,25 +50,32 @@ const createStudent = async (req, res) => {
       firstLogin: true // Force password change on first login
     });
 
-    // Create student assignment if bus and stop provided
+    // Create student assignment if bus provided
     let assignment = null;
     let busNumber = 'Not assigned yet';
     let routeName = 'Not assigned yet';
     let stopName = 'Not assigned yet';
 
-    if (busId && stopId) {
+    if (busId) {
       const bus = await Bus.findById(busId).populate('route');
-      const stop = await Stop.findById(stopId);
-      
-      if (bus && stop) {
-        assignment = await StudentAssignment.create({
+      if (bus) {
+        const assignmentData = {
           student: student._id,
-          bus: busId,
-          stop: stopId
-        });
+          bus: busId
+        };
+
+        // Add stop if provided and valid
+        if (stopId) {
+          const stop = await Stop.findById(stopId);
+          if (stop) {
+            assignmentData.stop = stopId;
+            stopName = stop.name;
+          }
+        }
+
+        assignment = await StudentAssignment.create(assignmentData);
         busNumber = bus.numberPlate || bus.name;
         routeName = bus.route?.name || 'Unknown';
-        stopName = stop.name;
       }
     }
 

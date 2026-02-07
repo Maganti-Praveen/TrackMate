@@ -8,7 +8,7 @@ import {
   User, X, Bus, MapPin, CheckCircle, Clock
 } from 'lucide-react';
 
-const blankForm = { username: '', password: '', name: '', phone: '', email: '', busId: '', stopId: '' };
+const blankForm = { username: '', name: '', phone: '', email: '', busId: '', stopId: '' };
 
 /* Stat Card Component */
 const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
@@ -120,6 +120,7 @@ const ManageStudents = () => {
   const [assignments, setAssignments] = useState({});
   const [buses, setBuses] = useState([]);
   const [stops, setStops] = useState([]);
+  const [loadingStops, setLoadingStops] = useState(false);
   const [search, setSearch] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -158,12 +159,13 @@ const ManageStudents = () => {
   const openCreate = () => {
     setEditingStudent(null);
     setForm(blankForm);
+    setStops([]);
     setDrawerOpen(true);
   };
 
   const openEdit = (student) => {
     setEditingStudent(student);
-    setForm({ username: student.username, password: '', name: student.name || '', phone: student.phone || '' });
+    setForm({ username: student.username, password: '', name: student.name || '', phone: student.phone || '', email: student.email || '' });
     setDrawerOpen(true);
   };
 
@@ -175,8 +177,9 @@ const ManageStudents = () => {
       phone: form.phone,
       email: form.email.trim()
     };
-    if (!editingStudent || form.password.trim()) {
-      payload.password = form.password.trim() || form.username.trim();
+    // Only include password for edit mode (manual reset by admin)
+    if (editingStudent && form.password?.trim()) {
+      payload.password = form.password.trim();
     }
     
     // Add bus and stop for new students
@@ -339,17 +342,18 @@ const ManageStudents = () => {
               required
             />
           </div>
-          <div>
-            <label className="text-sm text-slate-300 mb-1.5 block">Password</label>
-            <input
-              type="text"
-              value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-              placeholder={editingStudent ? 'Leave blank to keep current' : 'Required'}
-              required={!editingStudent}
-            />
-          </div>
+          {editingStudent && (
+            <div>
+              <label className="text-sm text-slate-300 mb-1.5 block">Reset Password</label>
+              <input
+                type="text"
+                value={form.password}
+                onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                placeholder="Leave blank to keep current"
+              />
+            </div>
+          )}
           <div>
             <label className="text-sm text-slate-300 mb-1.5 block">Full Name</label>
             <input
@@ -388,8 +392,25 @@ const ManageStudents = () => {
                 <label className="text-sm text-slate-300 mb-1.5 block">Assign Bus (Optional)</label>
                 <select
                   value={form.busId}
-                  onChange={(e) => {
-                    setForm((prev) => ({ ...prev, busId: e.target.value, stopId: '' }));
+                  onChange={async (e) => {
+                    const busId = e.target.value;
+                    setForm((prev) => ({ ...prev, busId, stopId: '' }));
+                    setStops([]);
+                    if (busId) {
+                      const selectedBus = buses.find(b => b._id === busId);
+                      if (selectedBus?.route?._id || selectedBus?.route) {
+                        const routeId = selectedBus.route._id || selectedBus.route;
+                        try {
+                          setLoadingStops(true);
+                          const { data } = await api.get(`/stops/${routeId}`);
+                          setStops(data);
+                        } catch {
+                          toast.error('Failed to load stops');
+                        } finally {
+                          setLoadingStops(false);
+                        }
+                      }
+                    }
                   }}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
                 >
@@ -405,18 +426,27 @@ const ManageStudents = () => {
               {form.busId && (
                 <div>
                   <label className="text-sm text-slate-300 mb-1.5 block">Assign Stop (Optional)</label>
-                  <select
-                    value={form.stopId}
-                    onChange={(e) => setForm((prev) => ({ ...prev, stopId: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
-                  >
-                    <option value="">Select a stop (optional)</option>
-                    {buses.find(b => b._id === form.busId)?.route?.stops?.map((stop, idx) => (
-                      <option key={stop._id} value={stop._id}>
-                        {idx + 1}. {stop.name}
-                      </option>
-                    ))}
-                  </select>
+                  {loadingStops ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-400">
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      Loading stops...
+                    </div>
+                  ) : stops.length > 0 ? (
+                    <select
+                      value={form.stopId}
+                      onChange={(e) => setForm((prev) => ({ ...prev, stopId: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+                    >
+                      <option value="">Select a stop (optional)</option>
+                      {stops.map((stop) => (
+                        <option key={stop._id} value={stop._id}>
+                          {stop.sequence}. {stop.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-amber-400 px-1">No stops found for this bus&apos;s route. Add stops to the route first.</p>
+                  )}
                 </div>
               )}
             </>

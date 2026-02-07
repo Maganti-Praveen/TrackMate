@@ -174,11 +174,11 @@ const Login = () => {
             {!registrationSuccess && (
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  {isSignUp ? 'Roll Number' : 'Username'} {isSignUp && <span className="text-red-400">*</span>}
+                  {isSignUp ? 'Roll Number' : 'Roll Number / Username'} {isSignUp && <span className="text-red-400">*</span>}
                 </label>
                 <input
                   type="text"
-                  placeholder={isSignUp ? 'Enter your roll number' : 'Enter your username'}
+                  placeholder={isSignUp ? 'Enter your roll number' : 'Enter roll number or username'}
                   className="w-full"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}

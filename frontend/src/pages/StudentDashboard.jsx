@@ -327,9 +327,13 @@ const StudentDashboard = () => {
     if (eta?.source === 'server' && Date.now() - eta.updatedAt < 10000) return;
     if (busPosition && stopInfo) {
       const fallback = computeFallbackETA(busPosition, normalizeLocation(stopInfo), busSpeed || 5);
-      if (fallback) setEta({ value: fallback, source: 'fallback', updatedAt: Date.now() });
+      if (fallback) setEta(prev => {
+        // Skip update if value hasn't meaningfully changed (within 5s)
+        if (prev?.source === 'fallback' && Math.abs((prev.value || 0) - fallback) < 5000) return prev;
+        return { value: fallback, source: 'fallback', updatedAt: Date.now() };
+      });
     }
-  }, [busPosition, stopInfo, busSpeed, eta?.source, eta?.updatedAt]);
+  }, [busPosition, stopInfo, busSpeed]);
 
   // Push notification handlers
   const enableNotifications = async () => {

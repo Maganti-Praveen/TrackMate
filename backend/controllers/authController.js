@@ -23,6 +23,7 @@ const serializeUser = (user) => ({
   role: user.role,
   name: user.name,
   email: user.email,
+  phone: user.phone,
   firstLogin: user.firstLogin,
   assignedBusId: user.assignedBusId,
   assignedStopId: user.assignedStopId
@@ -52,7 +53,10 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    let user = await User.findOne({ username });
+    // Case-insensitive lookup — students use roll numbers, admin/drivers use usernames
+    let user = await User.findOne({
+      username: { $regex: new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
 
     // SECURITY: Auto-creation of default admin is disabled for security.
     // To create the default admin account, run: npm run seed
@@ -140,7 +144,7 @@ const updateProfile = async (req, res) => {
 // Register student account (students only - no admin/driver self-registration)
 const registerUser = async (req, res) => {
   try {
-    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const username = typeof req.body.username === 'string' ? req.body.username.trim().toUpperCase() : '';
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
@@ -154,8 +158,10 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Full name is required' });
     }
 
-    // Check if username already exists
-    const existingUser = await User.findOne({ username });
+    // Check if username already exists (case-insensitive — roll numbers may vary in case)
+    const existingUser = await User.findOne({
+      username: { $regex: new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
     if (existingUser) {
       return res.status(409).json({ message: 'Roll number already registered' });
     }
@@ -200,15 +206,18 @@ const registerUser = async (req, res) => {
 // Forgot password — reset to roll number and email it
 const forgotPassword = async (req, res) => {
   try {
-    const identifier = typeof req.body.identifier === 'string' ? req.body.identifier.trim().toLowerCase() : '';
+    const identifier = typeof req.body.identifier === 'string' ? req.body.identifier.trim() : '';
 
     if (!identifier) {
       return res.status(400).json({ message: 'Roll number or email is required' });
     }
 
-    // Look up by username (roll number) or email
+    // Look up by username (roll number, case-insensitive) or email (already lowercase in DB)
     const user = await User.findOne({
-      $or: [{ username: identifier }, { email: identifier }]
+      $or: [
+        { username: { $regex: new RegExp(`^${identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+        { email: identifier.toLowerCase() }
+      ]
     });
 
     if (!user) {
