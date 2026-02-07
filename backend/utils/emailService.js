@@ -1,4 +1,7 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+const { promisify } = require('util');
+const resolve4 = promisify(dns.resolve4);
 
 // Email configuration — credentials MUST be in environment variables
 const EMAIL_USER = process.env.EMAIL_USER;
@@ -8,33 +11,51 @@ if (!EMAIL_USER || !EMAIL_PASSWORD) {
   console.warn('⚠️  EMAIL_USER and EMAIL_PASSWORD env vars not set — emails will not be sent');
 }
 
-const EMAIL_CONFIG = {
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASSWORD
-  },
-  connectionTimeout: 30000,
-  socketTimeout: 30000
-};
-
-// Create reusable transporter
+// Create reusable transporter (cached after first successful init)
 let transporter = null;
+let transporterInitPromise = null;
 
-const getTransporter = () => {
-  if (!EMAIL_USER || !EMAIL_PASSWORD) {
-    return null;
+/**
+ * Get (or create) the email transporter.
+ * Resolves smtp.gmail.com to an IPv4 address manually so that
+ * Render (which has no IPv6 outbound) doesn't fail with ENETUNREACH.
+ */
+const getTransporter = async () => {
+  if (!EMAIL_USER || !EMAIL_PASSWORD) return null;
+  if (transporter) return transporter;
+
+  // Deduplicate concurrent init calls
+  if (!transporterInitPromise) {
+    transporterInitPromise = (async () => {
+      try {
+        // --- Manually resolve IPv4 to dodge Render's IPv6 blackhole ---
+        const addresses = await resolve4('smtp.gmail.com');
+        const ipv4Host = addresses[0];
+        console.log(`📧 Resolved smtp.gmail.com → ${ipv4Host}`);
+
+        const t = nodemailer.createTransport({
+          host: ipv4Host,          // IPv4 address directly — no DNS lookup by nodemailer
+          port: 465,
+          secure: true,
+          auth: { user: EMAIL_USER, pass: EMAIL_PASSWORD },
+          tls: { servername: 'smtp.gmail.com' }, // TLS cert expects the hostname, not the IP
+          connectionTimeout: 30000,
+          socketTimeout: 30000
+        });
+
+        await t.verify();
+        console.log('✅ Email transporter ready (smtp.gmail.com:465)');
+        transporter = t;
+        return transporter;
+      } catch (err) {
+        console.error('❌ Email transporter init failed:', err.message);
+        transporterInitPromise = null; // allow retry on next call
+        return null;
+      }
+    })();
   }
-  if (!transporter) {
-    transporter = nodemailer.createTransport(EMAIL_CONFIG);
-    // Verify connection on first use (logs to console, doesn't block)
-    transporter.verify()
-      .then(() => console.log('✅ Email transporter ready (smtp.gmail.com:465)'))
-      .catch(err => console.error('❌ Email transporter verification failed:', err.message));
-  }
-  return transporter;
+
+  return transporterInitPromise;
 };
 
 /**
@@ -51,9 +72,9 @@ const getTransporter = () => {
 const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeName, stopName }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Team" <${EMAIL_CONFIG.auth.user}>`,
+      from: `"TrackMate Team" <${EMAIL_USER}>`,
       to: email,
-      subject: 'Welcome to TrackMate – Smart Bus Tracking System',
+      subject: 'Welcome to TrackMate \u2013 Smart Bus Tracking System',
       html: `
 <!DOCTYPE html>
 <html>
@@ -134,7 +155,7 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
       `
     };
 
-    const transport = getTransporter();
+    const transport = await getTransporter();
     if (!transport) {
       console.warn('⚠️ Email not configured — skipping welcome email');
       return false;
@@ -160,9 +181,7 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
 const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Alerts" <${EMAIL_CONFIG.auth.user}>`,
-      to: email,
-      subject: `🚍 Bus Arriving at ${stopName}`,
+      from: `"TrackMate Alerts" <${EMAIL_USER}>`,      to: email,      subject: `🚍 Bus Arriving at ${stopName}`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -194,7 +213,7 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
       `
     };
 
-    const transport = getTransporter();
+    const transport = await getTransporter();
     if (!transport) {
       console.warn('⚠️ Email not configured — skipping stop arrival email');
       return false;
@@ -218,7 +237,7 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
 const sendPasswordResetEmail = async ({ email, fullName, username }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Team" <${EMAIL_CONFIG.auth.user}>`,
+      from: `"TrackMate Team" <${EMAIL_USER}>`,
       to: email,
       subject: 'TrackMate – Password Reset',
       html: `
@@ -278,7 +297,7 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
       `
     };
 
-    const transport = getTransporter();
+    const transport = await getTransporter();
     if (!transport) {
       console.warn('⚠️ Email not configured — skipping password reset email');
       return false;
