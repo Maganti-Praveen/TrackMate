@@ -1,4 +1,10 @@
 require('dotenv').config();
+
+// Force IPv4-first DNS resolution BEFORE any network modules load
+// Render free tier doesn't support IPv6 outbound — prevents ENETUNREACH errors
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 const express = require('express');
 const cors = require('cors');
 const http = require('http');

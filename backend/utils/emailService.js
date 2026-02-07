@@ -1,18 +1,20 @@
 const nodemailer = require('nodemailer');
-const dns = require('dns');
 
-// Force IPv4-first DNS resolution — Render free tier doesn't support IPv6 outbound
-// This prevents ENETUNREACH errors when smtp.gmail.com resolves to IPv6
-dns.setDefaultResultOrder('ipv4first');
+// Email configuration — credentials MUST be in environment variables
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
 
-// Email configuration — explicit SMTP settings
+if (!EMAIL_USER || !EMAIL_PASSWORD) {
+  console.warn('⚠️  EMAIL_USER and EMAIL_PASSWORD env vars not set — emails will not be sent');
+}
+
 const EMAIL_CONFIG = {
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
   auth: {
-    user: process.env.EMAIL_USER || 'trackmate15@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'sbkh vnco zcuq kyfg'
+    user: EMAIL_USER,
+    pass: EMAIL_PASSWORD
   },
   connectionTimeout: 30000,
   socketTimeout: 30000
@@ -22,11 +24,14 @@ const EMAIL_CONFIG = {
 let transporter = null;
 
 const getTransporter = () => {
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    return null;
+  }
   if (!transporter) {
     transporter = nodemailer.createTransport(EMAIL_CONFIG);
     // Verify connection on first use (logs to console, doesn't block)
     transporter.verify()
-      .then(() => console.log('✅ Email transporter ready (smtp.gmail.com:465 IPv4)'))
+      .then(() => console.log('✅ Email transporter ready (smtp.gmail.com:465)'))
       .catch(err => console.error('❌ Email transporter verification failed:', err.message));
   }
   return transporter;
@@ -130,6 +135,10 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
     };
 
     const transport = getTransporter();
+    if (!transport) {
+      console.warn('⚠️ Email not configured — skipping welcome email');
+      return false;
+    }
     await transport.sendMail(mailOptions);
     console.log(`✅ Welcome email sent to ${email}`);
     return true;
@@ -186,6 +195,10 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
     };
 
     const transport = getTransporter();
+    if (!transport) {
+      console.warn('⚠️ Email not configured — skipping stop arrival email');
+      return false;
+    }
     await transport.sendMail(mailOptions);
     return true;
   } catch (error) {
@@ -266,6 +279,10 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
     };
 
     const transport = getTransporter();
+    if (!transport) {
+      console.warn('⚠️ Email not configured — skipping password reset email');
+      return false;
+    }
     await transport.sendMail(mailOptions);
     console.log(`✅ Password reset email sent to ${email}`);
     return true;
