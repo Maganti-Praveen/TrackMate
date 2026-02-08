@@ -1,61 +1,76 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns');
-const { promisify } = require('util');
-const resolve4 = promisify(dns.resolve4);
+const https = require('https');
 
 // Email configuration — credentials MUST be in environment variables
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
+// Uses Brevo (formerly Sendinblue) HTTP API — SMTP is blocked on Render free tier
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const EMAIL_USER = process.env.EMAIL_USER; // verified sender email in Brevo
 
-if (!EMAIL_USER || !EMAIL_PASSWORD) {
-  console.warn('⚠️  EMAIL_USER and EMAIL_PASSWORD env vars not set — emails will not be sent');
+if (!BREVO_API_KEY || !EMAIL_USER) {
+  console.warn('⚠️  BREVO_API_KEY and EMAIL_USER env vars not set — emails will not be sent');
+} else {
+  console.log('✅ Email service ready (Brevo HTTP API)');
 }
 
-// Create reusable transporter (cached after first successful init)
-let transporter = null;
-let transporterInitPromise = null;
-
 /**
- * Get (or create) the email transporter.
- * Resolves smtp.gmail.com to an IPv4 address manually so that
- * Render (which has no IPv6 outbound) doesn't fail with ENETUNREACH.
+ * Send an email via Brevo HTTP API (works on Render — uses HTTPS port 443)
+ * @param {Object} options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.toName - Recipient name
+ * @param {string} options.subject - Subject line
+ * @param {string} options.html - HTML body
+ * @param {string} [options.fromName='TrackMate Team'] - Sender display name
+ * @returns {Promise<boolean>}
  */
-const getTransporter = async () => {
-  if (!EMAIL_USER || !EMAIL_PASSWORD) return null;
-  if (transporter) return transporter;
-
-  // Deduplicate concurrent init calls
-  if (!transporterInitPromise) {
-    transporterInitPromise = (async () => {
-      try {
-        // --- Manually resolve IPv4 to dodge Render's IPv6 blackhole ---
-        const addresses = await resolve4('smtp.gmail.com');
-        const ipv4Host = addresses[0];
-        console.log(`📧 Resolved smtp.gmail.com → ${ipv4Host}`);
-
-        const t = nodemailer.createTransport({
-          host: ipv4Host,          // IPv4 address directly — no DNS lookup by nodemailer
-          port: 587,
-          secure: false,           // STARTTLS — upgrades to TLS after connect
-          auth: { user: EMAIL_USER, pass: EMAIL_PASSWORD },
-          tls: { servername: 'smtp.gmail.com' }, // TLS cert expects the hostname, not the IP
-          connectionTimeout: 30000,
-          socketTimeout: 30000
-        });
-
-        await t.verify();
-        console.log('✅ Email transporter ready (smtp.gmail.com:587 STARTTLS)');
-        transporter = t;
-        return transporter;
-      } catch (err) {
-        console.error('❌ Email transporter init failed:', err.message);
-        transporterInitPromise = null; // allow retry on next call
-        return null;
-      }
-    })();
+const sendEmail = ({ to, toName, subject, html, fromName = 'TrackMate Team' }) => {
+  if (!BREVO_API_KEY || !EMAIL_USER) {
+    console.warn('⚠️ Email not configured — skipping email');
+    return Promise.resolve(false);
   }
 
-  return transporterInitPromise;
+  const payload = JSON.stringify({
+    sender: { name: fromName, email: EMAIL_USER },
+    to: [{ email: to, name: toName || to }],
+    subject,
+    htmlContent: html
+  });
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.brevo.com',
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(true);
+        } else {
+          console.error(`Brevo API error ${res.statusCode}:`, data);
+          resolve(false);
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('Email send error:', err.message);
+      resolve(false);
+    });
+
+    req.setTimeout(30000, () => {
+      req.destroy();
+      console.error('Email send timeout');
+      resolve(false);
+    });
+
+    req.write(payload);
+    req.end();
+  });
 };
 
 /**
@@ -72,9 +87,6 @@ const getTransporter = async () => {
 const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeName, stopName }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Team" <${EMAIL_USER}>`,
-      to: email,
-      subject: 'Welcome to TrackMate \u2013 Smart Bus Tracking System',
       html: `
 <!DOCTYPE html>
 <html>
@@ -155,14 +167,14 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
       `
     };
 
-    const transport = await getTransporter();
-    if (!transport) {
-      console.warn('⚠️ Email not configured — skipping welcome email');
-      return false;
-    }
-    await transport.sendMail(mailOptions);
-    console.log(`✅ Welcome email sent to ${email}`);
-    return true;
+    const success = await sendEmail({
+      to: email,
+      toName: fullName,
+      subject: 'Welcome to TrackMate \u2013 Smart Bus Tracking System',
+      html: mailOptions.html
+    });
+    if (success) console.log(`\u2705 Welcome email sent to ${email}`);
+    return success;
   } catch (error) {
     console.error('Failed to send welcome email:', error.message);
     return false;
@@ -181,7 +193,7 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
 const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Alerts" <${EMAIL_USER}>`,      to: email,      subject: `🚍 Bus Arriving at ${stopName}`,
+
       html: `
 <!DOCTYPE html>
 <html>
@@ -213,13 +225,14 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
       `
     };
 
-    const transport = await getTransporter();
-    if (!transport) {
-      console.warn('⚠️ Email not configured — skipping stop arrival email');
-      return false;
-    }
-    await transport.sendMail(mailOptions);
-    return true;
+    const success = await sendEmail({
+      to: email,
+      toName: fullName,
+      subject: `\ud83d\ude8d Bus Arriving at ${stopName}`,
+      html: mailOptions.html,
+      fromName: 'TrackMate Alerts'
+    });
+    return success;
   } catch (error) {
     console.error('Failed to send stop arrival email:', error.message);
     return false;
@@ -237,9 +250,7 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
 const sendPasswordResetEmail = async ({ email, fullName, username }) => {
   try {
     const mailOptions = {
-      from: `"TrackMate Team" <${EMAIL_USER}>`,
-      to: email,
-      subject: 'TrackMate – Password Reset',
+
       html: `
 <!DOCTYPE html>
 <html>
@@ -297,14 +308,14 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
       `
     };
 
-    const transport = await getTransporter();
-    if (!transport) {
-      console.warn('⚠️ Email not configured — skipping password reset email');
-      return false;
-    }
-    await transport.sendMail(mailOptions);
-    console.log(`✅ Password reset email sent to ${email}`);
-    return true;
+    const success = await sendEmail({
+      to: email,
+      toName: fullName,
+      subject: 'TrackMate \u2013 Password Reset',
+      html: mailOptions.html
+    });
+    if (success) console.log(`\u2705 Password reset email sent to ${email}`);
+    return success;
   } catch (error) {
     console.error('Failed to send password reset email:', error.message);
     return false;
