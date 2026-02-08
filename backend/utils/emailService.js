@@ -35,8 +35,8 @@ const getTransporter = async () => {
 
         const t = nodemailer.createTransport({
           host: ipv4Host,          // IPv4 address directly — no DNS lookup by nodemailer
-          port: 465,
-          secure: true,
+          port: 587,
+          secure: false,           // STARTTLS — upgrades to TLS after connect
           auth: { user: EMAIL_USER, pass: EMAIL_PASSWORD },
           tls: { servername: 'smtp.gmail.com' }, // TLS cert expects the hostname, not the IP
           connectionTimeout: 30000,
@@ -44,7 +44,7 @@ const getTransporter = async () => {
         });
 
         await t.verify();
-        console.log('✅ Email transporter ready (smtp.gmail.com:465)');
+        console.log('✅ Email transporter ready (smtp.gmail.com:587 STARTTLS)');
         transporter = t;
         return transporter;
       } catch (err) {
