@@ -1,5 +1,3 @@
-const https = require('https');
-
 // Email configuration — credentials MUST be in environment variables
 // Uses Brevo (formerly Sendinblue) HTTP API — SMTP is blocked on Render free tier
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
@@ -12,7 +10,7 @@ if (!BREVO_API_KEY || !EMAIL_USER) {
 }
 
 /**
- * Send an email via Brevo HTTP API (works on Render — uses HTTPS port 443)
+ * Send an email via Brevo HTTP API (uses native fetch — port 443, works everywhere)
  * @param {Object} options
  * @param {string} options.to - Recipient email
  * @param {string} options.toName - Recipient name
@@ -21,56 +19,46 @@ if (!BREVO_API_KEY || !EMAIL_USER) {
  * @param {string} [options.fromName='TrackMate Team'] - Sender display name
  * @returns {Promise<boolean>}
  */
-const sendEmail = ({ to, toName, subject, html, fromName = 'TrackMate Team' }) => {
+const sendEmail = async ({ to, toName, subject, html, fromName = 'TrackMate Team' }) => {
   if (!BREVO_API_KEY || !EMAIL_USER) {
     console.warn('⚠️ Email not configured — skipping email');
-    return Promise.resolve(false);
+    return false;
   }
 
-  const payload = JSON.stringify({
-    sender: { name: fromName, email: EMAIL_USER },
-    to: [{ email: to, name: toName || to }],
-    subject,
-    htmlContent: html
-  });
-
-  return new Promise((resolve) => {
-    const req = https.request({
-      hostname: 'api.brevo.com',
-      path: '/v3/smtp/email',
-      method: 'POST',
-      headers: {
-        'api-key': BREVO_API_KEY,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(true);
-        } else {
-          console.error(`Brevo API error ${res.statusCode}:`, data);
-          resolve(false);
-        }
+  // Retry up to 3 times on transient network errors
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': BREVO_API_KEY,
+          'Content-Type': 'application/json',
+          'accept': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: fromName, email: EMAIL_USER },
+          to: [{ email: to, name: toName || to }],
+          subject,
+          htmlContent: html
+        }),
+        signal: AbortSignal.timeout(30000)
       });
-    });
 
-    req.on('error', (err) => {
-      console.error('Email send error:', err.message);
-      resolve(false);
-    });
+      if (res.ok) return true;
 
-    req.setTimeout(30000, () => {
-      req.destroy();
-      console.error('Email send timeout');
-      resolve(false);
-    });
-
-    req.write(payload);
-    req.end();
-  });
+      const body = await res.text();
+      console.error(`Email send failed (attempt ${i + 1}/3): Brevo API ${res.status}: ${body}`);
+      return false; // API errors (4xx/5xx) are not retryable
+    } catch (err) {
+      if (i === 2) {
+        console.error(`Email send failed (attempt ${i + 1}/3):`, err.message);
+        return false;
+      }
+      console.warn(`Email send retry ${i + 1}/3 (${err.message}) — waiting ${(i + 1)}s...`);
+      await new Promise(r => setTimeout(r, (i + 1) * 1000));
+    }
+  }
+  return false;
 };
 
 /**
