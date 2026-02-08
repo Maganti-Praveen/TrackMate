@@ -74,92 +74,134 @@ const sendEmail = async ({ to, toName, subject, html, fromName = 'TrackMate Team
  */
 const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeName, stopName }) => {
   try {
-    const mailOptions = {
-      html: `
+    const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-    .details { background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0; }
-    .detail-row { margin: 10px 0; }
-    .detail-label { font-weight: bold; color: #667eea; }
-    .steps { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-    .step { margin: 15px 0; padding-left: 25px; position: relative; }
-    .step:before { content: "✓"; position: absolute; left: 0; color: #667eea; font-weight: bold; }
-    .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to TrackMate</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 28px;">🚍 Welcome to TrackMate</h1>
-      <p style="margin: 10px 0 0 0; font-size: 16px;">Smart Bus Tracking System</p>
-    </div>
-    
-    <div class="content">
-      <p>Hello <strong>${fullName}</strong>,</p>
-      
-      <p>Welcome to <strong>TrackMate – Smart Bus Tracking System</strong>!</p>
-      <p>Your account has been successfully created and you are now ready to track your assigned bus in real time.</p>
-      
-      <div class="details">
-        <h3 style="margin-top: 0; color: #667eea;">📋 Your Account Details:</h3>
-        <div class="detail-row">
-          <span class="detail-label">Username / Roll Number:</span> ${username}
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Assigned Bus Number:</span> ${busNumber || 'Not assigned yet'}
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Route:</span> ${routeName || 'Not assigned yet'}
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Boarding Stop:</span> ${stopName || 'Not assigned yet'}
-        </div>
-      </div>
-      
-      <div class="steps">
-        <h3 style="margin-top: 0; color: #667eea;">🚀 Getting Started:</h3>
-        <div class="step">Login using your roll number as the initial password.</div>
-        <div class="step">Change your password after first login for security.</div>
-        <div class="step">Track your bus live and check ETA from your dashboard.</div>
-        <div class="step">Enable notifications to receive arrival alerts.</div>
-      </div>
-      
-      <div class="warning">
-        <h3 style="margin-top: 0; color: #856404;">🔒 Important Security Note:</h3>
-        <p style="margin: 0;">For your safety, please update your password immediately after logging in. Your initial password is your roll number (<strong>${username}</strong>).</p>
-      </div>
-      
-      <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #667eea;">❓ Need Help?</h3>
-        <p style="margin: 0;">If your bus/route details are incorrect or you face any issues, please contact the TrackMate administrator.</p>
-      </div>
-      
-      <p>We hope TrackMate makes your daily commute smarter, safer, and more convenient.</p>
-      
-      <div class="footer">
-        <p><strong>Best Regards,</strong><br>
-        <strong>TrackMate Team</strong><br>
-        Smart Campus Transportation System</p>
-      </div>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:#F5F5F5;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#2D2D2D;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F5F5F5;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:36px 32px;text-align:center;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td align="center">
+              <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:56px;height:56px;line-height:56px;font-size:28px;text-align:center;">&#128205;</div>
+            </td></tr>
+            <tr><td align="center" style="padding-top:14px;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#FFFFFF;letter-spacing:0.5px;">TrackMate</h1>
+              <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.9);font-weight:400;">Smart Bus Tracking System</p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background-color:#FFFFFF;padding:36px 32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+          <!-- Greeting -->
+          <h2 style="margin:0 0 6px;font-size:22px;font-weight:600;color:#2D2D2D;">Hi ${fullName} &#128075;</h2>
+          <p style="margin:0 0 8px;font-size:17px;font-weight:600;color:#F57C00;">Welcome to TrackMate</p>
+          <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">Your smart commute companion is ready. Your account has been created and you can now track your assigned bus in real time.</p>
+
+          <!-- Account Details Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8F0;border:1px solid #FFE0B2;border-radius:10px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr><td style="font-size:15px;font-weight:700;color:#E65100;padding-bottom:14px;">
+                  &#128203;&nbsp; Account Details
+                </td></tr>
+                <tr><td>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#444;">
+                    <tr>
+                      <td style="padding:7px 0;font-weight:600;color:#795548;width:160px;">Roll Number</td>
+                      <td style="padding:7px 0;">${username}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:7px 0;font-weight:600;color:#795548;border-top:1px solid #FFE0B2;">Assigned Bus</td>
+                      <td style="padding:7px 0;border-top:1px solid #FFE0B2;">${busNumber || 'Not assigned yet'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:7px 0;font-weight:600;color:#795548;border-top:1px solid #FFE0B2;">Route</td>
+                      <td style="padding:7px 0;border-top:1px solid #FFE0B2;">${routeName || 'Not assigned yet'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:7px 0;font-weight:600;color:#795548;border-top:1px solid #FFE0B2;">Boarding Stop</td>
+                      <td style="padding:7px 0;border-top:1px solid #FFE0B2;">${stopName || 'Not assigned yet'}</td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <!-- Getting Started -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border-radius:10px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#E65100;">&#128640;&nbsp; Getting Started</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#444;line-height:1.7;">
+                <tr><td style="padding:5px 0;"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#F57C00;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:10px;">&#10003;</span>Log in using your roll number as the initial password</td></tr>
+                <tr><td style="padding:5px 0;"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#F57C00;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:10px;">&#10003;</span>Change your password after first login</td></tr>
+                <tr><td style="padding:5px 0;"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#F57C00;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:10px;">&#10003;</span>Track your bus live and view ETA</td></tr>
+                <tr><td style="padding:5px 0;"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#F57C00;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:10px;">&#10003;</span>Enable notifications for arrival alerts</td></tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <!-- Security Warning -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF3E0;border-left:4px solid #F57C00;border-radius:0 10px 10px 0;margin-bottom:24px;">
+            <tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E65100;">&#128274;&nbsp; Security Reminder</p>
+              <p style="margin:0;font-size:13px;color:#6D4C00;line-height:1.5;">Please change your password immediately after logging in. Your initial password is your roll number (<strong>${username}</strong>).</p>
+            </td></tr>
+          </table>
+
+          <!-- Help -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border-radius:10px;margin-bottom:28px;">
+            <tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#888;">&#10067;&nbsp; Need Help?</p>
+              <p style="margin:0;font-size:13px;color:#777;line-height:1.5;">If your details are incorrect or you face any issues, contact the TrackMate administrator.</p>
+            </td></tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td align="center" style="padding-bottom:8px;">
+              <a href="https://trackmaterce.onrender.com/" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#F57C00,#FF9800);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:13px 36px;border-radius:8px;box-shadow:0 3px 10px rgba(245,124,0,0.3);">Open TrackMate</a>
+            </td></tr>
+          </table>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:28px 32px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#888;">TrackMate Team</p>
+          <p style="margin:0 0 14px;font-size:12px;color:#AAA;">Smart Campus Transportation System</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;">
+            <tr>
+              <td style="padding:0 8px;"><a href="https://trackmaterce.onrender.com/" style="font-size:12px;color:#F57C00;text-decoration:none;">Dashboard</a></td>
+              <td style="color:#DDD;font-size:12px;">|</td>
+              <td style="padding:0 8px;"><a href="https://maganti-praveen.github.io/TrackMate/" style="font-size:12px;color:#F57C00;text-decoration:none;">Website</a></td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font-size:11px;color:#BBB;">You received this email because an account was created for you on TrackMate.</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
-</html>
-      `
-    };
+</html>`;
 
     const success = await sendEmail({
       to: email,
       toName: fullName,
-      subject: 'Welcome to TrackMate \u2013 Smart Bus Tracking System',
-      html: mailOptions.html
+      subject: 'Welcome to TrackMate \u2013 Your Smart Commute Starts Now',
+      html
     });
     if (success) console.log(`\u2705 Welcome email sent to ${email}`);
     return success;
@@ -180,44 +222,67 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
  */
 const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) => {
   try {
-    const mailOptions = {
-
-      html: `
+    const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .alert { background: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 8px; }
-    .content { padding: 20px; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Arriving</title>
 </head>
-<body>
-  <div class="container">
-    <div class="alert">
-      <h2 style="margin: 0;">🚍 Bus Alert</h2>
-    </div>
-    <div class="content">
-      <p>Hi <strong>${fullName}</strong>,</p>
-      <p>Your bus is arriving at <strong>${stopName}</strong> in approximately <strong>${etaMinutes} minute${etaMinutes !== 1 ? 's' : ''}</strong>.</p>
-      <p>Please be ready at your stop.</p>
-      <p style="margin-top: 30px; color: #666; font-size: 14px;">
-        Best regards,<br>
-        <strong>TrackMate Team</strong>
-      </p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:#F5F5F5;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#2D2D2D;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F5F5F5;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:30px 32px;text-align:center;">
+          <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:50px;height:50px;line-height:50px;font-size:24px;text-align:center;">&#128652;</div>
+          <h1 style="margin:12px 0 0;font-size:22px;font-weight:700;color:#FFFFFF;">Bus Arriving Soon</h1>
+          <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.9);">TrackMate Alert</p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background-color:#FFFFFF;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+          <p style="margin:0 0 20px;font-size:16px;color:#2D2D2D;">Hi <strong>${fullName}</strong>,</p>
+
+          <!-- ETA Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8F0;border:1px solid #FFE0B2;border-radius:10px;margin-bottom:24px;">
+            <tr><td style="padding:24px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:42px;font-weight:700;color:#F57C00;">${etaMinutes}<span style="font-size:18px;font-weight:400;"> min</span></p>
+              <p style="margin:0;font-size:15px;color:#555;">until arrival at <strong style="color:#E65100;">${stopName}</strong></p>
+            </td></tr>
+          </table>
+
+          <p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.6;">Your bus is almost at your stop. Please make your way there and be ready to board.</p>
+
+          <!-- CTA -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td align="center">
+              <a href="https://trackmaterce.onrender.com/" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#F57C00,#FF9800);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:8px;box-shadow:0 3px 10px rgba(245,124,0,0.3);">Track Live</a>
+            </td></tr>
+          </table>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:24px 32px;text-align:center;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#888;">TrackMate Team</p>
+          <p style="margin:0;font-size:11px;color:#BBB;">Smart Campus Transportation System</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
-</html>
-      `
-    };
+</html>`;
 
     const success = await sendEmail({
       to: email,
       toName: fullName,
-      subject: `\ud83d\ude8d Bus Arriving at ${stopName}`,
-      html: mailOptions.html,
+      subject: `Bus arriving at ${stopName} in ${etaMinutes} min`,
+      html,
       fromName: 'TrackMate Alerts'
     });
     return success;
@@ -237,70 +302,99 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
  */
 const sendPasswordResetEmail = async ({ email, fullName, username }) => {
   try {
-    const mailOptions = {
-
-      html: `
+    const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-    .details { background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0; }
-    .detail-row { margin: 10px 0; }
-    .detail-label { font-weight: bold; color: #667eea; }
-    .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Reset</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 28px;">🔑 Password Reset</h1>
-      <p style="margin: 10px 0 0 0; font-size: 16px;">TrackMate – Smart Bus Tracking</p>
-    </div>
-    
-    <div class="content">
-      <p>Hello <strong>${fullName}</strong>,</p>
-      
-      <p>Your password has been reset successfully. Here are your updated login credentials:</p>
-      
-      <div class="details">
-        <h3 style="margin-top: 0; color: #667eea;">📋 Login Credentials:</h3>
-        <div class="detail-row">
-          <span class="detail-label">Username:</span> ${username}
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">New Password:</span> ${username}
-        </div>
-      </div>
-      
-      <div class="warning">
-        <h3 style="margin-top: 0; color: #856404;">🔒 Important:</h3>
-        <p style="margin: 0;">Please change your password immediately after logging in. Your password has been reset to your roll number (<strong>${username}</strong>) for security purposes.</p>
-      </div>
-      
-      <p>If you did not request this password reset, please contact the TrackMate administrator immediately.</p>
-      
-      <div class="footer">
-        <p><strong>Best Regards,</strong><br>
-        <strong>TrackMate Team</strong><br>
-        Smart Campus Transportation System</p>
-      </div>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:#F5F5F5;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#2D2D2D;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F5F5F5;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:36px 32px;text-align:center;">
+          <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:56px;height:56px;line-height:56px;font-size:28px;text-align:center;">&#128272;</div>
+          <h1 style="margin:14px 0 0;font-size:24px;font-weight:700;color:#FFFFFF;">Password Updated</h1>
+          <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">TrackMate – Smart Bus Tracking</p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background-color:#FFFFFF;padding:36px 32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+
+          <h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#2D2D2D;">Hi ${fullName},</h2>
+          <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">Your password has been reset successfully. Use the credentials below to log back in.</p>
+
+          <!-- Credentials Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8F0;border:1px solid #FFE0B2;border-radius:10px;margin-bottom:24px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#E65100;">&#128100;&nbsp; Login Credentials</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#444;">
+                <tr>
+                  <td style="padding:8px 0;font-weight:600;color:#795548;width:160px;">Username</td>
+                  <td style="padding:8px 0;"><code style="background:#FFF3E0;padding:3px 10px;border-radius:4px;font-size:14px;color:#E65100;font-weight:600;">${username}</code></td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;font-weight:600;color:#795548;border-top:1px solid #FFE0B2;">Temporary Password</td>
+                  <td style="padding:8px 0;border-top:1px solid #FFE0B2;"><code style="background:#FFF3E0;padding:3px 10px;border-radius:4px;font-size:14px;color:#E65100;font-weight:600;">${username}</code></td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <!-- Security Warning -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF3E0;border-left:4px solid #F57C00;border-radius:0 10px 10px 0;margin-bottom:24px;">
+            <tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E65100;">&#128274;&nbsp; Change Your Password</p>
+              <p style="margin:0;font-size:13px;color:#6D4C00;line-height:1.5;">Please update your password immediately after logging in. Your temporary password is your roll number for security purposes.</p>
+            </td></tr>
+          </table>
+
+          <!-- Not You -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border-radius:10px;margin-bottom:28px;">
+            <tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#888;">&#9888;&#65039;&nbsp; Didn't request this?</p>
+              <p style="margin:0;font-size:13px;color:#777;line-height:1.5;">If you did not request a password reset, please contact the TrackMate administrator immediately.</p>
+            </td></tr>
+          </table>
+
+          <!-- CTA Button -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr><td align="center" style="padding-bottom:8px;">
+              <a href="https://trackmaterce.onrender.com/" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#F57C00,#FF9800);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:13px 36px;border-radius:8px;box-shadow:0 3px 10px rgba(245,124,0,0.3);">Log In Now</a>
+            </td></tr>
+          </table>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:28px 32px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#888;">TrackMate Team</p>
+          <p style="margin:0 0 14px;font-size:12px;color:#AAA;">Smart Campus Transportation System</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;">
+            <tr>
+              <td style="padding:0 8px;"><a href="https://trackmaterce.onrender.com/" style="font-size:12px;color:#F57C00;text-decoration:none;">Dashboard</a></td>
+              <td style="color:#DDD;font-size:12px;">|</td>
+              <td style="padding:0 8px;"><a href="https://maganti-praveen.github.io/TrackMate/" style="font-size:12px;color:#F57C00;text-decoration:none;">Website</a></td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font-size:11px;color:#BBB;">You received this email because a password reset was requested for your TrackMate account.</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
-</html>
-      `
-    };
+</html>`;
 
     const success = await sendEmail({
       to: email,
       toName: fullName,
-      subject: 'TrackMate \u2013 Password Reset',
-      html: mailOptions.html
+      subject: 'TrackMate \u2013 Your Password Has Been Reset',
+      html
     });
     if (success) console.log(`\u2705 Password reset email sent to ${email}`);
     return success;
