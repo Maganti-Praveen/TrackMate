@@ -687,22 +687,51 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Test Notification */}
-            <button
-              onClick={async () => {
-                try {
-                  toast('Sending test...');
-                  await api.get('/notifications/test-push');
-                  toast.success('Check your notifications!');
-                } catch (err) {
-                  toast.error('Test failed');
-                }
-              }}
-              disabled={!notificationsEnabled}
-              className="sd-test-btn"
-            >
-              🔔 Send Test Notification
-            </button>
+            {/* Notification Control Card */}
+            <div className="sd-notif-card sd-card-animate" style={{ animationDelay: '0.24s' }}>
+              <div className="sd-notif-header">
+                <div className="sd-notif-icon-ring">
+                  {notificationsEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                </div>
+                <div className="sd-notif-info">
+                  <h3 className="sd-notif-title">Push Notifications</h3>
+                  <p className="sd-notif-desc">
+                    {notificationsEnabled
+                      ? 'You\'ll be alerted when your bus is nearby'
+                      : 'Enable to get real-time bus approach alerts'}
+                  </p>
+                </div>
+                <button
+                  onClick={notificationsEnabled ? disableNotifications : enableNotifications}
+                  className={`sd-notif-toggle ${notificationsEnabled ? 'sd-notif-toggle-on' : 'sd-notif-toggle-off'}`}
+                >
+                  <span className={`sd-notif-toggle-dot ${notificationsEnabled ? 'sd-notif-dot-on' : ''}`} />
+                </button>
+              </div>
+              {notificationsEnabled && (
+                <div className="sd-notif-actions">
+                  <div className="sd-notif-status">
+                    <span className="sd-notif-status-dot" />
+                    <span className="sd-notif-status-text">Active &middot; Permission: {permission}</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        toast('Sending test...');
+                        await api.get('/notifications/test-push');
+                        toast.success('Check your notifications!');
+                      } catch (err) {
+                        toast.error('Test failed');
+                      }
+                    }}
+                    className="sd-notif-test-btn"
+                  >
+                    <Bell className="w-4 h-4" />
+                    Send Test
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

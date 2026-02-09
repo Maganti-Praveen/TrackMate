@@ -20,6 +20,7 @@ import AssignStudents from './pages/AssignStudents';
 import ManageStudents from './pages/ManageStudents';
 import DriverSimulator from './pages/DriverSimulator';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 
 const router = createBrowserRouter(
   [
@@ -122,7 +123,8 @@ const router = createBrowserRouter(
               <Profile />
             </ProtectedRoute>
           )
-        }
+        },
+        { path: '*', element: <NotFound /> }
       ]
     }
   ],

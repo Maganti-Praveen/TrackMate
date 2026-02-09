@@ -91,7 +91,7 @@ const sendWelcomeEmail = async ({ email, fullName, username, busNumber, routeNam
         <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:36px 32px;text-align:center;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
             <tr><td align="center">
-              <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:56px;height:56px;line-height:56px;font-size:28px;text-align:center;">&#128205;</div>
+              <img src="https://trackmaterce.onrender.com/email-logo.png" alt="TrackMate" width="56" height="56" style="display:block;margin:0 auto;border-radius:14px;" />
             </td></tr>
             <tr><td align="center" style="padding-top:14px;">
               <h1 style="margin:0;font-size:26px;font-weight:700;color:#FFFFFF;letter-spacing:0.5px;">TrackMate</h1>
@@ -237,7 +237,7 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:30px 32px;text-align:center;">
-          <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:50px;height:50px;line-height:50px;font-size:24px;text-align:center;">&#128652;</div>
+          <img src="https://trackmaterce.onrender.com/email-logo.png" alt="TrackMate" width="50" height="50" style="display:block;margin:0 auto;border-radius:12px;" />
           <h1 style="margin:12px 0 0;font-size:22px;font-weight:700;color:#FFFFFF;">Bus Arriving Soon</h1>
           <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.9);">TrackMate Alert</p>
         </td></tr>
@@ -317,7 +317,7 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:36px 32px;text-align:center;">
-          <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50%;width:56px;height:56px;line-height:56px;font-size:28px;text-align:center;">&#128272;</div>
+          <img src="https://trackmaterce.onrender.com/email-logo.png" alt="TrackMate" width="56" height="56" style="display:block;margin:0 auto;border-radius:14px;" />
           <h1 style="margin:14px 0 0;font-size:24px;font-weight:700;color:#FFFFFF;">Password Updated</h1>
           <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">TrackMate – Smart Bus Tracking</p>
         </td></tr>

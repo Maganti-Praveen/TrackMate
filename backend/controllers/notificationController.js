@@ -91,10 +91,12 @@ const testPush = async (req, res) => {
         console.log('Sending Test Push to:', user.name);
         try {
             await webpush.sendNotification(user.pushSubscription, JSON.stringify({
-                title: 'Test Notification',
-                body: 'This is a test message from the Debugger.',
-                url: '/',
-                tag: 'test-push'
+                title: '🔔 TrackMate',
+                body: 'Push notifications are working! You\'ll get alerts when your bus is nearby.',
+                url: '/student',
+                tag: 'test-push',
+                icon: '/favicons/android-chrome-192x192.png',
+                badge: '/favicons/favicon-32x32.png'
             }));
             res.json({ message: 'Test notification sent.' });
         } catch (pushErr) {

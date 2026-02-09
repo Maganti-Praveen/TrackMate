@@ -37,8 +37,9 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/markers/bus.png',
-    badge: '/markers/location.png',
+    icon: data.icon || '/favicons/android-chrome-192x192.png',
+    badge: data.badge || '/favicons/favicon-32x32.png',
+    image: data.image || undefined,
     data: {
       url: data.url
     },
