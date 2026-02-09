@@ -7,6 +7,7 @@ import {
   Users, Plus, Search, Edit2, Trash2, Phone, 
   User, X, Bus, MapPin, CheckCircle, Clock
 } from 'lucide-react';
+import TrackMateLoader from '../components/TrackMateLoader';
 
 const blankForm = { username: '', name: '', phone: '', email: '', busId: '', stopId: '' };
 
@@ -279,10 +280,7 @@ const ManageStudents = () => {
 
         {/* Students Grid */}
         {loading ? (
-          <div className="card p-12 text-center">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-slate-400 mt-3">Loading students...</p>
-          </div>
+          <TrackMateLoader compact message="Loading students..." />
         ) : filteredStudents.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStudents.map((student) => (

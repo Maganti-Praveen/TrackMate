@@ -5,7 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 import {
   User, Phone, Lock, Shield, Save, Eye, EyeOff,
-  Bus, MapPin, AlertCircle
+  Bus, MapPin, AlertCircle, IdCard, ChevronRight, X,
+  Navigation, Settings, Users, UserCheck, LayoutDashboard, Mail
 } from 'lucide-react';
 
 const roleRedirect = {
@@ -135,11 +136,11 @@ const Profile = () => {
 
   const getRoleBadge = (role) => {
     const styles = {
-      admin: 'bg-purple-500/20 text-purple-400',
-      driver: 'bg-emerald-500/20 text-emerald-400',
-      student: 'bg-indigo-500/20 text-indigo-400'
+      admin: 'profile-badge-admin',
+      driver: 'profile-badge-driver',
+      student: 'profile-badge-student'
     };
-    return styles[role] || 'bg-slate-500/20 text-slate-400';
+    return styles[role] || 'profile-badge-default';
   };
 
   // Get stops for selected bus
@@ -147,223 +148,345 @@ const Profile = () => {
   const availableStops = selectedBus?.route?.stops || [];
 
   return (
-    <main className="min-h-screen pb-24 md:pb-8">
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* First Login Warning */}
+    <main className="profile-page">
+      <div className="profile-container">
+        {/* ---- Security Alert Banner (full width) ---- */}
         {user?.firstLogin && (
-          <div className="card p-5 bg-gradient-to-r from-orange-500/10 to-red-500/10 border-orange-500/20 animate-pulse-slow">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-orange-400 font-semibold mb-1">🔒 Security Alert: Change Your Password</h3>
-                <p className="text-sm text-slate-300">
-                  You're using your initial password (same as your username). For your security, please change it now.
-                </p>
-              </div>
+          <div className="profile-alert profile-card-animate profile-full-width">
+            <div className="profile-alert-icon">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="profile-alert-title">Security Alert</h3>
+              <p className="profile-alert-text">
+                Change your password if using default credentials. Your initial password is your username.
+              </p>
             </div>
           </div>
         )}
 
-        {/* Header */}
-        <header className="text-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-            <User className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">{formData.name || formData.username}</h1>
-          <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${getRoleBadge(formData.role)}`}>
-            {formData.role}
-          </span>
-        </header>
-
-        {/* Account Info Card */}
-        <div className="card p-5">
-          <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4">Account Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-800/50 rounded-xl p-3">
-              <p className="text-xs text-slate-500 mb-1">Username</p>
-              <p className="text-white font-medium truncate">@{formData.username}</p>
-            </div>
-            <div className="bg-slate-800/50 rounded-xl p-3">
-              <p className="text-xs text-slate-500 mb-1">Role</p>
-              <p className="text-white font-medium capitalize">{formData.role}</p>
-            </div>
-            {formData.phone && (
-              <div className="bg-slate-800/50 rounded-xl p-3 col-span-2">
-                <p className="text-xs text-slate-500 mb-1">Phone</p>
-                <p className="text-white font-medium">{formData.phone}</p>
+        {/* ---- Desktop 2-column grid ---- */}
+        <div className="profile-grid">
+          {/* LEFT COLUMN: Header + Role-specific cards */}
+          <div className="profile-col-left">
+            {/* Profile Header */}
+            <header className="profile-header profile-card-animate">
+              <div className="profile-avatar">
+                <User className="w-10 h-10 text-white" />
               </div>
-            )}
-          </div>
-        </div>
+              <h1 className="profile-name">{formData.name || formData.username}</h1>
+              <span className={`profile-badge ${getRoleBadge(formData.role)}`}>
+                {formData.role}
+              </span>
+              <div className="profile-header-divider" />
+            </header>
 
-        {/* Profile Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Personal Info */}
-          <div className="card p-5 space-y-4">
-            <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Personal Information</h2>
-
-            <div>
-              <label className="text-sm text-slate-300 mb-1.5 block">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your name"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-300 mb-1.5 block">Phone Number</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bus & Stop Selection - Students Only */}
-          {formData.role === 'student' && (
-            <div className="card p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Bus className="w-4 h-4 text-indigo-400" />
-                <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Bus Assignment</h2>
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 mb-1.5 block">Select Bus</label>
-                <div className="relative">
-                  <Bus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <select
-                    value={selectedBusId}
-                    onChange={handleBusChange}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
-                  >
-                    <option value="">Select a bus...</option>
-                    {buses.map(bus => (
-                      <option key={bus._id} value={bus._id}>
-                        {bus.name} ({bus.numberPlate}) {bus.route ? `- ${bus.route.name}` : ''}
-                      </option>
-                    ))}
-                  </select>
+            {/* Account Information (Read-Only) — admin/driver only (students see it on right) */}
+            {formData.role !== 'student' && (
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <IdCard className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Account Information</h2>
                 </div>
-              </div>
+                <div className="profile-info-grid">
+                  <div className="profile-info-tag">
+                    <span className="profile-info-label">Username</span>
+                    <span className="profile-info-value">@{formData.username}</span>
+                  </div>
+                  <div className="profile-info-tag">
+                    <span className="profile-info-label">Role</span>
+                    <span className="profile-info-value capitalize">{formData.role}</span>
+                  </div>
+                  {formData.phone && (
+                    <div className="profile-info-tag profile-info-tag-full">
+                      <span className="profile-info-label">Phone</span>
+                      <span className="profile-info-value">{formData.phone}</span>
+                    </div>
+                  )}
+                  {user?.email && (
+                    <div className="profile-info-tag profile-info-tag-full">
+                      <span className="profile-info-label">Email</span>
+                      <span className="profile-info-value">{user.email}</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
-              {availableStops.length > 0 && (
-                <div>
-                  <label className="text-sm text-slate-300 mb-1.5 block">Select Your Stop</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <select
-                      value={selectedStopSeq}
-                      onChange={(e) => setSelectedStopSeq(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
-                    >
-                      <option value="">Select your stop...</option>
-                      {availableStops.map(stop => (
-                        <option key={stop._id} value={stop.seq}>
-                          Stop #{stop.seq}: {stop.name}
-                        </option>
-                      ))}
-                    </select>
+            {/* Admin — Permissions / Quick Links */}
+            {formData.role === 'admin' && (
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <Shield className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Admin Privileges</h2>
+                </div>
+                <div className="profile-perms-list">
+                  {[
+                    { icon: LayoutDashboard, label: 'Dashboard & Analytics' },
+                    { icon: Bus, label: 'Manage Buses' },
+                    { icon: UserCheck, label: 'Manage Drivers' },
+                    { icon: Navigation, label: 'Manage Routes' },
+                    { icon: Users, label: 'Manage Students' },
+                    { icon: Settings, label: 'System Configuration' },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="profile-perm-item">
+                      <Icon className="w-4 h-4 profile-perm-icon" />
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Driver — Assignment Info */}
+            {formData.role === 'driver' && (
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <Navigation className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Driver Assignment</h2>
+                </div>
+                <div className="profile-info-grid">
+                  <div className="profile-info-tag profile-info-tag-full">
+                    <span className="profile-info-label">Assigned Bus</span>
+                    <span className="profile-info-value">
+                      {user?.assignedBusId ? (
+                        <span className="profile-assignment-pill">
+                          <Bus className="w-4 h-4 flex-shrink-0" />
+                          <span>Bus assigned</span>
+                        </span>
+                      ) : (
+                        <span className="profile-no-assignment">No bus assigned — contact admin</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="profile-info-tag profile-info-tag-full">
+                    <span className="profile-info-label">Status</span>
+                    <span className="profile-info-value">
+                      <span className="profile-driver-status">
+                        <span className="profile-driver-status-dot" />
+                        Active Driver
+                      </span>
+                    </span>
                   </div>
                 </div>
-              )}
+              </section>
+            )}
 
-              {currentAssignment && (
-                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                  <p className="text-xs text-indigo-300">
-                    Current: <strong>{currentAssignment.bus?.name}</strong>
-                    {currentAssignment.stop?.name && ` → ${currentAssignment.stop.name}`}
-                  </p>
+            {/* Bus Assignment — Students Only */}
+            {formData.role === 'student' && (
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <Bus className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Bus Assignment</h2>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Change Password */}
-          <div className="card p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-slate-400" />
-              <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Change Password</h2>
-            </div>
+                <div className="profile-form-fields">
+                  <div className="profile-field">
+                    <label className="profile-label">Select Bus</label>
+                    <div className="profile-input-wrap">
+                      <Bus className="profile-input-icon" />
+                      <select
+                        value={selectedBusId}
+                        onChange={handleBusChange}
+                        className="profile-input profile-select"
+                      >
+                        <option value="">Select a bus...</option>
+                        {buses.map(bus => (
+                          <option key={bus._id} value={bus._id}>
+                            {bus.name} ({bus.numberPlate}) {bus.route ? `- ${bus.route.name}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-            <div>
-              <label className="text-sm text-slate-300 mb-1.5 block">Current Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  name="currentPassword"
-                  value={formData.currentPassword}
-                  onChange={handleChange}
-                  placeholder="Required to change password"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                >
-                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+                  {availableStops.length > 0 && (
+                    <div className="profile-field">
+                      <label className="profile-label">Select Your Stop</label>
+                      <div className="profile-input-wrap">
+                        <MapPin className="profile-input-icon" />
+                        <select
+                          value={selectedStopSeq}
+                          onChange={(e) => setSelectedStopSeq(e.target.value)}
+                          className="profile-input profile-select"
+                        >
+                          <option value="">Select your stop...</option>
+                          {availableStops.map(stop => (
+                            <option key={stop._id} value={stop.seq}>
+                              Stop #{stop.seq}: {stop.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
 
-            <div>
-              <label className="text-sm text-slate-300 mb-1.5 block">New Password</label>
-              <div className="relative">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Leave blank to keep current"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                >
-                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">Only fill this if you want to change your password.</p>
-            </div>
+                  {currentAssignment && (
+                    <div className="profile-assignment-pill">
+                      <Bus className="w-4 h-4 flex-shrink-0" />
+                      <span>
+                        {currentAssignment.bus?.name}
+                        {currentAssignment.stop?.name && (
+                          <>
+                            <ChevronRight className="inline w-3.5 h-3.5 mx-0.5 opacity-60" />
+                            {currentAssignment.stop.name}
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Save Changes
-              </>
-            )}
-          </button>
-        </form>
+          {/* RIGHT COLUMN: Personal Info + Password (+ Account Info for students) */}
+          <div className="profile-col-right">
+            <form onSubmit={handleSubmit} className="profile-form-area">
+              {/* Account Information (Read-Only) — students only; admin/driver have it in left col */}
+              {formData.role === 'student' && (
+                <section className="profile-card profile-card-animate">
+                  <div className="profile-card-header">
+                    <IdCard className="w-4.5 h-4.5 profile-card-icon" />
+                    <h2 className="profile-card-title">Account Information</h2>
+                  </div>
+                  <div className="profile-info-grid">
+                    <div className="profile-info-tag">
+                      <span className="profile-info-label">Username</span>
+                      <span className="profile-info-value">@{formData.username}</span>
+                    </div>
+                    <div className="profile-info-tag">
+                      <span className="profile-info-label">Role</span>
+                      <span className="profile-info-value capitalize">{formData.role}</span>
+                    </div>
+                    {formData.phone && (
+                      <div className="profile-info-tag profile-info-tag-full">
+                        <span className="profile-info-label">Phone</span>
+                        <span className="profile-info-value">{formData.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Personal Information */}
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <User className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Personal Information</h2>
+                </div>
+
+                <div className="profile-form-fields">
+                  <div className="profile-field">
+                    <label className="profile-label">Full Name</label>
+                    <div className="profile-input-wrap">
+                      <User className="profile-input-icon" />
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Enter your name"
+                        className="profile-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="profile-field">
+                    <label className="profile-label">Phone Number</label>
+                    <div className="profile-input-wrap">
+                      <Phone className="profile-input-icon" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="Enter phone number"
+                        className="profile-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Change Password */}
+              <section className="profile-card profile-card-animate">
+                <div className="profile-card-header">
+                  <Shield className="w-4.5 h-4.5 profile-card-icon" />
+                  <h2 className="profile-card-title">Change Password</h2>
+                </div>
+
+                <div className="profile-form-fields">
+                  <div className="profile-field">
+                    <label className="profile-label">Current Password</label>
+                    <div className="profile-input-wrap">
+                      <Lock className="profile-input-icon" />
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        name="currentPassword"
+                        value={formData.currentPassword}
+                        onChange={handleChange}
+                        placeholder="Required to change password"
+                        className="profile-input pr-11"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="profile-eye-btn"
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="profile-field">
+                    <label className="profile-label">New Password</label>
+                    <div className="profile-input-wrap">
+                      <Shield className="profile-input-icon" />
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Leave blank to keep current"
+                        className="profile-input pr-11"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="profile-eye-btn"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                      </button>
+                    </div>
+                    <p className="profile-helper">Only fill this if you want to change your password.</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Save Button */}
+              <div className="profile-save-wrap">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="profile-save-btn"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </main>
   );

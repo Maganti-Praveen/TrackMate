@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../utils/api';
-import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound, MapPin, Shield, Bell } from 'lucide-react';
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -105,44 +105,125 @@ const Login = () => {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-start px-4 pt-16 pb-8 safe-bottom">
-      {/* Background decorations */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-sm animate-fade-in">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-wide">TRACKMATE</h1>
-          <p className="text-slate-400 text-sm">Real-time college bus tracking</p>
+    <main className="login-page">
+      {/* ===== LEFT PANEL — Visual Story ===== */}
+      <div className="login-hero">
+        {/* Animated background shapes */}
+        <div className="login-hero-bg">
+          <div className="hero-circle hero-circle-1" />
+          <div className="hero-circle hero-circle-2" />
+          <div className="hero-circle hero-circle-3" />
         </div>
 
-        {/* Login/Signup Card */}
-        <div className="card-elevated p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white mb-1">
-            {isSignUp ? 'Create Account' : 'Welcome back'}
-          </h2>
-          <p className="text-slate-400 text-sm mb-6">
-            {isSignUp ? 'Register to start tracking your bus' : 'Sign in to continue tracking'}
+        <div className="login-hero-content">
+          {/* Logo */}
+          <img
+            src="/logohorigental.svg"
+            alt="TrackMate"
+            className="login-hero-logo"
+          />
+
+          {/* Tagline */}
+          <h1 className="login-hero-title">
+            {isSignUp ? 'Start Your Smart Commute Today' : 'Smart Bus Tracking Made Simple'}
+          </h1>
+          <p className="login-hero-subtitle">
+            {isSignUp
+              ? 'Join TrackMate to track your bus in real time.'
+              : 'Track. Ride. Arrive safely.'}
           </p>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Registration Success Popup */}
+          {/* Feature pills */}
+          <div className="login-hero-features">
+            <div className="hero-feature-pill">
+              <MapPin className="w-4 h-4" />
+              <span>Live Tracking</span>
+            </div>
+            <div className="hero-feature-pill">
+              <Bell className="w-4 h-4" />
+              <span>Smart Alerts</span>
+            </div>
+            <div className="hero-feature-pill">
+              <Shield className="w-4 h-4" />
+              <span>Secure Login</span>
+            </div>
+          </div>
+
+          {/* Floating bus SVG illustration */}
+          <div className="login-hero-illustration">
+            <svg viewBox="0 0 320 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full max-w-xs opacity-30">
+              {/* Route line */}
+              <path d="M 20 80 Q 80 20 160 60 T 300 40" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeDasharray="6 4" fill="none">
+                <animate attributeName="stroke-dashoffset" values="0;-20" dur="2s" repeatCount="indefinite" />
+              </path>
+              {/* Bus body */}
+              <rect x="120" y="50" width="80" height="40" rx="8" fill="rgba(255,255,255,0.25)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </rect>
+              {/* Bus windows */}
+              <rect x="130" y="56" width="14" height="12" rx="2" fill="rgba(255,255,255,0.4)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </rect>
+              <rect x="150" y="56" width="14" height="12" rx="2" fill="rgba(255,255,255,0.4)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </rect>
+              <rect x="170" y="56" width="14" height="12" rx="2" fill="rgba(255,255,255,0.4)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </rect>
+              {/* Wheels */}
+              <circle cx="140" cy="92" r="6" fill="rgba(255,255,255,0.3)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="180" cy="92" r="6" fill="rgba(255,255,255,0.3)">
+                <animateTransform attributeName="transform" type="translate" values="0,0;4,-2;0,0" dur="3s" repeatCount="indefinite" />
+              </circle>
+              {/* Stop dots */}
+              <circle cx="40" cy="72" r="5" fill="rgba(255,255,255,0.5)">
+                <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="270" cy="44" r="5" fill="rgba(255,255,255,0.5)">
+                <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
+              </circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== RIGHT PANEL — Auth Card ===== */}
+      <div className="login-form-panel">
+        <div className="login-card login-card-animate">
+          {/* Mobile logo (hidden on desktop) */}
+          <div className="login-card-mobile-logo">
+            <img src="/logohorigental.svg" alt="TrackMate" className="h-10" />
+          </div>
+
+          {/* Card Header */}
+          <div className="mb-7">
+            <h2 className="login-card-title">
+              {isSignUp ? 'Create Your Account' : 'Welcome Back'}
+            </h2>
+            <p className="login-card-subtitle">
+              {isSignUp ? 'Get started with TrackMate' : 'Log in to continue tracking your bus'}
+            </p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Registration Success */}
             {registrationSuccess && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 animate-fade-in">
+              <div className="login-success-banner login-card-animate">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  </div>
                   <div>
-                    <h3 className="text-emerald-400 font-semibold mb-1">Account Created!</h3>
-                    <p className="text-sm text-slate-300">
-                      Check your email for login credentials.
+                    <h3 className="font-semibold text-emerald-800 text-sm">Account Created Successfully!</h3>
+                    <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
+                      Check your email for login credentials. Your initial password is your roll number.
                     </p>
                     <button
                       type="button"
                       onClick={() => { setRegistrationSuccess(false); setIsSignUp(false); }}
-                      className="mt-3 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
+                      className="mt-3 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
                     >
                       Go to Sign In &rarr;
                     </button>
@@ -151,16 +232,16 @@ const Login = () => {
               </div>
             )}
 
-            {/* Name (signup only) */}
+            {/* Full Name (signup only) */}
             {isSignUp && !registrationSuccess && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Full Name <span className="text-red-400">*</span>
+              <div className="login-field">
+                <label className="login-label">
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="Enter your full name"
-                  className="w-full"
+                  className="login-input"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -169,17 +250,17 @@ const Login = () => {
                 />
               </div>
             )}
-            
+
             {/* Username / Roll Number */}
             {!registrationSuccess && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  {isSignUp ? 'Roll Number' : 'Roll Number / Username'} {isSignUp && <span className="text-red-400">*</span>}
+              <div className="login-field">
+                <label className="login-label">
+                  {isSignUp ? 'Roll Number' : 'Roll Number / Username'} {isSignUp && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
                   placeholder={isSignUp ? 'Enter your roll number' : 'Enter roll number or username'}
-                  className="w-full"
+                  className="login-input"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -191,35 +272,33 @@ const Login = () => {
 
             {/* Email (signup only) */}
             {isSignUp && !registrationSuccess && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Email Address <span className="text-red-400">*</span>
+              <div className="login-field">
+                <label className="login-label">
+                  Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   placeholder="your.email@example.com"
-                  className="w-full"
+                  className="login-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-slate-400 mt-1">You'll receive a welcome email with your login details</p>
+                <p className="text-xs mt-1.5 login-hint">You'll receive a welcome email with your login details</p>
               </div>
             )}
 
             {/* Password (login only) */}
             {!isSignUp && !registrationSuccess && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Password
-                </label>
+              <div className="login-field">
+                <label className="login-label">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
-                    className="w-full pr-12"
+                    className="login-input pr-12"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -229,26 +308,31 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={openForgotPassword}
-                  className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 transition float-right"
-                >
-                  Forgot Password?
-                </button>
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={openForgotPassword}
+                    className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400 animate-fade-in">
-                {error}
+              <div className="login-error login-card-animate">
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span>{error}</span>
               </div>
             )}
 
@@ -257,7 +341,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 py-3.5 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                className="login-btn-primary"
               >
                 {isLoading ? (
                   <>
@@ -267,7 +351,7 @@ const Login = () => {
                 ) : (
                   <>
                     {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-                    {isSignUp ? 'Create Account' : 'Sign In'}
+                    {isSignUp ? 'Create Account' : 'Log In'}
                   </>
                 )}
               </button>
@@ -275,64 +359,62 @@ const Login = () => {
           </form>
 
           {/* Toggle Sign up / Sign in */}
-          <div className="mt-6 pt-6 border-t border-white/10 text-center">
-            <p className="text-slate-400 text-sm">
+          <div className="login-toggle-section">
+            <p className="login-toggle-text">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               <button
                 type="button"
                 onClick={toggleMode}
-                className="ml-2 text-indigo-400 hover:text-indigo-300 font-medium transition"
+                className="login-toggle-btn"
               >
                 {isSignUp ? 'Sign In' : 'Create Account'}
               </button>
             </p>
           </div>
-        </div>
 
-        {/* Footer */}
-        <p className="text-center text-slate-500 text-xs mt-6">
-          {isSignUp
-            ? 'Student accounts only. Admin/Driver accounts are created by administrators.'
-            : 'Contact your administrator if you need help'}
-        </p>
+          {/* Footer hint */}
+          <p className="login-footer-hint">
+            {isSignUp
+              ? 'Student accounts only. Admin/Driver accounts are created by administrators.'
+              : 'Contact your administrator if you need help'}
+          </p>
+        </div>
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* ===== Forgot Password Modal ===== */}
       {showForgotPassword && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={closeForgotPassword}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-sm card-elevated p-6 animate-fade-in"
+            className="login-modal login-card-animate"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
+            {/* Close */}
             <button
               type="button"
               onClick={closeForgotPassword}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                <KeyRound className="w-5 h-5 text-indigo-400" />
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">Forgot Password</h3>
-                <p className="text-xs text-slate-400">We&apos;ll reset and email your credentials</p>
+                <h3 className="text-lg font-bold text-gray-900">Forgot Password</h3>
+                <p className="text-xs text-gray-500">We&apos;ll reset and email your credentials</p>
               </div>
             </div>
 
             <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Roll Number or Email
-                </label>
+              <div className="login-field">
+                <label className="login-label">Roll Number or Email</label>
                 <input
                   type="text"
                   placeholder="Enter your roll number or email"
-                  className="w-full"
+                  className="login-input"
                   value={forgotIdentifier}
                   onChange={(e) => setForgotIdentifier(e.target.value)}
                   required
@@ -341,25 +423,28 @@ const Login = () => {
                 />
               </div>
 
-              {/* Result message */}
+              {/* Result */}
               {forgotResult && (
                 <div
-                  className={`rounded-xl px-4 py-3 text-sm animate-fade-in ${
+                  className={`login-card-animate rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
                     forgotResult.type === 'success'
-                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                      : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                      : 'bg-red-50 border border-red-200 text-red-600'
                   }`}
                 >
-                  {forgotResult.message}
+                  {forgotResult.type === 'success'
+                    ? <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    : <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  }
+                  <span>{forgotResult.message}</span>
                 </div>
               )}
 
-              {/* Submit / Close */}
               {forgotResult?.type === 'success' ? (
                 <button
                   type="button"
                   onClick={closeForgotPassword}
-                  className="w-full rounded-xl bg-slate-700 py-3 text-white font-semibold hover:bg-slate-600 transition active:scale-[0.98]"
+                  className="w-full rounded-xl bg-gray-100 py-3 text-gray-700 font-semibold hover:bg-gray-200 transition-all active:scale-[0.98]"
                 >
                   Back to Login
                 </button>
@@ -367,7 +452,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={forgotLoading || !forgotIdentifier.trim()}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 py-3 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                  className="login-btn-primary"
                 >
                   {forgotLoading ? (
                     <>

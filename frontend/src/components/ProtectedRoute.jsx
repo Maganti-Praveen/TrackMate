@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import TrackMateLoader from './TrackMateLoader';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-200">Loading...</div>;
+    return <TrackMateLoader message="Authenticating..." />;
   }
 
   if (!user) {
