@@ -129,6 +129,7 @@ const StudentDashboard = () => {
   const [stopDepartedInfo, setStopDepartedInfo] = useState(() => {
     try { return JSON.parse(localStorage.getItem(DEPARTED_STORAGE_KEY)); } catch { return null; }
   });
+  const [lastRefreshed, setLastRefreshed] = useState(null);
 
   const subscribedTripRef = useRef(null);
   const previousTripIdRef = useRef(() => {
@@ -223,6 +224,9 @@ const StudentDashboard = () => {
     fetchProfile();
   }, [stopInfo]);
 
+  // Use a ref so socket handlers can call fetchProfile without a dependency-order issue
+  const fetchProfileRef = useRef(null);
+
   const socketHandlers = useMemo(() => ({
     'trip:location_update': handleLocationUpdate,
     'trip:eta_update': handleEtaUpdate,
@@ -230,6 +234,14 @@ const StudentDashboard = () => {
     'trip:stop_left': (p) => handleStopEvent(p, 'LEFT'),
     'trip:sos': setSosAlert,
     'stats:live_visitors': setVisitorCount,
+    'bus:trip_started': () => {
+      // Instantly refresh when a driver starts a trip
+      fetchProfileRef.current?.();
+    },
+    'bus:trip_ended': () => {
+      // Instantly refresh when a trip ends
+      fetchProfileRef.current?.();
+    },
   }), [handleLocationUpdate, handleEtaUpdate, handleStopEvent]);
 
   const { socket, isConnected } = useSocket(socketHandlers);
@@ -297,8 +309,12 @@ const StudentDashboard = () => {
       setError('Failed to load dashboard');
     } finally {
       setLoading(false);
+      setLastRefreshed(Date.now());
     }
   }, [user]);
+
+  // Keep ref in sync so socket handlers always call the latest version
+  fetchProfileRef.current = fetchProfile;
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -316,6 +332,43 @@ const StudentDashboard = () => {
       socket.emit('student:unsubscribe', { tripId });
     };
   }, [socket, tripId, isAuthenticated]);
+
+  // Auto-refresh every 30 seconds (pauses when tab is hidden)
+  useEffect(() => {
+    const POLL_INTERVAL_MS = 30000; // 30 seconds
+    let intervalId = null;
+
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        fetchProfile();
+      }, POLL_INTERVAL_MS);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProfile(); // Refresh immediately when tab becomes visible
+        startPolling();
+      } else {
+        stopPolling(); // Save battery when tab is hidden
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchProfile]);
 
   // Fallback ETA calculation
   useEffect(() => {
@@ -513,6 +566,12 @@ const StudentDashboard = () => {
               <span className={`sd-live-dot ${isConnected ? 'sd-live-dot-on' : ''}`} />
               {isConnected ? 'Live' : 'Offline'}
             </span>
+            {lastRefreshed && (
+              <span className="sd-refresh-indicator" title="Auto-refreshes every 30s">
+                <RefreshCw className="w-3 h-3" />
+                {new Date(lastRefreshed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            )}
           </div>
         </header>
 

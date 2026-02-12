@@ -161,9 +161,7 @@ const getDashboardStats = async (_req, res) => {
   }
 };
 
-const fixStudentData = async (req, res) => {
-  res.status(501).json({ message: 'Legacy fixStudentData is disabled.' });
-};
+
 
 const clearEvents = async (req, res) => {
   try {
@@ -367,7 +365,7 @@ module.exports = {
   getActiveTrips,
   getEventHistory,
   getDashboardStats,
-  fixStudentData,
+
   clearEvents,
   getLiveBusPositions,
   getTripAnalytics,

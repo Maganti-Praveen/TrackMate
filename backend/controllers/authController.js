@@ -28,8 +28,7 @@ const serializeUser = (user) => ({
   email: user.email,
   phone: user.phone,
   firstLogin: user.firstLogin,
-  assignedBusId: user.assignedBusId,
-  assignedStopId: user.assignedStopId
+  assignedBusId: user.assignedBusId
 });
 
 // Hash a password

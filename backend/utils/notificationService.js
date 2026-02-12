@@ -60,7 +60,7 @@ const sendPushNotification = async ({ busId, title, body }) => {
  * @param {Object} params.location - Current location
  * @returns {Promise<boolean>} Success status
  */
-const sendSOSNotification = async ({ tripId, message, location }) => {
+const sendSOSNotification = async ({ tripId, message }) => {
   try {
     const Trip = require('../models/Trip');
 

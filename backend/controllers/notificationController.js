@@ -25,17 +25,17 @@ const subscribe = async (req, res) => {
         if (!pushEnabled) {
             return res.status(503).json({ message: 'Push notifications are not configured on the server' });
         }
-        
+
         const subscription = req.body;
         if (!subscription || !subscription.endpoint) {
             return res.status(400).json({ message: 'Invalid subscription object' });
         }
 
         // Reject subscriptions with invalid/placeholder endpoints (non-secure context)
-        if (subscription.endpoint.includes('permanently-removed.invalid') || 
+        if (subscription.endpoint.includes('permanently-removed.invalid') ||
             !subscription.endpoint.startsWith('https://')) {
-            return res.status(400).json({ 
-                message: 'Invalid push endpoint. Push notifications require a secure (HTTPS) context. If testing on LAN, add your LAN URL to chrome://flags/#unsafely-treat-insecure-origin-as-secure' 
+            return res.status(400).json({
+                message: 'Invalid push endpoint. Push notifications require a secure (HTTPS) context. If testing on LAN, add your LAN URL to chrome://flags/#unsafely-treat-insecure-origin-as-secure'
             });
         }
 
@@ -64,14 +64,14 @@ const sendPush = async (user, payload) => {
     }
 };
 
-const fs = require('fs');
+
 
 const testPush = async (req, res) => {
     try {
         if (!pushEnabled) {
             return res.status(503).json({ message: 'Push notifications are not configured on the server. Please set VAPID keys.' });
         }
-        
+
         // user is attached by authMiddleware
         const user = await User.findById(req.user.id);
         if (!user || !user.pushSubscription) {
@@ -83,8 +83,8 @@ const testPush = async (req, res) => {
             !user.pushSubscription.endpoint?.startsWith('https://')) {
             // Clear the invalid subscription
             await User.findByIdAndUpdate(user._id, { pushSubscription: null });
-            return res.status(400).json({ 
-                message: 'Your push subscription is invalid (created from non-secure context). Please disable and re-enable notifications from a secure context (HTTPS or add LAN URL to chrome://flags).' 
+            return res.status(400).json({
+                message: 'Your push subscription is invalid (created from non-secure context). Please disable and re-enable notifications from a secure context (HTTPS or add LAN URL to chrome://flags).'
             });
         }
 
@@ -100,10 +100,6 @@ const testPush = async (req, res) => {
             }));
             res.json({ message: 'Test notification sent.' });
         } catch (pushErr) {
-            // Write to file so we can read it via tool
-            const logMsg = `[PUSH ERROR] ${new Date().toISOString()} - ${pushErr.message} - Code: ${pushErr.statusCode}\nStack: ${pushErr.stack}\n`;
-            fs.appendFileSync('debug.log', logMsg);
-
             console.error('Test Push Failed:', pushErr);
             // If failed, assume invalid subscription and clear it so frontend knows to re-subscribe
             if ([404, 410, 400, 401].includes(pushErr.statusCode)) {
@@ -115,9 +111,7 @@ const testPush = async (req, res) => {
     } catch (error) {
         console.error('Test Push Error:', error);
         res.status(500).json({
-            message: error.message || 'Internal Server Error',
-            code: error.statusCode || 'UNKNOWN',
-            details: error.body || error.stack
+            message: 'Failed to send test notification. Please try again later.'
         });
     }
 };

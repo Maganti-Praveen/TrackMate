@@ -59,8 +59,12 @@ const createStop = async (req, res) => {
 };
 
 const getStopsByRoute = async (req, res) => {
-  const stops = await ensureStopsExistForRoute(req.params.routeId);
-  res.json(stops);
+  try {
+    const stops = await ensureStopsExistForRoute(req.params.routeId);
+    res.json(stops);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch stops', error: error.message });
+  }
 };
 
 const updateStop = async (req, res) => {
@@ -82,14 +86,18 @@ const updateStop = async (req, res) => {
 };
 
 const deleteStop = async (req, res) => {
-  const stop = await Stop.findByIdAndDelete(req.params.id);
-  if (!stop) {
-    return res.status(404).json({ message: 'Stop not found' });
-  }
+  try {
+    const stop = await Stop.findByIdAndDelete(req.params.id);
+    if (!stop) {
+      return res.status(404).json({ message: 'Stop not found' });
+    }
 
-  await refreshRouteStops(stop.route);
-  await StudentAssignment.deleteMany({ stop: stop._id });
-  res.json({ message: 'Stop removed' });
+    await refreshRouteStops(stop.route);
+    await StudentAssignment.deleteMany({ stop: stop._id });
+    res.json({ message: 'Stop removed' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete stop', error: error.message });
+  }
 };
 
 module.exports = { createStop, getStopsByRoute, updateStop, deleteStop };

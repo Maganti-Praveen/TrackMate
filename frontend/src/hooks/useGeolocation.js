@@ -8,9 +8,6 @@ const GEO_OPTIONS = {
   timeout: 15000 // 15s timeout
 };
 
-// ... inside hooks ...
-
-
 
 const simulatePoint = (lat, lng, idx = 0) => ({
   coords: {

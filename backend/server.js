@@ -25,7 +25,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 // CORS configuration - use specific origins in production
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:5173', 'http://localhost:3000'];
 
@@ -74,13 +74,13 @@ app.get('/', (_req, res) => {
 // Global error handler - must be last middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.stack);
-  
+
   // Don't leak error details in production
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'Internal server error' 
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal server error'
     : err.message;
-  
-  res.status(err.status || 500).json({ 
+
+  res.status(err.status || 500).json({
     message,
     ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
   });
@@ -102,7 +102,10 @@ process.on('uncaughtException', (error) => {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: {
+    origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
+    credentials: true
+  }
 });
 app.set('io', io);
 

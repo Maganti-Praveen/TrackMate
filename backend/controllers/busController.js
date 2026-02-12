@@ -72,8 +72,8 @@ const deleteBus = async (req, res) => {
     // Check for active trips before deletion
     const activeTrip = await Trip.findOne({ bus: req.params.id, status: 'ONGOING' });
     if (activeTrip) {
-      return res.status(400).json({ 
-        message: 'Cannot delete bus with an active trip. End the trip first.' 
+      return res.status(400).json({
+        message: 'Cannot delete bus with an active trip. End the trip first.'
       });
     }
 
@@ -81,7 +81,7 @@ const deleteBus = async (req, res) => {
     if (!bus) {
       return res.status(404).json({ message: 'Bus not found' });
     }
-    
+
     if (bus.driver) {
       await clearDriverMeta(bus.driver);
     }

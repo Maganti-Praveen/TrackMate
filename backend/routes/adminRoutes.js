@@ -10,7 +10,6 @@ const {
   getActiveTrips,
   getEventHistory,
   getDashboardStats,
-  fixStudentData,
   clearEvents
 } = require('../controllers/adminController');
 const {
@@ -37,7 +36,7 @@ const exportLimiter = rateLimit({
   legacyHeaders: false
 });
 
-router.get('/fix-data', fixStudentData);
+
 // Export route before auth middleware - handles its own token auth for browser downloads
 // Rate limited to prevent abuse
 router.get('/export-trips', exportLimiter, require('../controllers/adminController').exportTripsCSV);

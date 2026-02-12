@@ -127,11 +127,12 @@ const updateRoute = async (req, res) => {
 };
 
 const deleteRoute = async (req, res) => {
-  const route = await Route.findByIdAndDelete(req.params.id);
+  const route = await Route.findById(req.params.id);
   if (!route) {
     return res.status(404).json({ message: 'Route not found' });
   }
 
+  // Clean up associated stops and student assignments BEFORE deleting the route
   const routeStops = await Stop.find({ route: route._id }, '_id');
   if (routeStops.length) {
     const stopIds = routeStops.map((stop) => stop._id);
@@ -139,6 +140,8 @@ const deleteRoute = async (req, res) => {
     await Stop.deleteMany({ _id: { $in: stopIds } });
   }
   await Bus.updateMany({ route: route._id }, { route: null });
+
+  await Route.findByIdAndDelete(route._id);
 
   res.json({ message: 'Route removed' });
 };

@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import { refreshSocketAuth, useSocket } from '../hooks/useSocket';
 import useGeolocation from '../hooks/useGeolocation';
+import useWakeLock from '../hooks/useWakeLock';
 import DriverMap from '../components/DriverMap';
 import { ELURU_SIM_PATH } from '../constants/geo';
 import {
@@ -40,6 +41,8 @@ const DriverDashboard = () => {
   const [debugLog, setDebugLog] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator?.onLine ?? true);
   const [showDebug, setShowDebug] = useState(false);
+
+  const { isWakeLockActive, requestWakeLock, releaseWakeLock } = useWakeLock();
 
   const addLog = (message) => {
     setDebugLog(prev => [`${new Date().toLocaleTimeString()} ${message}`, ...prev].slice(0, 20));
@@ -109,6 +112,7 @@ const DriverDashboard = () => {
       const { data } = await api.post('/trips/start', { busId: user.assignedBusId });
       setTrip(data);
       refreshSocketAuth();
+      requestWakeLock();
 
       // Only start GPS tracking if NOT in simulation mode
       if (!isSimulationMode) {
@@ -131,6 +135,7 @@ const DriverDashboard = () => {
         api.post('/trips/end', { tripId: trip._id || trip.id })
       );
       setTrip(null);
+      releaseWakeLock();
       setStatusMessage('Trip ended.');
       addLog('🏁 Trip ended');
     } catch (err) {
@@ -328,6 +333,18 @@ const DriverDashboard = () => {
                   <div>
                     <span className="dd-stat-label">GPS Mode</span>
                     <span className="dd-stat-value">{isSimulationMode ? 'Simulation' : 'Live GPS'}</span>
+                  </div>
+                </div>
+
+                <div className="dd-stat">
+                  <div className={`dd-stat-icon ${isWakeLockActive ? 'dd-stat-icon-on' : ''}`}>
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="dd-stat-label">Screen</span>
+                    <span className={`dd-stat-value ${isWakeLockActive ? 'dd-stat-value-on' : ''}`}>
+                      {isWakeLockActive ? 'Stays On' : 'Normal'}
+                    </span>
                   </div>
                 </div>
 
