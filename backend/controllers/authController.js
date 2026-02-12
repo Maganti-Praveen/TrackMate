@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Bus = require('../models/Bus');
+const Stop = require('../models/Stop');
+const StudentAssignment = require('../models/StudentAssignment');
 const { JWT_SECRET } = require('../config/constants');
 const { sendWelcomeEmail } = require('../utils/emailService');
 
@@ -147,6 +150,8 @@ const registerUser = async (req, res) => {
     const username = typeof req.body.username === 'string' ? req.body.username.trim().toUpperCase() : '';
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const busId = req.body.busId || null;
+    const stopSeq = req.body.stopSeq != null ? Number(req.body.stopSeq) : null;
 
     if (!username) {
       return res.status(400).json({ message: 'Roll number is required' });
@@ -183,14 +188,52 @@ const registerUser = async (req, res) => {
       firstLogin: true // Force password change on first login
     });
 
+    // Optional bus/stop assignment during registration
+    let busNumber = 'Not assigned yet';
+    let routeName = 'Not assigned yet';
+    let stopName = 'Not assigned yet';
+
+    if (busId) {
+      try {
+        const bus = await Bus.findById(busId).populate('route');
+        if (bus) {
+          busNumber = bus.name || bus.numberPlate || busNumber;
+          routeName = bus.route?.name || routeName;
+
+          const assignment = new StudentAssignment({
+            student: user._id,
+            bus: bus._id,
+            stop: null
+          });
+
+          // Look up stop by sequence if provided
+          if (stopSeq != null && bus.route) {
+            const stopDoc = await Stop.findOne({
+              route: bus.route._id,
+              sequence: stopSeq
+            });
+            if (stopDoc) {
+              assignment.stop = stopDoc._id;
+              stopName = stopDoc.name || stopName;
+            }
+          }
+
+          await assignment.save();
+        }
+      } catch (assignErr) {
+        // Assignment is optional — don't fail registration if it errors
+        console.error('Optional assignment during registration failed:', assignErr.message);
+      }
+    }
+
     // Send welcome email with credentials asynchronously
     sendWelcomeEmail({
       email: user.email,
       fullName: user.name,
       username: user.username,
-      busNumber: 'Not assigned yet',
-      routeName: 'Not assigned yet',
-      stopName: 'Not assigned yet'
+      busNumber,
+      routeName,
+      stopName
     }).catch(err => console.error('Welcome email failed:', err.message));
 
     // Do NOT auto-login — user must check email and log in manually

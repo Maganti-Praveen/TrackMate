@@ -1553,6 +1553,32 @@ input, select, textarea {
   color: #9ca3af;
 }
 
+/* ---- SELECT / OPTIONAL FIELDS ---- */
+.login-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.login-optional-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #f97316;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  vertical-align: middle;
+}
+
 /* ---- SUCCESS BANNER ---- */
 .login-success-banner {
   border-radius: 0.85rem;
@@ -1712,6 +1738,18 @@ body:not([data-theme]) .login-input:focus {
 [data-theme="dark"] .login-hint,
 body:not([data-theme]) .login-hint {
   color: #64748b;
+}
+
+[data-theme="dark"] .login-select,
+body:not([data-theme]) .login-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .login-optional-badge,
+body:not([data-theme]) .login-optional-badge {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.25);
 }
 
 [data-theme="dark"] .login-success-banner,

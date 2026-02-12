@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../utils/api';
-import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound, MapPin, Shield, Bell } from 'lucide-react';
+import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound, MapPin, Shield, Bell, Bus, MapPinned } from 'lucide-react';
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -18,7 +18,26 @@ const Login = () => {
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotResult, setForgotResult] = useState(null); // { type: 'success'|'error', message }
+  const [buses, setBuses] = useState([]);
+  const [selectedBusId, setSelectedBusId] = useState('');
+  const [selectedStopSeq, setSelectedStopSeq] = useState('');
   const { login, user } = useAuth();
+
+  // Fetch buses with routes for optional assignment during signup
+  useEffect(() => {
+    if (isSignUp) {
+      api.get('/auth/buses')
+        .then(res => setBuses(res.data || []))
+        .catch(() => setBuses([]));
+    }
+  }, [isSignUp]);
+
+  // Get the stops for the selected bus
+  const selectedBusStops = useMemo(() => {
+    if (!selectedBusId) return [];
+    const bus = buses.find(b => b._id === selectedBusId);
+    return bus?.route?.stops || [];
+  }, [selectedBusId, buses]);
 
   const targetPath = useMemo(() => {
     if (!user) return null;
@@ -38,15 +57,16 @@ const Login = () => {
     try {
       if (isSignUp) {
         // Register new student — no password needed, auto-set to roll number
-        await api.post('/auth/register', {
-          username,
-          name,
-          email
-        });
+        const payload = { username, name, email };
+        if (selectedBusId) payload.busId = selectedBusId;
+        if (selectedBusId && selectedStopSeq !== '') payload.stopSeq = Number(selectedStopSeq);
+        await api.post('/auth/register', payload);
         // Show success popup, switch to login mode
         setRegistrationSuccess(true);
         setName('');
         setEmail('');
+        setSelectedBusId('');
+        setSelectedStopSeq('');
         // Keep username so user can log in easily
         setPassword('');
       } else {
@@ -68,6 +88,8 @@ const Login = () => {
     setIsSignUp(!isSignUp);
     setError('');
     setRegistrationSuccess(false);
+    setSelectedBusId('');
+    setSelectedStopSeq('');
   };
 
   const openForgotPassword = () => {
@@ -287,6 +309,58 @@ const Login = () => {
                   disabled={isLoading}
                 />
                 <p className="text-xs mt-1.5 login-hint">You'll receive a welcome email with your login details</p>
+              </div>
+            )}
+
+            {/* Bus Selection (signup only — optional) */}
+            {isSignUp && !registrationSuccess && buses.length > 0 && (
+              <div className="login-field">
+                <label className="login-label">
+                  <Bus className="w-3.5 h-3.5 inline mr-1 opacity-60" />
+                  Select Your Bus
+                  <span className="login-optional-badge">Optional</span>
+                </label>
+                <select
+                  className="login-input login-select"
+                  value={selectedBusId}
+                  onChange={(e) => {
+                    setSelectedBusId(e.target.value);
+                    setSelectedStopSeq('');
+                  }}
+                  disabled={isLoading}
+                >
+                  <option value="">— Skip for now —</option>
+                  {buses.map(bus => (
+                    <option key={bus._id} value={bus._id}>
+                      {bus.name} {bus.route ? `— ${bus.route.name}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs mt-1.5 login-hint">You can always change this later from your profile</p>
+              </div>
+            )}
+
+            {/* Stop Selection (signup only — optional, shown when bus selected) */}
+            {isSignUp && !registrationSuccess && selectedBusId && selectedBusStops.length > 0 && (
+              <div className="login-field">
+                <label className="login-label">
+                  <MapPinned className="w-3.5 h-3.5 inline mr-1 opacity-60" />
+                  Select Your Stop
+                  <span className="login-optional-badge">Optional</span>
+                </label>
+                <select
+                  className="login-input login-select"
+                  value={selectedStopSeq}
+                  onChange={(e) => setSelectedStopSeq(e.target.value)}
+                  disabled={isLoading}
+                >
+                  <option value="">— Skip for now —</option>
+                  {selectedBusStops.map(stop => (
+                    <option key={stop.seq} value={stop.seq}>
+                      Stop {stop.seq} — {stop.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
