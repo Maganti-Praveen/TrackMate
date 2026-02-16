@@ -22,8 +22,11 @@ const {
   listStudents,
   createStudent,
   updateStudent,
-  deleteStudent
+  deleteStudent,
+  bulkUploadStudents
 } = require('../controllers/studentAdminController');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const router = express.Router();
 
@@ -59,6 +62,7 @@ router.put('/drivers/:id', updateDriverAccount);
 router.delete('/drivers/:id', deleteDriverAccount);
 router.get('/students', listStudents);
 router.post('/students', createStudent);
+router.post('/students/bulk-upload', upload.single('file'), bulkUploadStudents);
 router.put('/students/:id', updateStudent);
 router.delete('/students/:id', deleteStudent);
 

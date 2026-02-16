@@ -19,6 +19,7 @@
     "leaflet": "^1.9.4",
     "leaflet.pm": "^2.2.0",
     "lucide-react": "^0.561.0",
+    "papaparse": "^5.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",

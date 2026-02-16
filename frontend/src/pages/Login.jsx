@@ -1,43 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../utils/api';
-import { Eye, EyeOff, Loader2, UserPlus, LogIn, CheckCircle, X, KeyRound, MapPin, Shield, Bell, Bus, MapPinned } from 'lucide-react';
+import { Eye, EyeOff, Loader2, LogIn, CheckCircle, X, KeyRound, MapPin, Shield, Bell } from 'lucide-react';
 
 const Login = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotResult, setForgotResult] = useState(null); // { type: 'success'|'error', message }
-  const [buses, setBuses] = useState([]);
-  const [selectedBusId, setSelectedBusId] = useState('');
-  const [selectedStopSeq, setSelectedStopSeq] = useState('');
   const { login, user } = useAuth();
-
-  // Fetch buses with routes for optional assignment during signup
-  useEffect(() => {
-    if (isSignUp) {
-      api.get('/auth/buses')
-        .then(res => setBuses(res.data || []))
-        .catch(() => setBuses([]));
-    }
-  }, [isSignUp]);
-
-  // Get the stops for the selected bus
-  const selectedBusStops = useMemo(() => {
-    if (!selectedBusId) return [];
-    const bus = buses.find(b => b._id === selectedBusId);
-    return bus?.route?.stops || [];
-  }, [selectedBusId, buses]);
 
   const targetPath = useMemo(() => {
     if (!user) return null;
@@ -55,41 +32,17 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        // Register new student — no password needed, auto-set to roll number
-        const payload = { username, name, email };
-        if (selectedBusId) payload.busId = selectedBusId;
-        if (selectedBusId && selectedStopSeq !== '') payload.stopSeq = Number(selectedStopSeq);
-        await api.post('/auth/register', payload);
-        // Show success popup, switch to login mode
-        setRegistrationSuccess(true);
-        setName('');
-        setEmail('');
-        setSelectedBusId('');
-        setSelectedStopSeq('');
-        // Keep username so user can log in easily
-        setPassword('');
-      } else {
-        await login({ username, password });
-      }
+      await login({ username, password });
     } catch (err) {
       console.error('Auth error:', err);
       const errorMsg = err.response?.data?.message
         || err.response?.data?.error
         || err.message
-        || (isSignUp ? 'Registration failed' : 'Login failed');
+        || 'Login failed';
       setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const toggleMode = () => {
-    setIsSignUp(!isSignUp);
-    setError('');
-    setRegistrationSuccess(false);
-    setSelectedBusId('');
-    setSelectedStopSeq('');
   };
 
   const openForgotPassword = () => {
@@ -146,14 +99,8 @@ const Login = () => {
           />
 
           {/* Tagline */}
-          <h1 className="login-hero-title">
-            {isSignUp ? 'Start Your Smart Commute Today' : 'Smart Bus Tracking Made Simple'}
-          </h1>
-          <p className="login-hero-subtitle">
-            {isSignUp
-              ? 'Join TrackMate to track your bus in real time.'
-              : 'Track. Ride. Arrive safely.'}
-          </p>
+          <h1 className="login-hero-title">Smart Bus Tracking Made Simple</h1>
+          <p className="login-hero-subtitle">Track. Ride. Arrive safely.</p>
 
           {/* Feature pills */}
           <div className="login-hero-features">
@@ -221,184 +168,59 @@ const Login = () => {
 
           {/* Card Header */}
           <div className="mb-7">
-            <h2 className="login-card-title">
-              {isSignUp ? 'Create Your Account' : 'Welcome Back'}
-            </h2>
-            <p className="login-card-subtitle">
-              {isSignUp ? 'Get started with TrackMate' : 'Log in to continue tracking your bus'}
-            </p>
+            <h2 className="login-card-title">Welcome Back</h2>
+            <p className="login-card-subtitle">Log in to continue tracking your bus</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
-            {/* Registration Success */}
-            {registrationSuccess && (
-              <div className="login-success-banner login-card-animate">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-emerald-800 text-sm">Account Created Successfully!</h3>
-                    <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
-                      Check your email for login credentials. Your initial password is your roll number.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => { setRegistrationSuccess(false); setIsSignUp(false); }}
-                      className="mt-3 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-                    >
-                      Go to Sign In &rarr;
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Full Name (signup only) */}
-            {isSignUp && !registrationSuccess && (
-              <div className="login-field">
-                <label className="login-label">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="login-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  autoComplete="name"
-                  disabled={isLoading}
-                />
-              </div>
-            )}
-
             {/* Username / Roll Number */}
-            {!registrationSuccess && (
-              <div className="login-field">
-                <label className="login-label">
-                  {isSignUp ? 'Roll Number' : 'Roll Number / Username'} {isSignUp && <span className="text-red-500">*</span>}
-                </label>
+            <div className="login-field">
+              <label className="login-label">Roll Number / Username</label>
+              <input
+                type="text"
+                placeholder="Enter roll number or username"
+                className="login-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoComplete="username"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="login-field">
+              <label className="login-label">Password</label>
+              <div className="relative">
                 <input
-                  type="text"
-                  placeholder={isSignUp ? 'Enter your roll number' : 'Enter roll number or username'}
-                  className="login-input"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  className="login-input pr-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="username"
+                  autoComplete="current-password"
                   disabled={isLoading}
                 />
-              </div>
-            )}
-
-            {/* Email (signup only) */}
-            {isSignUp && !registrationSuccess && (
-              <div className="login-field">
-                <label className="login-label">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="your.email@example.com"
-                  className="login-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  disabled={isLoading}
-                />
-                <p className="text-xs mt-1.5 login-hint">You'll receive a welcome email with your login details</p>
-              </div>
-            )}
-
-            {/* Bus Selection (signup only — optional) */}
-            {isSignUp && !registrationSuccess && buses.length > 0 && (
-              <div className="login-field">
-                <label className="login-label">
-                  <Bus className="w-3.5 h-3.5 inline mr-1 opacity-60" />
-                  Select Your Bus
-                  <span className="login-optional-badge">Optional</span>
-                </label>
-                <select
-                  className="login-input login-select"
-                  value={selectedBusId}
-                  onChange={(e) => {
-                    setSelectedBusId(e.target.value);
-                    setSelectedStopSeq('');
-                  }}
-                  disabled={isLoading}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
+                  tabIndex={-1}
                 >
-                  <option value="">— Skip for now —</option>
-                  {buses.map(bus => (
-                    <option key={bus._id} value={bus._id}>
-                      {bus.name} {bus.route ? `— ${bus.route.name}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs mt-1.5 login-hint">You can always change this later from your profile</p>
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
-            )}
-
-            {/* Stop Selection (signup only — optional, shown when bus selected) */}
-            {isSignUp && !registrationSuccess && selectedBusId && selectedBusStops.length > 0 && (
-              <div className="login-field">
-                <label className="login-label">
-                  <MapPinned className="w-3.5 h-3.5 inline mr-1 opacity-60" />
-                  Select Your Stop
-                  <span className="login-optional-badge">Optional</span>
-                </label>
-                <select
-                  className="login-input login-select"
-                  value={selectedStopSeq}
-                  onChange={(e) => setSelectedStopSeq(e.target.value)}
-                  disabled={isLoading}
+              <div className="flex justify-end mt-1.5">
+                <button
+                  type="button"
+                  onClick={openForgotPassword}
+                  className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors"
                 >
-                  <option value="">— Skip for now —</option>
-                  {selectedBusStops.map(stop => (
-                    <option key={stop.seq} value={stop.seq}>
-                      Stop {stop.seq} — {stop.name}
-                    </option>
-                  ))}
-                </select>
+                  Forgot Password?
+                </button>
               </div>
-            )}
-
-            {/* Password (login only) */}
-            {!isSignUp && !registrationSuccess && (
-              <div className="login-field">
-                <label className="login-label">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    className="login-input pr-12"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <div className="flex justify-end mt-1.5">
-                  <button
-                    type="button"
-                    onClick={openForgotPassword}
-                    className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
 
             {/* Error */}
             {error && (
@@ -411,46 +233,28 @@ const Login = () => {
             )}
 
             {/* Submit */}
-            {!registrationSuccess && (
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="login-btn-primary"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {isSignUp ? 'Creating account...' : 'Signing in...'}
-                  </>
-                ) : (
-                  <>
-                    {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-                    {isSignUp ? 'Create Account' : 'Log In'}
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="login-btn-primary"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Log In
+                </>
+              )}
+            </button>
           </form>
 
-          {/* Toggle Sign up / Sign in */}
-          <div className="login-toggle-section">
-            <p className="login-toggle-text">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="login-toggle-btn"
-              >
-                {isSignUp ? 'Sign In' : 'Create Account'}
-              </button>
-            </p>
-          </div>
-
           {/* Footer hint */}
-          <p className="login-footer-hint">
-            {isSignUp
-              ? 'Student accounts only. Admin/Driver accounts are created by administrators.'
-              : 'Contact your administrator if you need help'}
+          <p className="login-footer-hint mt-6">
+            Contact your administrator if you need an account
           </p>
         </div>
       </div>
@@ -500,11 +304,10 @@ const Login = () => {
               {/* Result */}
               {forgotResult && (
                 <div
-                  className={`login-card-animate rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
-                    forgotResult.type === 'success'
+                  className={`login-card-animate rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${forgotResult.type === 'success'
                       ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
                       : 'bg-red-50 border border-red-200 text-red-600'
-                  }`}
+                    }`}
                 >
                   {forgotResult.type === 'success'
                     ? <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -547,4 +350,3 @@ const Login = () => {
 };
 
 export default Login;
-

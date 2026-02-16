@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import offlineBuffer from '../utils/offlineBuffer';
 import { API_BASE_URL } from '../constants/api';
@@ -11,6 +11,7 @@ const MAX_RETRIES = 3;
 
 let socketInstance = null;
 let lastEmitTs = 0;
+let retryTimeoutId = null;
 
 const getSocket = () => {
   if (typeof window === 'undefined') {
@@ -86,10 +87,22 @@ const emitLocation = (payload, { retry = true } = {}) => {
     return true;
   } catch (error) {
     if (retry) {
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+      // Cancel any previous retry chain before starting a new one
+      if (retryTimeoutId) clearTimeout(retryTimeoutId);
+      let attempt = 0;
+      const scheduleRetry = () => {
+        attempt += 1;
+        if (attempt > MAX_RETRIES) {
+          offlineBuffer.push(payload);
+          return;
+        }
         const delay = Math.min(FLUSH_DELAY_MS * 2 ** attempt, 2000);
-        setTimeout(() => emitLocation(payload, { retry: attempt < MAX_RETRIES }), delay);
-      }
+        retryTimeoutId = setTimeout(() => {
+          const sent = emitLocation(payload, { retry: false });
+          if (!sent) scheduleRetry();
+        }, delay);
+      };
+      scheduleRetry();
     } else {
       offlineBuffer.push(payload);
     }
@@ -155,24 +168,29 @@ export const useSocket = (handlers = {}) => {
     };
   }, []);
 
+  // Store handlers in a ref to avoid re-subscribing on every render
+  const handlersRef = useRef(handlers);
+  useEffect(() => { handlersRef.current = handlers; }, [handlers]);
+
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return undefined;
 
-    Object.entries(handlers).forEach(([event, callback]) => {
+    // Create stable wrapper functions that delegate to the latest handler ref
+    const wrappers = {};
+    Object.entries(handlersRef.current).forEach(([event, callback]) => {
       if (typeof callback === 'function') {
-        socket.on(event, callback);
+        wrappers[event] = (...args) => handlersRef.current[event]?.(...args);
+        socket.on(event, wrappers[event]);
       }
     });
 
     return () => {
-      Object.entries(handlers).forEach(([event, callback]) => {
-        if (typeof callback === 'function') {
-          socket.off(event, callback);
-        }
+      Object.entries(wrappers).forEach(([event, wrapper]) => {
+        socket.off(event, wrapper);
       });
     };
-  }, [handlers]);
+  }, []); // subscribe once — handlers are read from ref
 
   return useMemo(
     () => ({

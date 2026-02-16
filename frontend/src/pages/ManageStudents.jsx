@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import Papa from 'papaparse';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { 
-  Users, Plus, Search, Edit2, Trash2, Phone, 
-  User, X, Bus, MapPin, CheckCircle, Clock
+import {
+  Users, Plus, Search, Edit2, Trash2, Phone,
+  User, X, Bus, MapPin, CheckCircle, Clock, Upload, FileSpreadsheet, AlertTriangle, Loader2
 } from 'lucide-react';
 import TrackMateLoader from '../components/TrackMateLoader';
 
@@ -18,7 +19,7 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
     emerald: 'from-emerald-500 to-emerald-600',
     amber: 'from-amber-500 to-amber-600'
   };
-  
+
   return (
     <div className="card p-4">
       <div className="flex items-start gap-3">
@@ -38,14 +39,13 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
 /* Student Card Component */
 const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
   const isAssigned = Boolean(assignment);
-  
+
   return (
     <div className="card p-4 hover:border-indigo-500/30 transition-all group">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-            isAssigned ? 'bg-emerald-500/20' : 'bg-amber-500/20'
-          }`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isAssigned ? 'bg-emerald-500/20' : 'bg-amber-500/20'
+            }`}>
             <User className={`w-5 h-5 ${isAssigned ? 'text-emerald-400' : 'text-amber-400'}`} />
           </div>
           <div className="min-w-0">
@@ -53,11 +53,10 @@ const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
             <p className="text-xs text-slate-400">@{student.username}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-          isAssigned 
-            ? 'bg-emerald-500/20 text-emerald-400' 
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${isAssigned
+            ? 'bg-emerald-500/20 text-emerald-400'
             : 'bg-amber-500/20 text-amber-400'
-        }`}>
+          }`}>
           {isAssigned ? 'Assigned' : 'Pending'}
         </span>
       </div>
@@ -68,7 +67,7 @@ const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
           <span>{student.phone}</span>
         </div>
       )}
-      
+
       {student.email && (
         <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
           <span className="text-xs">✉️</span>
@@ -102,11 +101,10 @@ const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
         <button
           onClick={() => onDelete(student)}
           disabled={isAssigned}
-          className={`p-2 rounded-lg transition ${
-            isAssigned 
-              ? 'text-slate-600 cursor-not-allowed' 
+          className={`p-2 rounded-lg transition ${isAssigned
+              ? 'text-slate-600 cursor-not-allowed'
               : 'text-red-400 hover:bg-red-500/20'
-          }`}
+            }`}
           title={isAssigned ? 'Remove assignment first' : 'Delete student'}
         >
           <Trash2 className="w-4 h-4" />
@@ -128,12 +126,19 @@ const ManageStudents = () => {
   const [form, setForm] = useState(blankForm);
   const [confirmState, setConfirmState] = useState({ open: false, target: null });
   const [loading, setLoading] = useState(true);
+  // CSV Upload state
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvResults, setCsvResults] = useState(null);
+  const fileInputRef = useRef(null);
 
   const loadStudents = async () => {
     setLoading(true);
     try {
       const [studentsRes, assignmentsRes, busesRes] = await Promise.all([
-        api.get('/admin/students'), 
+        api.get('/admin/students'),
         api.get('/admin/assignments'),
         api.get('/buses')
       ]);
@@ -182,7 +187,7 @@ const ManageStudents = () => {
     if (editingStudent && form.password?.trim()) {
       payload.password = form.password.trim();
     }
-    
+
     // Add bus and stop for new students
     if (!editingStudent) {
       payload.busId = form.busId || null;
@@ -220,6 +225,68 @@ const ManageStudents = () => {
     }
   };
 
+  // === CSV Upload Handlers ===
+  const openCsvModal = () => {
+    setCsvModalOpen(true);
+    setCsvFile(null);
+    setCsvPreview([]);
+    setCsvResults(null);
+  };
+
+  const closeCsvModal = () => {
+    setCsvModalOpen(false);
+    setCsvFile(null);
+    setCsvPreview([]);
+    setCsvResults(null);
+    setCsvUploading(false);
+  };
+
+  const handleCsvSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    setCsvResults(null);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, ''),
+      complete: (result) => {
+        setCsvPreview(result.data.slice(0, 50)); // show up to 50 rows
+      },
+      error: () => {
+        toast.error('Failed to parse CSV file');
+        setCsvFile(null);
+        setCsvPreview([]);
+      }
+    });
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvFile) return;
+    setCsvUploading(true);
+    setCsvResults(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+      const { data } = await api.post('/admin/students/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setCsvResults(data);
+      if (data.created > 0) {
+        toast.success(`${data.created} student(s) created successfully!`);
+        loadStudents();
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Upload failed';
+      toast.error(msg);
+      setCsvResults({ created: 0, skipped: 0, errors: [{ reason: msg }] });
+    } finally {
+      setCsvUploading(false);
+    }
+  };
+
   const filteredStudents = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) return students;
@@ -240,13 +307,22 @@ const ManageStudents = () => {
             <h1 className="text-2xl font-bold text-white">Student Directory</h1>
             <p className="text-sm text-slate-400 mt-1">Manage student accounts and view assignments</p>
           </div>
-          <button
-            onClick={openCreate}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
-          >
-            <Plus className="w-5 h-5" />
-            Add Student
-          </button>
+          <div className="flex gap-2 sm:w-auto w-full">
+            <button
+              onClick={openCsvModal}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 font-medium hover:bg-white/5 hover:border-white/20 transition sm:w-auto flex-1"
+            >
+              <Upload className="w-5 h-5" />
+              Upload CSV
+            </button>
+            <button
+              onClick={openCreate}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto flex-1"
+            >
+              <Plus className="w-5 h-5" />
+              Add Student
+            </button>
+          </div>
         </header>
 
         {/* Stats Grid */}
@@ -383,7 +459,7 @@ const ManageStudents = () => {
             />
             <p className="text-xs text-slate-400 mt-1">Welcome email will be sent to this address</p>
           </div>
-          
+
           {!editingStudent && (
             <>
               <div>
@@ -420,7 +496,7 @@ const ManageStudents = () => {
                   ))}
                 </select>
               </div>
-              
+
               {form.busId && (
                 <div>
                   <label className="text-sm text-slate-300 mb-1.5 block">Assign Stop (Optional)</label>
@@ -461,6 +537,147 @@ const ManageStudents = () => {
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}
       />
+
+      {/* ===== CSV Upload Modal ===== */}
+      {csvModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={closeCsvModal}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-2xl max-h-[85vh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                  <FileSpreadsheet className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Bulk Upload Students</h3>
+                  <p className="text-xs text-slate-400">Upload a CSV file with student details</p>
+                </div>
+              </div>
+              <button onClick={closeCsvModal} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* File picker */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCsvSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex flex-col items-center justify-center gap-2 px-6 py-8 rounded-xl border-2 border-dashed border-white/10 hover:border-indigo-500/50 text-slate-400 hover:text-indigo-400 transition cursor-pointer"
+                >
+                  <Upload className="w-8 h-8" />
+                  <span className="text-sm font-medium">{csvFile ? csvFile.name : 'Click to select CSV file'}</span>
+                  <span className="text-xs text-slate-500">Columns: fullname, rollno, email, busname (optional)</span>
+                </button>
+              </div>
+
+              {/* Preview table */}
+              {csvPreview.length > 0 && (
+                <div>
+                  <p className="text-sm text-slate-300 mb-2 font-medium">
+                    Preview ({csvPreview.length} row{csvPreview.length !== 1 ? 's' : ''})
+                  </p>
+                  <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-800/80">
+                          <th className="text-left px-3 py-2 text-slate-400 font-medium">#</th>
+                          <th className="text-left px-3 py-2 text-slate-400 font-medium">Full Name</th>
+                          <th className="text-left px-3 py-2 text-slate-400 font-medium">Roll No</th>
+                          <th className="text-left px-3 py-2 text-slate-400 font-medium">Email</th>
+                          <th className="text-left px-3 py-2 text-slate-400 font-medium">Bus</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {csvPreview.map((row, i) => (
+                          <tr key={i} className="border-t border-white/5 hover:bg-white/5">
+                            <td className="px-3 py-2 text-slate-500">{i + 1}</td>
+                            <td className="px-3 py-2 text-white">{row.fullname || row.name || '—'}</td>
+                            <td className="px-3 py-2 text-indigo-400 font-mono">{row.rollno || row.rollnumber || row.username || '—'}</td>
+                            <td className="px-3 py-2 text-slate-300">{row.email || row.emailid || row.mailid || '—'}</td>
+                            <td className="px-3 py-2 text-slate-400">{row.busname || row.bus || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Results */}
+              {csvResults && (
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <div className="flex-1 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <p className="text-xs text-emerald-400">Created</p>
+                      <p className="text-xl font-bold text-emerald-400">{csvResults.created}</p>
+                    </div>
+                    <div className="flex-1 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <p className="text-xs text-amber-400">Skipped</p>
+                      <p className="text-xl font-bold text-amber-400">{csvResults.skipped}</p>
+                    </div>
+                  </div>
+                  {csvResults.errors?.length > 0 && (
+                    <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+                      <p className="text-xs text-red-400 mb-2 font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Issues
+                      </p>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {csvResults.errors.map((e, i) => (
+                          <p key={i} className="text-xs text-red-300">
+                            {e.row ? `Row ${e.row}` : ''} {e.rollno ? `(${e.rollno})` : ''}: {e.reason}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-white/10">
+              <button
+                onClick={closeCsvModal}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition"
+              >
+                {csvResults ? 'Close' : 'Cancel'}
+              </button>
+              {!csvResults && (
+                <button
+                  onClick={handleCsvUpload}
+                  disabled={!csvFile || csvUploading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {csvUploading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" />
+                      Upload & Create Students
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
