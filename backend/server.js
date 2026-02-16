@@ -69,7 +69,58 @@ app.use('/api/notifications', notificationRoutes);
 
 // Lightweight health check — used by UptimeRobot / cron pings to prevent Render sleep
 app.get('/ping', (_req, res) => {
-  res.status(200).send('pong');
+  const uptimeSec = process.uptime();
+  const h = Math.floor(uptimeSec / 3600);
+  const m = Math.floor((uptimeSec % 3600) / 60);
+  const s = Math.floor(uptimeSec % 60);
+  const uptime = `${h}h ${m}m ${s}s`;
+
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrackMate — Status</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0e1a;color:#e2e8f0;overflow:hidden}
+.bg{position:fixed;inset:0;z-index:0}
+.bg span{position:absolute;border-radius:50%;filter:blur(80px);opacity:.12;animation:float 8s ease-in-out infinite alternate}
+.bg span:nth-child(1){width:400px;height:400px;background:#FF6B2C;top:-10%;left:-5%}
+.bg span:nth-child(2){width:350px;height:350px;background:#3b82f6;bottom:-10%;right:-5%;animation-delay:2s}
+.bg span:nth-child(3){width:250px;height:250px;background:#FF6B2C;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:4s}
+@keyframes float{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,-20px) scale(1.1)}}
+.card{position:relative;z-index:1;background:rgba(15,23,42,.65);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:2.5rem 3rem;text-align:center;max-width:380px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,.4)}
+.logo{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:1.5rem;background:linear-gradient(135deg,#FF6B2C,#ff9a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo span{font-size:.7rem;display:block;font-weight:500;letter-spacing:.15em;text-transform:uppercase;-webkit-text-fill-color:#64748b;margin-top:.25rem}
+.pulse-wrap{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:1.75rem}
+.pulse{width:12px;height:12px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e80;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px #22c55e60}50%{box-shadow:0 0 20px #22c55eaa,0 0 40px #22c55e40}}
+.status{font-size:1rem;font-weight:600;color:#22c55e}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem}
+.stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:.85rem .5rem}
+.stat-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:.35rem}
+.stat-value{font-size:.95rem;font-weight:700;color:#e2e8f0}
+.stat-value.orange{color:#FF6B2C}
+.foot{font-size:.65rem;color:#475569;line-height:1.6}
+.foot a{color:#FF6B2C;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="bg"><span></span><span></span><span></span></div>
+<div class="card">
+  <div class="logo">TrackMate<span>System Status</span></div>
+  <div class="pulse-wrap"><div class="pulse"></div><div class="status">All Systems Operational</div></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Uptime</div><div class="stat-value orange">${uptime}</div></div>
+    <div class="stat"><div class="stat-label">Status</div><div class="stat-value">Online</div></div>
+    <div class="stat"><div class="stat-label">Server</div><div class="stat-value">Render</div></div>
+    <div class="stat"><div class="stat-label">Checked</div><div class="stat-value">${new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'})}</div></div>
+  </div>
+  <div class="foot">Monitored by UptimeRobot &middot; <a href="https://trackmaterce.onrender.com" target="_blank">Go to TrackMate</a></div>
+</div>
+</body>
+</html>`);
 });
 
 app.get('/', (_req, res) => {
