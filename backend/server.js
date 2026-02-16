@@ -67,6 +67,11 @@ app.use('/api/students', studentRoutes); // Alias for frontend compatibility
 app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Lightweight health check — used by UptimeRobot / cron pings to prevent Render sleep
+app.get('/ping', (_req, res) => {
+  res.status(200).send('pong');
+});
+
 app.get('/', (_req, res) => {
   res.json({ message: 'TrackMate backend is running' });
 });
