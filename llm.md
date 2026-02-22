@@ -1104,7 +1104,7 @@ Styled HTML page shown when the user is offline. Branded with TrackMate logo, da
 ```env
 PORT=5000
 NODE_ENV=development
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=TrackMate
+MONGO_URI=mongourl
 DB_NAME=TrackMatev1
 JWT_SECRET=your-secret-key
 ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.vercel.app
