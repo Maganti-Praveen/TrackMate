@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 const App = () => {
   const location = useLocation();
-  const hideNavbar = location.pathname === '/login';
+  const hideNavbar = location.pathname === '/login' || location.pathname.startsWith('/track');
 
   return (
     <div className="min-h-screen text-slate-100">

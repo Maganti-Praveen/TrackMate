@@ -260,13 +260,13 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
                 for (const assignment of studentsWithPush) {
                   const stu = assignment.student;
                   const studentStopName = assignment.stop?.name || 'your stop';
-                  
+
                   // Customize message based on whether this is their stop
                   const isTheirStop = assignment.stop?.sequence === nextStop.seq;
                   const notifBody = isTheirStop
                     ? `🎯 Bus has arrived at ${event.stopName} - YOUR STOP!`
                     : `Bus has arrived at ${event.stopName}`;
-                  
+
                   await sendPush(stu, {
                     title: isTheirStop ? '🚍 YOUR BUS IS HERE!' : '🚍 Bus Stop Update',
                     body: notifBody,
@@ -325,7 +325,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
           stopName: event.stopName,
           timestamp: event.timestamp
         });
-        
+
         // Send "Bus Left" notification to ALL students on this bus
         (async () => {
           try {
@@ -345,7 +345,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
 
             for (const assignment of studentsWithPush) {
               const stu = assignment.student;
-              
+
               await sendPush(stu, {
                 title: '🚍 Bus Departed',
                 body: `Bus has left ${event.stopName}`,
@@ -357,7 +357,7 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
             console.error('Departure Push Error:', pushErr.message);
           }
         })();
-        
+
         const updatedTrip = await advanceToNextStop(tripId);
         if (updatedTrip) {
           state.trip = updatedTrip;
@@ -551,7 +551,8 @@ const handleManualEvent = async (io, socket, payload) => {
 const registerLocationHandlers = (io) => {
   io.on('connection', (socket) => {
     const authTimeout = setTimeout(() => {
-      if (!socket.user) {
+      // Don't disconnect public viewers
+      if (!socket.user && !socket.isPublicViewer) {
         socket.disconnect(true);
       }
     }, 5000);
@@ -566,6 +567,28 @@ const registerLocationHandlers = (io) => {
       joinedTrips.add(normalized);
       socket.emit('trip:subscribed', { tripId: normalized, source });
     };
+
+    // Public tracking — no auth needed, read-only
+    socket.on('public:subscribe', async ({ tripId } = {}) => {
+      if (!tripId) {
+        socket.emit('trip:subscription_error', { message: 'tripId is required.' });
+        return;
+      }
+      try {
+        const Trip = require('../models/Trip');
+        const trip = await Trip.findById(tripId, 'status').lean();
+        if (!trip || trip.status !== 'ONGOING') {
+          socket.emit('trip:subscription_error', { message: 'Trip not active.' });
+          return;
+        }
+        socket.isPublicViewer = true;
+        clearTimeout(authTimeout);
+        subscribeToTrip(tripId, 'public:subscribe');
+      } catch (err) {
+        console.error('[Socket] Public subscription error:', err.message);
+        subscribeToTrip(tripId, 'public:subscribe'); // fail open
+      }
+    });
 
     const unsubscribeFromTrip = (tripId) => {
       const normalized = tripId ? tripId.toString() : null;
@@ -616,8 +639,13 @@ const registerLocationHandlers = (io) => {
           }).lean();
 
           if (!assignment) {
-            socket.emit('trip:subscription_error', { message: 'Not authorized for this trip.' });
-            return;
+            // Also allow if student has an active missed-bus redirect to this trip
+            const { getRedirectMap } = require('./missedBusController');
+            const redirect = getRedirectMap().get(socket.user.id);
+            if (!redirect || redirect.redirectedTripId !== tripId.toString()) {
+              socket.emit('trip:subscription_error', { message: 'Not authorized for this trip.' });
+              return;
+            }
           }
         }
 

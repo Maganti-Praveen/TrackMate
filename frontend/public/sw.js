@@ -1,8 +1,23 @@
-const CACHE_VERSION = 'trackmate-v1';
+const CACHE_VERSION = 'trackmate-v2';
+const STATIC_CACHE = 'trackmate-static-v1';
+const OFFLINE_URL = '/offline.html';
+
+// Static assets to pre-cache on install
+const PRECACHE_URLS = [
+  '/',
+  '/offline.html',
+  '/favicons/android-chrome-192x192.png',
+  '/favicons/android-chrome-512x512.png',
+  '/favicons/favicon-32x32.png',
+  '/manifest.json'
+];
 
 self.addEventListener('install', (event) => {
-  // Activate new SW immediately
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -11,13 +26,61 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) =>
       Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_VERSION)
+          .filter((name) => name !== CACHE_VERSION && name !== STATIC_CACHE)
           .map((name) => caches.delete(name))
       )
     ).then(() => self.clients.claim())
   );
 });
 
+// Fetch strategy: Network-first for navigation, Cache-first for static assets
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+
+  // Skip non-GET requests and API calls
+  if (request.method !== 'GET') return;
+  if (request.url.includes('/api/') || request.url.includes('/socket.io/')) return;
+
+  // Navigation requests — network first, offline fallback
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful navigation responses
+          const clone = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images, fonts) — cache first, network fallback
+  if (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'image' ||
+    request.destination === 'font' ||
+    request.url.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|ico)$/)
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        }).catch(() => new Response('', { status: 503 }));
+      })
+    );
+    return;
+  }
+});
+
+// Push notification handler
 self.addEventListener('push', (event) => {
   let data = { title: 'Bus Update', body: 'New location details received', url: '/' };
 

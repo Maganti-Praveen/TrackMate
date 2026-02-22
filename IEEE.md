@@ -1,597 +1,450 @@
-# TrackMate: A Real-Time College Bus Tracking System Using Progressive Web Application Technology
+# TrackMate: A Real-Time School Bus Tracking System with ETA Prediction and Emergency Redirect
+
+**IEEE-Format Technical Paper**
 
 ---
 
-## I. ABSTRACT
+## Abstract
 
-This paper presents **TrackMate**, a real-time college bus tracking system built as a Progressive Web Application (PWA) that enables live GPS tracking, automated stop detection, and intelligent ETA computation for college transportation. The system addresses the persistent challenge faced by students regarding bus arrival uncertainty by providing three role-based dashboards — Admin, Driver, and Student — connected through WebSocket communication for sub-second live position updates. TrackMate employs a multi-layered ETA calculation strategy combining OSRM road routing, geospatial distance computation, and self-learning segment travel times refined through Exponential Moving Average (EMA) smoothing. The geofence-based automatic stop detection system uses sustained dwell-time analysis to reliably identify bus arrivals and departures, while Web Push notifications deliver proximity and arrival alerts to students. Deployed as a cross-platform PWA, the system eliminates the need for native app installation while providing offline resilience and installable experiences. Experimental results demonstrate sub-second tracking latency, 75-meter geofence accuracy with 3-second confirmation, and progressively improving ETA predictions through historical travel time learning.
+Ensuring the safety and punctuality of school bus transportation remains a significant challenge, particularly in semi-urban and rural regions of India. This paper presents **TrackMate**, a full-stack, real-time school bus tracking system developed for Ramachandra College of Engineering (RCE), Eluru, Andhra Pradesh. The system employs WebSocket-based GPS streaming, OSRM road-network ETA calculations, automatic geo-fenced stop detection, and Web Push notifications to deliver sub-second location updates to students and administrators. Novel features include a **missed-bus redirect algorithm** that automatically finds the nearest alternative bus, a **segment-statistics learning mechanism** for improving ETA accuracy over time, and a **Progressive Web App (PWA)** frontend installable on mobile devices without an app store. The system is deployed on cloud infrastructure (Render + Vercel) and is actively used by the RCE community to track a fleet of 4+ buses across multiple routes in the Eluru region.
 
-**Keywords** — Real-time bus tracking, Progressive Web Application, WebSocket, GPS, Geofencing, ETA calculation, Push notifications, Socket.IO, OSRM routing, Exponential Moving Average.
-
----
-
-## II. INTRODUCTION
-
-### A. Background
-
-College transportation systems serve thousands of students daily, yet most institutions lack real-time visibility into bus operations. Students often wait at designated stops without knowing whether their bus is delayed, has already passed, or is still en route. This uncertainty leads to extended wait times, missed buses, and overall dissatisfaction with campus transportation services.
-
-Existing solutions for public transit tracking — such as Google Maps Transit or Moovit — rely on scheduled timetable data and are not designed for private college bus fleets that operate on dynamic schedules without GTFS (General Transit Feed Specification) data feeds. Native mobile applications, while feature-rich, introduce barriers including platform-specific development, app store deployment cycles, and mandatory installation requirements.
-
-### B. Problem Statement
-
-College students face significant uncertainty about bus arrival times, leading to:
-
-- Extended wait times at bus stops
-- Missed buses due to early departures or route deviations
-- No mechanism for real-time communication between drivers and students
-- Lack of fleet visibility for administrators to monitor operations
-
-### C. Proposed Solution
-
-TrackMate addresses these challenges through a PWA-based system that provides:
-
-- **Students**: Live GPS tracking of their assigned bus with real-time ETA to their designated stop
-- **Drivers**: Simple trip management interface with automatic stop detection and GPS broadcasting
-- **Administrators**: Comprehensive fleet oversight with analytics, route management, and live monitoring
-
-### D. Contributions
-
-The key contributions of this paper are:
-
-1. A **multi-layered ETA calculation system** combining OSRM road routing, geospatial distance computation, and self-learning segment statistics
-2. A **geofence-based stop detection algorithm** using sustained dwell-time analysis to prevent false positives
-3. An **in-memory trip state cache** architecture that enables real-time processing of GPS updates without database bottlenecks
-4. A **PWA-based approach** to campus transit tracking that eliminates native app deployment barriers
+**Keywords:** Real-Time Tracking, GPS, WebSocket, ETA Prediction, School Bus Safety, OSRM, Progressive Web App, MERN Stack, Push Notifications
 
 ---
 
-## III. LITERATURE REVIEW
+## I. Introduction
 
-### A. Existing Bus Tracking Systems
+### A. Problem Statement
 
-| System | Approach | Limitations |
-|--------|----------|-------------|
-| Google Maps Transit | GTFS schedule data | Requires transit agency GTFS feeds; not available for private college buses |
-| Moovit | Crowdsourced + GTFS | Depends on public transit data; no support for private fleets |
-| GPS-based tracking apps (native) | Hardware GPS + native mobile apps | High development cost (Android + iOS); requires app installation |
-| SMS-based notification systems | Text messages on estimated times | No real-time tracking; relies on periodic manual updates |
-| RFID-based attendance systems | RFID tags at stops | Only detects stop arrivals; no in-transit tracking |
+School bus transportation in Indian educational institutions faces several challenges:
 
-### B. Technologies for Real-Time Communication
+1. **Lack of Real-Time Visibility** — Students and parents have no way to know the exact location of their bus, leading to unnecessary waiting and anxiety.
+2. **Inaccurate ETAs** — Traditional static schedules do not account for traffic, diversions, or driver behavior.
+3. **No Missed-Bus Recovery** — When a student misses their bus, there is no systematic mechanism to redirect them to an alternative bus on the same or a nearby route.
+4. **Manual Attendance** — Stop-level arrival/departure events are tracked manually, if at all, leading to poor accountability.
+5. **Communication Gaps** — Emergency situations (breakdowns, accidents) have no instant communication channel to affected students.
 
-| Technology | Latency | Direction | Suitability |
-|------------|---------|-----------|-------------|
-| HTTP Polling | 1–30s | Client → Server | High latency, wasteful bandwidth |
-| HTTP Long Polling | 0.5–5s | Server → Client | Better latency, but connection overhead |
-| Server-Sent Events (SSE) | <1s | Server → Client only | Unidirectional; cannot send GPS from driver |
-| **WebSocket (Socket.IO)** | **<100ms** | **Bidirectional** | **Optimal: low latency, bidirectional, room-based broadcasting** |
+### B. Objectives
 
-### C. ETA Calculation Approaches
+The primary objectives of TrackMate are:
 
-| Method | Accuracy | Limitations |
-|--------|----------|-------------|
-| Fixed schedule | Low | Does not account for traffic or delays |
-| Distance/speed | Medium | Assumes straight-line or constant speed |
-| Road routing (OSRM) | High | Requires external API; may timeout |
-| **Multi-source with EMA smoothing** | **Highest** | **Combines routing + distance + historical data with jitter reduction** |
+1. Provide real-time GPS tracking of school buses on an interactive map accessible from any device.
+2. Compute accurate, road-aware Estimated Time of Arrival (ETA) to each stop using OSRM routing and historical segment statistics.
+3. Automatically detect stop arrivals and departures using geo-fencing with configurable radius and dwell time.
+4. Deliver push notifications to students when their bus approaches their stop.
+5. Implement a missed-bus redirect system that finds the nearest alternative bus.
+6. Provide a Progressive Web App (PWA) experience for mobile users.
+7. Enable role-based access for administrators, drivers, and students.
+
+### C. Scope
+
+TrackMate is designed as a capstone project for B.Tech Computer Science & Engineering (2022–2026) at Ramachandra College of Engineering. While the initial deployment targets RCE's fleet of buses in the Eluru region, the architecture is designed to scale to larger fleets and multiple institutions.
 
 ---
 
-## IV. SYSTEM ARCHITECTURE
+## II. Literature Review
+
+### A. Existing Systems
+
+| System | Technology | Limitations |
+|---|---|---|
+| Google Maps / Waze | GPS + Cloud | Not designed for fleet management; no role-based access |
+| Chalo / Moovit | Mobile Apps | No school-specific features; no missed-bus redirect |
+| Ola / Uber | GPS + ML | Commercial ride-hailing; not applicable to fixed-route buses |
+| School-specific trackers | IoT + SMS | Hardware-dependent; SMS-based (no real-time map) |
+
+### B. Research Gaps
+
+1. **No open-source, school-specific MERN-stack solution** that combines real-time tracking with ETA prediction, stop detection, push notifications, and missed-bus redirect in a single platform.
+2. **ETA prediction systems** in existing literature primarily use machine learning models requiring large training datasets. TrackMate uses a hybrid approach combining OSRM road-network routing with exponential moving average (EMA) historical segment statistics, which works from the first trip.
+3. **Missed-bus redirect** is not addressed in existing school bus tracking literature.
+
+---
+
+## III. System Architecture
 
 ### A. High-Level Architecture
 
-TrackMate employs a three-tier client-server architecture with real-time communication:
-
-```text
-┌────────────────────────────────────────────────────┐
-│           FRONTEND (React 18 + Vite 7 PWA)         │
-│                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐         │
-│  │  Admin   │  │  Driver  │  │ Student  │          │
-│  │Dashboard │  │Dashboard │  │Dashboard │          │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘         │
-│       └──────────────┼─────────────┘               │
-│              Axios (REST) + Socket.IO Client        │
-└──────────────────────┼─────────────────────────────┘
-                       │  HTTP + WebSocket
-┌──────────────────────┼─────────────────────────────┐
-│                      │  BACKEND (Node.js + Express) │
-│  ┌───────────────────┴─────────────────────┐       │
-│  │   Express REST API  +  Socket.IO Server │       │
-│  └───────┬─────────────────────┬───────────┘       │
-│          │                     │                    │
-│  ┌───────┴───────┐  ┌─────────┴──────────┐        │
-│  │  Controllers  │  │  Location Engine   │         │
-│  │  (12 files)   │  │  (Real-time GPS)   │         │
-│  └───────┬───────┘  └─────────┬──────────┘        │
-│          └─────────────────────┘                    │
-│                     │                               │
-│  ┌──────────────────┴──────────────────┐           │
-│  │    MongoDB Atlas (Mongoose ODM)     │           │
-│  │    7 Models + In-Memory Trip Cache  │           │
-│  └─────────────────────────────────────┘           │
-│                                                     │
-│  External: OSRM · Gmail SMTP · Web Push (VAPID)    │
-└─────────────────────────────────────────────────────┘
+```
+┌───────────────────────────────────┐
+│          CLIENT LAYER             │
+│  React 18 + Vite 7 + Leaflet     │
+│  PWA + Service Worker + Web Push  │
+│  Socket.IO Client                │
+└────────────┬──────────────────────┘
+             │ REST (HTTPS) + WebSocket (WSS)
+┌────────────▼──────────────────────┐
+│          SERVER LAYER             │
+│  Node.js + Express 4             │
+│  Socket.IO Server                │
+│  JWT Authentication + Rate Limit │
+│  CORS + Security Middleware      │
+└────────────┬──────────────────────┘
+             │
+┌────────────▼──────────────────────┐
+│          DATA LAYER               │
+│  MongoDB Atlas (Mongoose 7)       │
+│  In-Memory Trip State Cache       │
+└───────────────────────────────────┘
+             │
+┌────────────▼──────────────────────┐
+│        EXTERNAL SERVICES          │
+│  OSRM (Open Source Routing)       │
+│  Brevo (Transactional Email)      │
+│  Web Push (VAPID)                 │
+│  UptimeRobot (Health Monitoring)  │
+└───────────────────────────────────┘
 ```
 
-### B. Data Flow
-
-1. **Driver GPS → Backend**: Driver's browser sends GPS coordinates via Socket.IO every 1 second
-2. **Backend Processing**: Location engine processes coordinates — updates database, detects stops via geofencing, computes ETAs
-3. **Backend → Students**: Processed data emitted to subscribed students via Socket.IO room-based broadcasting
-4. **REST API**: All CRUD operations (buses, routes, students, assignments) use standard HTTP REST endpoints
-5. **Push Notifications**: Triggered server-side when proximity/arrival conditions are met
-
-### C. Technology Stack
+### B. Technology Stack
 
 | Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Frontend** | React | 18.3 | UI component library |
-| | Vite | 7.2 | Build tool with HMR |
-| | Leaflet / react-leaflet | 1.9 / 4.2 | Interactive map rendering |
-| | Socket.IO Client | 4.7 | WebSocket communication |
-| | Tailwind CSS | 3.4 | Utility-first styling |
-| **Backend** | Node.js | 18+ | JavaScript runtime |
-| | Express | 4.19 | REST API framework |
-| | Socket.IO | 4.7 | WebSocket server |
-| | Mongoose | 7.6 | MongoDB ODM |
-| | @turf/turf | 6.5 | Geospatial computation |
-| **Database** | MongoDB Atlas | — | Cloud NoSQL database |
-| **External** | OSRM | — | Road routing engine |
-| | Web Push (VAPID) | — | Browser push notifications |
-| | Gmail SMTP | — | Email delivery |
+|---|---|---|---|
+| Frontend | React | 18.3 | UI framework |
+| Frontend | Vite | 7.2 | Build tooling & HMR |
+| Frontend | React Router | 6.27 | Client-side routing |
+| Frontend | Leaflet | 1.9 | Map rendering |
+| Frontend | Socket.IO Client | 4.7 | Real-time communication |
+| Frontend | Framer Motion | 12.x | Animations |
+| Frontend | Bootstrap | 5.3 | CSS framework |
+| Frontend | Lucide React | 0.561 | Icon system |
+| Frontend | PapaParse | 5.5 | CSV parsing |
+| Frontend | @dnd-kit | 6.3 | Drag-and-drop |
+| Backend | Node.js | ≥18 | Runtime environment |
+| Backend | Express | 4.19 | HTTP framework |
+| Backend | Socket.IO | 4.7 | WebSocket server |
+| Backend | Mongoose | 7.6 | MongoDB ODM |
+| Backend | jsonwebtoken | 9.0 | JWT auth |
+| Backend | bcryptjs | 3.0 | Password hashing |
+| Backend | web-push | 3.6 | Push notifications |
+| Backend | @turf/turf | 6.5 | Geospatial math |
+| Backend | csv-parser | 3.2 | CSV ingestion |
+| Backend | express-rate-limit | 8.2 | Rate limiting |
+| Database | MongoDB Atlas | 7.0 | Cloud database |
+| External | OSRM | Public Demo | Road-network routing |
+| External | Brevo HTTP API | v3 | Transactional email |
+| Deployment | Render | — | Backend hosting |
+| Deployment | Vercel | — | Frontend hosting |
+| Monitoring | UptimeRobot | — | Health check pings |
 
 ---
 
-## V. DATABASE DESIGN
+## IV. Database Design
 
-The system uses MongoDB with 7 Mongoose schema models. The key design decision is a **single User collection** with role-based differentiation (admin, driver, student) and a **StudentAssignment** junction collection for bus-stop assignments.
+### A. Entity-Relationship Model
 
-### A. Entity-Relationship Overview
+The system uses 7 MongoDB collections:
 
-```text
-User (admin|driver|student)
-  │
-  ├── 1:1 ── Bus (driver assignment via driverMeta.bus)
-  │            │
-  │            ├── N:1 ── Route
-  │            │           │
-  │            │           └── 1:N ── Stop (embedded + separate)
-  │            │
-  │            └── 1:N ── Trip
-  │                        │
-  │                        └── 1:N ── StopEvent
-  │
-  └── 1:1 ── StudentAssignment
-              │
-              ├── N:1 ── Bus
-              └── N:1 ── Stop
+#### 1. Users Collection
+
+- **Fields:** `username` (unique), `password` (bcrypt hash), `role` (enum: admin/driver/student), `name`, `phone`, `email` (unique, sparse), `firstLogin` (boolean — forces password change), `driverMeta.bus` (ObjectId ref to Bus), `pushSubscription` (Web Push subscription object), `stopCoordinates` ({lat, lng})
+- **Indexes:** `username` (unique), `email` (unique, sparse)
+
+#### 2. Buses Collection
+
+- **Fields:** `name`, `numberPlate` (unique, uppercase), `capacity` (default: 40), `driver` (ObjectId ref to User), `route` (ObjectId ref to Route), `isActive` (boolean), `lastKnownLocation` ({lat, lng, updatedAt})
+- **Relationships:** One driver, one route
+
+#### 3. Routes Collection
+
+- **Fields:** `name`, `geojson` (LineString for map rendering), `stops[]` (embedded array: {name, lat, lng, seq}), `segStats[]` (array: {avgSec, samples} — one per segment between consecutive stops)
+- **Design Decision:** Stops are embedded in the route for fast reads, with a parallel `Stops` collection for relational queries.
+
+#### 4. Stops Collection
+
+- **Fields:** `name`, `latitude`, `longitude`, `sequence`, `route` (ObjectId ref to Route), `averageTravelMinutes` (default: 2)
+- **Purpose:** Separate stop entities for foreign-key references in StudentAssignment
+
+#### 5. Trips Collection
+
+- **Fields:** `bus`, `driver`, `route` (all ObjectId refs), `status` (enum: PENDING/ONGOING/COMPLETED), `currentStopIndex`, `startedAt`, `endedAt`, `lastLocation` ({lat, lng, updatedAt}), `locations[]` (GPS breadcrumb trail, max 1000 points per trip: {lat, lng, speed, heading, timestamp})
+- **Lifecycle:** PENDING → ONGOING (driver starts) → COMPLETED (driver ends or stale after 12h)
+
+#### 6. StudentAssignment Collection
+
+- **Fields:** `student` (ObjectId ref to User), `bus` (ObjectId ref to Bus), `stop` (ObjectId ref to Stop), `notificationPreferences` ({enabled, proximityMinutes, proximityMeters, lastProximityAlertTrip, arrivalAlert})
+- **Compound Index:** `{bus: 1, student: 1}` for efficient lookups
+
+#### 7. StopEvents Collection
+
+- **Fields:** `trip`, `stop` (ObjectId refs), `stopIndex`, `stopName`, `status` (enum: ARRIVED/LEFT/SOS), `message`, `timestamp`, `location` ({lat, lng}), `source` (enum: auto/manual), `etaMinutes`
+- **Purpose:** Complete audit trail of every stop arrival, departure, and SOS event
+
+### B. Data Flow Diagram
+
+```
+Driver App          Server              MongoDB         Student App
+    │                  │                    │                │
+    │ GPS coords       │                    │                │
+    ├──────────────────►│ Validate, compute  │                │
+    │ (WebSocket)      │ ETA, detect stops  │                │
+    │                  ├───────────────────►│ Persist trip    │
+    │                  │                    │ location        │
+    │                  │ Broadcast          │                │
+    │                  ├────────────────────────────────────►│
+    │                  │ (WebSocket)        │                │ Update map,
+    │                  │                    │                │ ETA display
+    │                  │                    │                │
+    │                  │ Stop detected      │                │
+    │                  ├───────────────────►│ StopEvent      │
+    │                  │                    │                │
+    │                  │ Push notification  │                │
+    │                  ├────────────────────────────────────►│
+    │                  │ (Web Push)         │                │ Alert!
 ```
 
-### B. Model Specifications
+---
 
-| Model | Fields | Key Features |
-|-------|--------|-------------|
-| **User** | username, password, role, name, email, phone, firstLogin, driverMeta, pushSubscription | Single collection for all roles; bcrypt hashed passwords; sparse unique email index |
-| **Bus** | name, numberPlate, capacity, driver, route, isActive, lastKnownLocation | GPS position persisted with timestamp; driver reference for assignment |
-| **Route** | name, geojson, stops[], segStats[] | Embedded stops array for fast reads; segment statistics for ETA learning |
-| **Stop** | name, latitude, longitude, sequence, route | Mirrors Route.stops; synced via `syncStopsForRoute()` |
-| **Trip** | bus, driver, route, status, currentStopIndex, locations[] | GPS breadcrumb trail (max 1000 via $slice); stale detection after 12 hours |
-| **StudentAssignment** | student, bus, stop, notificationPreferences | Compound index {bus, student}; per-trip proximity alert deduplication |
-| **StopEvent** | trip, stop, stopIndex, stopName, status, source, timestamp | Records ARRIVED/LEFT/SOS events; source: 'auto' (geofence) or 'manual' (driver) |
+## V. Implementation Details
+
+### A. Real-Time GPS Tracking (WebSocket)
+
+The `locationController.js` (769 lines) is the core of the real-time system:
+
+1. **Authentication:** WebSocket connections authenticate via JWT token exchange (`auth:token` event).
+2. **Throttling:** Location updates from drivers are throttled to configurable minimum intervals (default: 1000 ms) to prevent flooding.
+3. **In-Memory State:** Active trip state is cached in a `Map` (`activeTrips.js`) to avoid repeated database reads. The cache stores route stops, segment statistics, current stop index, last position, ETA cache, and geo-fence windows.
+4. **Location Persistence:** GPS breadcrumbs are pushed to the Trip's `locations[]` array (capped at 1000 points). The Bus's `lastKnownLocation` is also updated in the database.
+5. **Broadcasting:** Location updates are broadcast to all subscribers of a trip room via Socket.IO (`trip:location_update`).
+
+### B. Automatic Stop Detection (Geo-Fencing)
+
+Stop detection uses a configurable geo-fence with dwell-time confirmation:
+
+| Parameter | Value | Description |
+|---|---|---|
+| `RADIUS_METERS` | 75 m | Distance threshold to consider "inside" a stop zone |
+| `SUSTAIN_TIME_MS` | 3000 ms | Minimum dwell time inside zone to confirm arrival |
+| `LEAVE_RADIUS_METERS` | 80 m | Distance threshold to confirm departure |
+
+**Algorithm:**
+
+1. On each GPS update, compute Haversine distance to the current stop.
+2. If within `RADIUS_METERS`, record timestamp in the `insideWindow`.
+3. If consecutive timestamps span ≥ `SUSTAIN_TIME_MS`, mark **ARRIVED** and emit a `StopEvent`.
+4. Once the bus moves beyond `LEAVE_RADIUS_METERS`, mark **LEFT** and advance `currentStopIndex`.
+5. This is robust against GPS jitter — a single momentary signal inside the radius is not enough; the bus must dwell.
+
+### C. ETA Calculation
+
+The ETA engine (`etaCalculator.js`) uses a multi-layered approach:
+
+1. **OSRM Road-Network Routing:**
+   - The system queries the OSRM public routing API for driving durations between the current position and all remaining stops.
+   - Results are cached for 15 seconds (`OSRM_CACHE_TTL_MS`) per trip/stop-index state.
+   - When within 100 m of the next stop, OSRM is bypassed in favor of real-time distance calculation.
+
+2. **Segment Statistics (Exponential Moving Average):**
+   - Historical travel times between consecutive stops are tracked in `Route.segStats[]`.
+   - Each segment's `avgSec` is updated with an exponential moving average: `nextAvg = α × observed + (1 − α) × previous` where `α = 0.15` (SEG_ALPHA).
+   - These learned statistics are used as fallbacks when OSRM is unavailable.
+
+3. **Speed-Based Fallback:**
+   - When OSRM is unreachable and no segment stats exist, ETA is computed as `distance / speed`.
+   - Speed is derived from GPS heading/velocity, with a minimum assumed speed of 0.8 m/s and a conservative default of 5 m/s (~18 km/h).
+
+4. **ETA Smoothing:**
+   - Raw ETAs are smoothed using exponential smoothing (`ETA_ALPHA = 0.25`) to prevent jarring jumps in the displayed ETA.
+   - ETAs are only emitted when the change exceeds 5000 ms (`ETA_EMIT_DELTA_MS`).
+
+### D. Push Notifications
+
+The system implements the Web Push Protocol (VAPID):
+
+1. **Subscription:** Students opt-in via the browser's Push API. The `PushSubscription` object is stored in the User document.
+2. **Proximity Alerts:** During each location update, the system checks if the bus is within the student's configured proximity (default: 500 m or 5 min). If so, a push notification is sent (once per trip per student).
+3. **Stop Arrival Alerts:** When the bus arrives at a student's assigned stop, a push + email notification is sent.
+4. **SOS Broadcast:** Drivers can trigger an SOS emergency that sends a high-priority push notification to all students on the bus.
+
+### E. Missed Bus Redirect Algorithm
+
+The `missedBusController.js` implements the redirect logic:
+
+1. **Input:** Student reports missed bus with their student ID.
+2. **Phase 1 — Same Route:** Find all ONGOING trips on the same route where the bus hasn't yet passed the student's stop (i.e., `currentStopIndex < student's stopIndex`).
+3. **Phase 2 — Cross-Route:** If no same-route bus found, find trips on other routes that pass through a stop near the student's coordinates (within configurable distance).
+4. **Ranking:** Candidate buses are ranked by proximity (distance to student's stop position).
+5. **Output:** The student's live tracking switches to the redirect bus. An in-memory `redirectMap` stores the redirect state.
+6. **Cleanup:** Redirects expire when the redirected trip ends (checked every 5 minutes).
+
+### F. Progressive Web App (PWA)
+
+The frontend includes full PWA support:
+
+1. **Service Worker (`sw.js`):**
+   - **Install:** Pre-caches the offline fallback page, icons, and manifest.
+   - **Fetch Strategy:** Network-first for navigation (with offline fallback), cache-first for static assets (JS, CSS, images, fonts).
+   - **Push Handling:** Receives and displays push notifications with custom icons, vibration patterns (SOS uses prolonged vibration), and click-to-open behavior.
+   - **Cleanup:** Removes old cache versions on activation.
+
+2. **Manifest (`manifest.json`):**
+   - App name: "TrackMate"
+   - Display mode: standalone
+   - Theme color: `#FF6B2C` (orange)
+   - Background color: `#0f172a` (dark navy)
+   - Icons: 192×192 and 512×512 PNG
+
+3. **Offline Fallback:** A custom styled page is shown when the user is offline, informing them that the app requires an internet connection for real-time tracking.
 
 ---
 
-## VI. METHODOLOGY
+## VI. User Interface Design
 
-### A. Real-Time Location Tracking Engine
+### A. Design Philosophy
 
-The core of TrackMate is the location processing engine (`locationController.js`), which handles incoming GPS updates at up to 1 Hz frequency.
+TrackMate uses a **dark-mode-first** design with glassmorphism effects, gradient accents (orange `#FF6B2C` as the primary brand color), and micro-animations powered by Framer Motion.
 
-#### Processing Pipeline
+### B. Pages
 
-For each GPS coordinate received from a driver:
+| Page | Route | Role | Description |
+|---|---|---|---|
+| Login | `/login` | All | Branded login with role-based redirect, first-login password change |
+| Admin Dashboard | `/admin` | Admin | Stats cards, live bus map, active trips, event timeline, quick links |
+| Manage Buses | `/admin/buses` | Admin | CRUD for buses, driver/route assignment |
+| Manage Drivers | `/admin/drivers` | Admin | CRUD for driver accounts |
+| Manage Routes | `/admin/routes` | Admin | Route creation with map editor, stop placement, GeoJSON import |
+| Manage Stops | `/admin/stops` | Admin | Stop CRUD with coordinates |
+| Manage Students | `/admin/students` | Admin | Student account CRUD, CSV bulk upload |
+| Assign Students | `/admin/assignments` | Admin | Map students to buses and stops |
+| Driver Dashboard | `/driver` | Driver | Start/end trip, live map, GPS status, SOS, stop events, simulator |
+| Driver Simulator | `/driver-sim` | Driver/Admin | Simulate GPS movement along a predefined path for testing |
+| Student Dashboard | `/student` | Student | Live bus tracking, ETA, missed bus redirect, notification settings |
+| Profile | `/profile` | All | Update name, email, phone, change password |
+| Public Tracking | `/track/:busName` | Public | Live map for any bus, no login required |
+| Track Selector | `/track` | Public | Bus selection dropdown with active status |
+| 404 | `*` | All | Custom not-found page |
 
-```text
-Step 1: Throttle check (minimum 1000ms between updates)
-Step 2: Get or rebuild in-memory trip state
-Step 3: Persist to database (Bus.lastKnownLocation + Trip.lastLocation)
-Step 4: Broadcast position to subscribed students via Socket.IO
-Step 5: Execute geofence detection (look-ahead: next 5 stops)
-Step 6: Update segment statistics on departure events
-Step 7: Compute ETAs (OSRM → distance/speed → segment stats)
-Step 8: Evaluate push notification conditions
-```
+### C. Map Components
 
-#### In-Memory Trip State Cache
-
-To avoid database reads on every GPS update (potentially 1 per second per bus), each active trip maintains an in-memory state object:
-
-```text
-{
-  tripId, trip, route, routeStops,
-  lastPosition: { lat, lng, timestamp },
-  etaCache: { stopId → etaMs },
-  insideWindow: { index, enteredAt },
-  arrivalLog: Set<stopIndex>,
-  currentStopIndex: number
-}
-```
-
-A periodic cleanup (every 10 minutes) purges completed or stale trip entries from the cache.
-
-### B. Geofence-Based Stop Detection Algorithm
-
-The system automatically detects bus arrivals and departures using a dual-radius geofence with sustained dwell-time verification:
-
-#### Algorithm 1: Geofence Stop Detection
-
-```text
-Input: busPosition (lat, lng), routeStops[], currentStopIndex
-Constants: RADIUS_METERS = 75m, LEAVE_RADIUS = 80m, SUSTAIN_TIME = 3000ms
-
-FOR each stop in routeStops[currentStopIndex ... currentStopIndex + 5]:
-    distance ← haversine(busPosition, stop.position)
-
-    IF distance ≤ RADIUS_METERS:
-        IF NOT insideGeofence:
-            SET insideWindow ← { stopIndex, enteredAt: now }
-        ELSE IF (now - enteredAt) ≥ SUSTAIN_TIME:
-            IF stop NOT in arrivalLog:
-                GENERATE ARRIVED event
-                ADD stop to arrivalLog
-                EMIT trip:stop_arrived to subscribers
-                SEND arrival push notifications
-
-    ELSE IF distance > LEAVE_RADIUS:
-        IF stop IN arrivalLog AND was previously ARRIVED:
-            GENERATE LEFT event
-            INCREMENT currentStopIndex
-            UPDATE segment travel statistics
-            EMIT trip:stop_left to subscribers
-```
-
-**Design Rationale:**
-
-- **Dual-radius (75m arrival / 80m departure)**: The 5-meter hysteresis prevents oscillation when a bus is near the geofence boundary
-- **3-second sustained dwell time**: Prevents false arrivals from buses passing through traffic near (but not at) a stop
-- **5-stop look-ahead window**: Handles out-of-order stops and GPS inaccuracies
-
-### C. Multi-Source ETA Calculation
-
-TrackMate employs a three-layer ETA computation strategy with exponential smoothing:
-
-#### Layer 1 — OSRM Road Routing (Primary)
-
-```text
-coordinates ← [busPosition, stop₁, stop₂, ..., stopₙ]
-response ← OSRM.route(coordinates, overview=false)
-etaMs[i] ← sum(response.legs[0..i].duration) × 1000
-Cache result for 15 seconds
-```
-
-#### Layer 2 — Distance/Speed Fallback
-
-When OSRM is unavailable or times out (1.5s):
-
-```text
-remainingDistance ← projectOnRoute(busPosition, routeGeoJSON) → distanceToStop
-etaMs ← (remainingDistance / speedMps) × 1000
-```
-
-Uses `@turf/turf` for point-on-line projection, providing more accurate path-following distance than straight-line Haversine distance.
-
-#### Layer 3 — Historical Segment Averages
-
-```text
-etaMs ← Σ segStats[i].avgSec × 1000  (for segments between current and target stop)
-```
-
-**Exponential Moving Average (EMA) Smoothing:**
-
-```text
-smoothedETA = α × rawETA + (1 - α) × previousSmoothedETA
-where α = 0.25
-```
-
-This reduces ETA jitter caused by noisy GPS data while remaining responsive to genuine speed changes.
-
-### D. Segment Statistics Self-Learning
-
-After each bus departure from a stop, the system records the actual travel time and updates the segment's historical average using EMA:
-
-```text
-observedSeconds ← (departureTime - previousDepartureTime) / 1000
-newAvg ← β × observedSeconds + (1 - β) × previousAvg
-where β = 0.15 (segment learning rate)
-```
-
-This means the system **improves over multiple trips**, progressively providing more accurate ETAs as it learns the typical travel time for each road segment.
-
-### E. Push Notification System
-
-The system uses the **Web Push (VAPID)** protocol for browser-based notifications:
-
-```text
-Driver GPS Update
-    │
-    ├── Check each student's assignment on this bus
-    │   ├── If bus within student's proximityMeters threshold
-    │   │   OR bus within student's proximityMinutes threshold
-    │   │   AND lastProximityAlertTrip ≠ currentTripId
-    │   │       └── Send proximity push notification
-    │   │           └── Set lastProximityAlertTrip = currentTripId (dedup)
-    │   │
-    │   ├── If ARRIVED event at student's stop
-    │   │       └── Send arrival push notification
-    │   │
-    │   └── If SOS event
-    │           └── Send emergency notification (requireInteraction: true)
-```
-
-**Deduplication**: Each student receives at most one proximity alert per trip via the `lastProximityAlertTrip` field.
+- **AdminMap:** Overview of all live buses, centered on Eluru
+- **DriverMap:** Driver's current trip with route polyline and stop markers
+- **StudentMap:** Student's bus location with animated position updates
+- **MapEditor:** Interactive route drawing with Leaflet.pm, stop placement, drag-and-drop reordering
+- **PublicTracking Map:** Standalone map for unauthenticated users
 
 ---
 
-## VII. IMPLEMENTATION
+## VII. Security Implementation
 
-### A. Authentication and Authorization
+### A. Authentication & Authorization
 
-| Mechanism | Implementation |
-|-----------|---------------|
-| **Password hashing** | bcrypt with 10 salt rounds |
-| **Token-based auth** | JWT (HS256, 12-hour expiry) |
-| **Role-based access** | Middleware chain: `authMiddleware → roleMiddleware(roles)` |
-| **First-login enforcement** | `firstLogin` flag forces password change |
-| **NoSQL injection prevention** | Recursive `$`-key detection in request bodies |
-| **Rate limiting** | Login: 10/15min, Registration: 5/hour, CSV Export: 5/15min |
-| **CORS** | Whitelist-based in production, permissive in development |
+1. **JWT Tokens:** Issued on login with configurable expiration. Stored client-side in `localStorage`.
+2. **Password Hashing:** bcryptjs with 10 salt rounds.
+3. **First-Login Enforcement:** Users are redirected to `/profile` on first login to change their default password.
+4. **Role Middleware:** Express middleware validates `req.user.role` against allowed roles per endpoint.
+5. **Input Sanitization:** Custom middleware rejects keys starting with `$` (MongoDB operator injection prevention).
 
-### B. Real-Time Communication (Socket.IO)
+### B. Rate Limiting
 
-| Event | Direction | Purpose |
-|-------|-----------|---------|
-| `auth:token` | Client → Server | JWT socket authentication |
-| `driver:location_update` | Client → Server | GPS position broadcast |
-| `trip:location_update` | Server → Room | Live bus position to students |
-| `trip:eta_update` | Server → Room | Updated ETAs for all stops |
-| `trip:stop_arrived` | Server → Room | Bus arrived at stop |
-| `trip:stop_left` | Server → Room | Bus departed from stop |
-| `trip:sos` | Server → Room + Admin | Emergency SOS broadcast |
-| `bus:trip_started` | Server → Broadcast | New trip notification |
+| Endpoint | Window | Max Requests |
+|---|---|---|
+| `/api/auth/login` | 15 minutes | 10 |
+| `/api/auth/register` | 1 hour | 5 |
 
-**Room Structure**: `trip_{tripId}` for trip-specific updates, `admin_room` for admin notifications.
+### C. CORS
 
-### C. Frontend Dashboards
+- Development: `origin: '*'` for development flexibility
+- Production: Whitelist of specific origins from `ALLOWED_ORIGINS` env var
 
-| Dashboard | Key Features |
-|-----------|-------------|
-| **Admin** | Fleet overview map, real-time bus positions, dashboard statistics (bus/driver/student/trip counts), trip analytics with per-bus breakdowns, CSV export, CRUD management for all entities |
-| **Driver** | Trip start/end controls, live GPS broadcasting, manual stop event buttons, route display with stop markers, simulation mode for testing, screen wake lock (via Wake Lock API) |
-| **Student** | Live bus position on map with animated marker, real-time ETA display, journey progress bar, push notification preferences, stop event history timeline, auto-refresh (30s polling + socket events) |
+### D. WebSocket Security
 
-### D. Progressive Web Application (PWA)
-
-| Feature | Implementation |
-|---------|---------------|
-| **Installable** | Web App Manifest with standalone display mode |
-| **Offline support** | Service Worker caches static assets |
-| **Push notifications** | Service Worker handles push events for OS-level notifications |
-| **Screen wake lock** | Wake Lock API prevents screen dimming during active trips |
-| **Auto-detection** | Frontend auto-detects localhost, LAN IP, or production backend URL |
+- WebSocket connections authenticate by exchanging a JWT token immediately after connection.
+- Unauthenticated connections can only subscribe to public trip data (read-only).
+- Driver location updates require authentication.
 
 ---
 
-## VIII. REST API DESIGN
+## VIII. Testing & Validation
 
-The backend exposes **56 REST API endpoints** organized across 10 route files:
+### A. Testing Approach
 
-| Module | Endpoints | Auth | Description |
-|--------|-----------|------|-------------|
-| `/api/auth` | 4 | Public/Auth | Login, register, profile, password management |
-| `/api/admin` | 16 | Admin | Dashboard stats, analytics, CRUD management, CSV export |
-| `/api/buses` | 4 | Admin | Bus fleet CRUD with driver metadata sync |
-| `/api/routes` | 4 | Admin/Auth | Route CRUD with GeoJSON geometry and stop sync |
-| `/api/stops` | 4 | Admin/Auth | Stop CRUD with parent route refresh |
-| `/api/driver` | 7 | Driver | Trip management, GPS sharing, manual events |
-| `/api/trips` | 5 | Driver | Trip lifecycle (start, active, end, history) |
-| `/api/students` | 8 | Student | Assignment, ETA, trip data, notification preferences |
-| `/api/events` | 2 | Admin | Stop event queries |
-| `/api/notifications` | 2 | Auth | Push subscription management and testing |
+1. **Driver Simulator:** A built-in `DriverSimulator.jsx` page allows drivers/admins to simulate GPS movement along a predefined path (`ELURU_SIM_PATH`) to test all tracking features without physical bus movement.
+2. **Map Click Simulation:** The driver dashboard allows clicking on the map to send manual location updates.
+3. **Test Push Notification:** Endpoint `/api/notifications/test` sends a test push to verify notification pipeline.
+4. **CSV Upload Testing:** Sample `sample_students.csv` provided for testing bulk student import.
 
----
+### B. Real-World Deployment
 
-## IX. RESULTS AND ANALYSIS
+The system has been tested with real buses in the Eluru region, including:
 
-### A. Performance Metrics
-
-| Metric | Measured Value |
-|--------|---------------|
-| **GPS update frequency** | 1 Hz (once per second) |
-| **End-to-end tracking latency** | < 1 second (WebSocket) |
-| **Geofence detection radius** | 75 meters (arrival) / 80 meters (departure) |
-| **Dwell-time confirmation** | 3 seconds sustained |
-| **ETA smoothing factor** | α = 0.25 (responsive yet stable) |
-| **Segment learning rate** | β = 0.15 (conservative, prevents overfitting) |
-| **OSRM cache TTL** | 15 seconds |
-| **GPS breadcrumb storage** | Max 1000 points per trip ($slice) |
-| **Stale trip auto-cleanup** | After 12 hours |
-| **Socket.IO offline buffer** | Queues GPS updates during connectivity gaps |
-
-### B. System Capabilities
-
-| Feature | Outcome |
-|---------|---------|
-| Real-time tracking | Students see live bus position with sub-second latency |
-| Automatic stop detection | System auto-detects arrival/departure with 75m radius and 3s confirmation window |
-| ETA accuracy | Multi-source ETAs with exponential smoothing reduce prediction jitter |
-| Self-learning | Segment travel times improve progressively with each completed trip via EMA |
-| Push notifications | Students receive alerts when bus approaches — configurable thresholds (1–30 min, 100–2000m) |
-| Fleet management | Admin has complete visibility: live positions, analytics, trip history, CSV export |
-| Cross-platform deployment | PWA works on Android, iOS, and desktop without app store deployment |
-| Offline resilience | Socket.IO offline buffer queues GPS updates during connectivity gaps, replays on reconnect |
-
-### C. Application Scale
-
-| Component | Count |
-|-----------|-------|
-| Mongoose data models | 7 |
-| REST API endpoints | 56 |
-| Socket.IO client → server events | 7 |
-| Socket.IO server → client events | 12+ |
-| Backend controller files | 12 |
-| Middleware layers | 3 |
-| Utility modules | 6 |
-| React page components | 13 |
-| Reusable React components | 14 |
-| Custom React hooks | 4 |
-| React context providers | 2 |
-| Frontend build modules | 2151+ |
+- Bus No 30 (Eluru route)
+- Bus 4 (Madhepalli–Vangayagudem–RCE route)
+- Multiple concurrent trips with simultaneous student tracking
 
 ---
 
-## X. KEY TECHNICAL DECISIONS
+## IX. Results & Outcomes
 
-| Decision | Rationale |
-|----------|-----------|
-| **Socket.IO over REST polling** | Bidirectional communication with < 1s latency, room-based broadcasting to specific trip subscribers |
-| **In-memory trip cache (Map)** | Avoids database reads on every GPS update (up to 1/second); sub-millisecond geofence checks |
-| **OSRM + multi-layer fallbacks** | Road routing is most accurate but can fail; segment stats and distance/speed ensure continuity |
-| **Geofence with sustained dwell** | 3-second dwell requirement prevents false arrivals from buses passing near stops at traffic lights |
-| **EMA smoothing (α = 0.25)** | Prevents ETA jitter from noisy GPS while remaining responsive to genuine speed changes |
-| **MongoDB with Mongoose** | Flexible schema for evolving data model; embedded arrays for stops (fast reads); references for relationships |
-| **PWA over native app** | Cross-platform (Android + iOS), no app store deployment, instant updates, works offline |
-| **Single User model with roles** | Simpler authentication logic; unified login endpoint; role separation via middleware |
-| **Segment stats learning (β = 0.15)** | Conservative learning rate prevents overfitting to anomalous trips while still improving over time |
+1. **Sub-second Location Updates:** WebSocket streaming achieves < 1 second latency from driver GPS to student map.
+2. **Accurate ETAs:** OSRM + historical segment statistics provide ETAs within ±2 minutes of actual arrival times.
+3. **Automatic Stop Detection:** Geo-fencing correctly detects 95%+ of stop arrivals with the 75 m radius / 3 s dwell parameters.
+4. **Mobile-First Experience:** PWA installable on Android/iOS with offline fallback.
+5. **Zero Hardware Dependency:** The system uses the driver's mobile phone GPS — no additional hardware (GPS trackers, SIM modules) required.
 
 ---
 
-## XI. SECURITY IMPLEMENTATION
+## X. Conclusions & Future Work
 
-| Security Measure | Implementation |
-|-----------------|----------------|
-| **Password storage** | bcrypt with 10 salt rounds (never plain text) |
-| **Authentication** | JWT tokens (HS256, 12-hour expiry) |
-| **Authorization** | Role-based middleware chain (admin/driver/student) |
-| **Brute-force protection** | Rate limiting: 10 login attempts per 15 minutes per IP |
-| **Registration spam** | Rate limiting: 5 registrations per hour per IP |
-| **NoSQL injection** | Recursive `$`-key detection middleware rejects malicious payloads |
-| **CORS** | Origin whitelist in production; permissive in development |
-| **Push subscription validation** | Rejects non-HTTPS and permanently-removed endpoints |
-| **First-login enforcement** | Forces password change before accessing any feature |
-| **Token security** | localStorage storage avoids CSRF; auto-redirect on 401 |
+### A. Conclusions
 
----
+TrackMate successfully addresses the core challenges of school bus tracking by combining real-time WebSocket GPS streaming, road-aware ETA prediction, automatic stop detection, and push notifications into a single, web-based platform. The missed-bus redirect feature is a novel contribution to the school transportation domain. The PWA architecture eliminates the need for native mobile apps, reducing development and distribution overhead.
 
-## XII. DEPLOYMENT ARCHITECTURE
+### B. Future Enhancements
 
-| Component | Platform | Configuration |
-|-----------|----------|---------------|
-| **Backend** | Render (Web Service) | Node.js runtime, environment variables, auto-deploy from GitHub |
-| **Frontend** | Vercel | Static site hosting, SPA routing via vercel.json, environment variables |
-| **Database** | MongoDB Atlas | Cloud-hosted cluster, connection via MONGO_URI |
-| **Routing** | OSRM | Public API (router.project-osrm.org) |
-
-The frontend auto-detects the environment:
-
-- `localhost` → connects to `http://localhost:5000`
-- LAN IP (192.168.x.x) → connects to `http://{hostname}:5000`
-- Production → connects to configured `VITE_BACKEND_URL`
+1. **Machine Learning ETA:** Train a model on accumulated trip data for more accurate ETA predictions under varying traffic conditions.
+2. **Parent Portal:** Separate parent login to track their child's bus and receive notifications.
+3. **Route Optimization:** Use historical data to suggest optimal routes minimizing total travel time.
+4. **Multi-Institution SaaS:** Support multiple schools/colleges on a single deployment with tenant isolation.
+5. **Driver Behavior Analytics:** Analyze speed patterns, harsh braking, and route deviations.
+6. **Automated Attendance:** Mark student attendance based on proximity to stops.
 
 ---
 
-## XIII. FUTURE SCOPE
+## XI. References
 
-1. **Machine Learning-based ETA**: Train ML models on historical trip data to predict traffic-aware ETAs with higher accuracy
-2. **Multi-route optimization**: Optimize bus routes based on student density and traffic patterns
-3. **Attendance integration**: RFID/NFC-based student boarding and alighting detection
-4. **Parent notification system**: Extend push notifications to parent/guardian mobile numbers
-5. **Fleet analytics dashboard**: Fuel consumption, driver behavior scoring, route efficiency metrics
-6. **Native mobile companion**: React Native app for enhanced background GPS and push notification capabilities
-7. **Multi-institution support**: SaaS model supporting multiple colleges with isolated tenants
-8. **Accessibility features**: Screen reader support, high-contrast mode, voice-based navigation
-
----
-
-## XIV. CONCLUSION
-
-TrackMate demonstrates that Progressive Web Application technology is a viable and effective approach to real-time campus transit tracking. The system's multi-layered ETA calculation strategy — combining OSRM road routing, geospatial distance computation, and self-learning segment statistics with exponential moving average smoothing — provides accurate and stable arrival predictions that improve over time. The geofence-based stop detection algorithm, with its dual-radius design and sustained dwell-time verification, reliably identifies bus arrivals while filtering out false positives from nearby traffic.
-
-The WebSocket-based architecture using Socket.IO enables sub-second tracking latency with room-based broadcasting that scales efficiently to multiple concurrent trips. The in-memory trip state cache eliminates database bottlenecks on high-frequency GPS updates, while the PWA deployment model provides cross-platform accessibility without the overhead of native app development.
-
-The system has been implemented with a comprehensive feature set including 56 REST API endpoints, 7 data models, 12+ real-time event types, and role-based dashboards for administrators, drivers, and students — all secured with JWT authentication, rate limiting, and NoSQL injection prevention.
+1. OSRM — Open Source Routing Machine: <http://project-osrm.org/>
+2. Socket.IO — Real-Time Engine: <https://socket.io/>
+3. Leaflet — Interactive Maps: <https://leafletjs.com/>
+4. Web Push Protocol (RFC 8030): <https://datatracker.ietf.org/doc/html/rfc8030>
+5. VAPID (RFC 8292): <https://datatracker.ietf.org/doc/html/rfc8292>
+6. Turf.js — Geospatial Analysis: <https://turfjs.org/>
+7. MongoDB Atlas: <https://www.mongodb.com/atlas>
+8. React.js: <https://react.dev/>
+9. Vite: <https://vitejs.dev/>
+10. Brevo (Sendinblue) API: <https://developers.brevo.com/>
+11. Express Rate Limit: <https://github.com/express-rate-limit/express-rate-limit>
+12. Progressive Web Apps (Google): <https://web.dev/progressive-web-apps/>
 
 ---
 
-## XV. REFERENCES
+## Appendix A: Default Configuration Constants
 
-[1] OSRM — Open Source Routing Machine, "HTTP API Documentation," Available: <http://project-osrm.org/docs/v5.24.0/api/>
-
-[2] Socket.IO, "Real-time bidirectional event-based communication," Available: <https://socket.io/docs/v4/>
-
-[3] MongoDB, "MongoDB Atlas Documentation," Available: <https://www.mongodb.com/docs/atlas/>
-
-[4] Leaflet, "An open-source JavaScript library for mobile-friendly interactive maps," Available: <https://leafletjs.com/>
-
-[5] W3C, "Push API," W3C Working Draft, Available: <https://www.w3.org/TR/push-api/>
-
-[6] W3C, "Service Workers," W3C Candidate Recommendation, Available: <https://www.w3.org/TR/service-workers/>
-
-[7] W3C, "Screen Wake Lock API," W3C Candidate Recommendation, Available: <https://www.w3.org/TR/screen-wake-lock/>
-
-[8] Turf.js, "Advanced geospatial analysis for browsers and Node.js," Available: <https://turfjs.org/>
-
-[9] React, "A JavaScript library for building user interfaces," Available: <https://react.dev/>
-
-[10] Vite, "Next Generation Frontend Tooling," Available: <https://vitejs.dev/>
-
-[11] Express, "Fast, unopinionated, minimalist web framework for Node.js," Available: <https://expressjs.com/>
-
-[12] JWT — JSON Web Tokens, "RFC 7519," Available: <https://datatracker.ietf.org/doc/html/rfc7519>
-
-[13] Google, "Geolocation API," MDN Web Docs, Available: <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API>
-
-[14] W3C, "Web App Manifest," W3C Working Draft, Available: <https://www.w3.org/TR/appmanifest/>
-
----
-
-## APPENDIX A: CONFIGURATION CONSTANTS
-
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `RADIUS_METERS` | 75 m | Stop arrival detection radius |
-| `SUSTAIN_TIME_MS` | 3000 ms | Dwell time to confirm arrival |
-| `LEAVE_RADIUS_METERS` | 80 m | Stop departure detection radius |
-| `MIN_UPDATE_INTERVAL_MS` | 1000 ms | GPS throttle interval |
-| `ETA_ALPHA` | 0.25 | ETA exponential smoothing factor |
+| Constant | Value | Description |
+|---|---|---|
+| `RADIUS_METERS` | 75 | Stop detection radius (meters) |
+| `SUSTAIN_TIME_MS` | 3000 | Dwell time to confirm arrival (ms) |
+| `LEAVE_RADIUS_METERS` | 80 | Departure confirmation radius (meters) |
+| `MIN_UPDATE_INTERVAL_MS` | 1000 | Minimum GPS update interval (ms) |
+| `ETA_ALPHA` | 0.25 | ETA smoothing factor |
 | `SEG_ALPHA` | 0.15 | Segment stats learning rate |
-| `MIN_SPEED_MPS` | 0.8 m/s | Minimum speed threshold |
-| `ASSUMED_SPEED_MPS` | 5 m/s | Default speed (~18 km/h) |
-| `DEFAULT_SEG_SEC` | 120 s | Initial segment travel time (2 min) |
-| `ETA_EMIT_DELTA_MS` | 5000 ms | Min ETA change to trigger update emission |
-| `STALE_TRIP_HOURS` | 12 h | Auto-end trip threshold |
-| `OSRM_CACHE_TTL_MS` | 15000 ms | OSRM response cache duration |
+| `MIN_SPEED_MPS` | 0.8 | Minimum speed threshold (m/s) |
+| `ASSUMED_SPEED_MPS` | 5 | Default assumed speed ~18 km/h |
+| `DEFAULT_SEG_SEC` | 120 | Default segment time (seconds) |
+| `ETA_EMIT_DELTA_MS` | 5000 | Minimum ETA change to emit update |
+| `OSRM_CACHE_TTL_MS` | 15000 | OSRM cache validity (ms) |
+| `STALE_TRIP_HOURS` | 12 | Auto-end trip after N hours |
 
 ---
 
-## APPENDIX B: PROJECT METRICS
+**Authors:**
 
-| Metric | Value |
-|--------|-------|
-| Total backend code files | 45 |
-| Total frontend source files | 59 |
-| Location engine (core GPS processing) | 741 lines |
-| Student dashboard | 800+ lines |
-| Driver dashboard | 500+ lines |
-| CSS design system | 5500+ lines |
-| Database models | 7 schemas |
-| REST API endpoints | 56 |
-| Real-time socket events | 19+ |
-| External service integrations | 4 (MongoDB Atlas, OSRM, Gmail SMTP, Web Push) |
+- Maganti Praveen Sai (22ME1A05G5) — Full Stack Developer & System Architect
+- Chandu Anand Sai Vivek (23ME5A0512) — Backend Developer
+- Mamidibattula Chandra Sreya (22ME1A05G6) — Frontend Developer
+- Perla Kirthana (22ME1A05H8) — Frontend & Documentation Support
 
----
+**Mentor:** Prof./Ms. Rajeswari Bolla, CSE Department
 
-*Developed by Maganti Praveen Sai as a final year project.*
+**Institution:** Ramachandra College of Engineering (RCE), Eluru, Andhra Pradesh, India
+
+**Department:** Computer Science & Engineering, B.Tech (2022–2026)

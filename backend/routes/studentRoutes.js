@@ -11,6 +11,11 @@ const {
   updateMyAssignment,
   getBusesWithRoutes
 } = require('../controllers/studentController');
+const {
+  reportMissedBus,
+  getRedirectStatus,
+  cancelRedirect
+} = require('../controllers/missedBusController');
 
 const router = express.Router();
 
@@ -25,5 +30,10 @@ router.get('/preferences', getNotificationPreferences);
 router.put('/preferences', updateNotificationPreferences);
 router.get('/buses', getBusesWithRoutes);
 router.put('/assignment', updateMyAssignment);
+
+// Missed bus redirect
+router.post('/missed-bus', reportMissedBus);
+router.get('/redirect-status', getRedirectStatus);
+router.post('/cancel-redirect', cancelRedirect);
 
 module.exports = router;

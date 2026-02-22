@@ -21,6 +21,8 @@ import ManageStudents from './pages/ManageStudents';
 import DriverSimulator from './pages/DriverSimulator';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import PublicTracking from './pages/PublicTracking';
+import TrackSelector from './pages/TrackSelector';
 
 const router = createBrowserRouter(
   [
@@ -124,6 +126,8 @@ const router = createBrowserRouter(
             </ProtectedRoute>
           )
         },
+        { path: 'track', element: <TrackSelector /> },
+        { path: 'track/:busName', element: <PublicTracking /> },
         { path: '*', element: <NotFound /> }
       ]
     }

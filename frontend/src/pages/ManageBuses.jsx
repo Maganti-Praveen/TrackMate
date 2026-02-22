@@ -3,9 +3,9 @@ import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { 
-  Bus, Plus, Search, Filter, Edit2, Trash2, Users, 
-  Navigation, UserCheck, X, ChevronDown
+import {
+  Bus, Plus, Search, Filter, Edit2, Trash2, Users,
+  Navigation, UserCheck, X, ChevronDown, CheckSquare, Square, MousePointerClick
 } from 'lucide-react';
 
 const createEmptyBus = () => ({
@@ -24,7 +24,7 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
     amber: 'from-amber-500 to-amber-600',
     purple: 'from-purple-500 to-purple-600'
   };
-  
+
   return (
     <div className="card p-4">
       <div className="flex items-start gap-3">
@@ -42,16 +42,32 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
 };
 
 /* Bus Card Component */
-const BusCard = ({ bus, onEdit, onDelete }) => {
+const BusCard = ({ bus, onEdit, onDelete, selectionMode, isSelected, onToggleSelect }) => {
   const hasRoute = Boolean(bus.route);
-  
+
+  const handleCardClick = () => {
+    if (selectionMode) onToggleSelect(bus._id);
+  };
+
   return (
-    <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+    <div
+      className={`card p-4 transition-all group cursor-pointer ${isSelected ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500/30'
+          : 'hover:border-indigo-500/30'
+        }`}
+      onClick={handleCardClick}
+    >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            hasRoute ? 'bg-indigo-500/20' : 'bg-slate-700'
-          }`}>
+          {selectionMode && (
+            <div className="flex-shrink-0">
+              {isSelected
+                ? <CheckSquare className="w-5 h-5 text-indigo-400" />
+                : <Square className="w-5 h-5 text-slate-500" />
+              }
+            </div>
+          )}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${hasRoute ? 'bg-indigo-500/20' : 'bg-slate-700'
+            }`}>
             <Bus className={`w-5 h-5 ${hasRoute ? 'text-indigo-400' : 'text-slate-400'}`} />
           </div>
           <div className="min-w-0">
@@ -59,11 +75,10 @@ const BusCard = ({ bus, onEdit, onDelete }) => {
             <p className="text-xs text-slate-400 font-mono">{bus.numberPlate}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-          hasRoute 
-            ? 'bg-emerald-500/20 text-emerald-400' 
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${hasRoute
+            ? 'bg-emerald-500/20 text-emerald-400'
             : 'bg-amber-500/20 text-amber-400'
-        }`}>
+          }`}>
           {hasRoute ? 'Active' : 'Idle'}
         </span>
       </div>
@@ -84,22 +99,24 @@ const BusCard = ({ bus, onEdit, onDelete }) => {
           <Users className="w-4 h-4" />
           <span className="text-sm">{bus.capacity} seats</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(bus)}
-            className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
-            title="Edit bus"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onDelete(bus)}
-            className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition"
-            title="Delete bus"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+        {!selectionMode && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(bus); }}
+              className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+              title="Edit bus"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(bus); }}
+              className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition"
+              title="Delete bus"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -117,6 +134,9 @@ const ManageBuses = () => {
   const [routeFilter, setRouteFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
 
   const loadBuses = async () => {
     try {
@@ -201,6 +221,40 @@ const ManageBuses = () => {
     }
   };
 
+  // === Multi-Select Handlers ===
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.size === 0) setSelectionMode(false);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredBuses.map(b => b._id)));
+  };
+
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    setBulkConfirm(false);
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await api.delete(`/buses/${id}`);
+        deleted++;
+      } catch { /* skip failures */ }
+    }
+    toast.success(`${deleted} bus${deleted !== 1 ? 'es' : ''} deleted`);
+    exitSelection();
+    loadBuses();
+  };
+
   const filteredBuses = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return buses.filter((bus) => {
@@ -232,13 +286,27 @@ const ManageBuses = () => {
             <h1 className="text-2xl font-bold text-white">Fleet Management</h1>
             <p className="text-sm text-slate-400 mt-1">Manage buses, routes, and drivers</p>
           </div>
-          <button
-            onClick={openCreate}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
-          >
-            <Plus className="w-5 h-5" />
-            Add Bus
-          </button>
+          <div className="flex gap-2 sm:w-auto w-full">
+            <button
+              onClick={() => { if (selectionMode) exitSelection(); else setSelectionMode(true); }}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition sm:w-auto ${selectionMode
+                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10'
+                  : 'border-white/10 text-slate-300 hover:bg-white/5 hover:border-white/20'
+                }`}
+            >
+              <MousePointerClick className="w-5 h-5" />
+              {selectionMode ? 'Cancel' : 'Select'}
+            </button>
+            {!selectionMode && (
+              <button
+                onClick={openCreate}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto flex-1"
+              >
+                <Plus className="w-5 h-5" />
+                Add Bus
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Stats Grid */}
@@ -271,15 +339,14 @@ const ManageBuses = () => {
                 </button>
               )}
             </div>
-            
+
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition sm:w-auto w-full justify-center ${
-                hasActiveFilters 
-                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10' 
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition sm:w-auto w-full justify-center ${hasActiveFilters
+                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10'
                   : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-              }`}
+                }`}
             >
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
@@ -341,6 +408,9 @@ const ManageBuses = () => {
                 bus={bus}
                 onEdit={openEdit}
                 onDelete={askDelete}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(bus._id)}
+                onToggleSelect={toggleSelect}
               />
             ))}
           </div>
@@ -456,6 +526,46 @@ const ManageBuses = () => {
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmState({ open: false, target: null })}
+      />
+
+      {/* Floating Selection Bar */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-white/10 backdrop-blur-lg rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-4 animate-fade-in">
+          <p className="text-sm text-white font-medium whitespace-nowrap">
+            {selectedIds.size} selected
+          </p>
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={selectAll}
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-medium whitespace-nowrap"
+          >
+            Select all ({filteredBuses.length})
+          </button>
+          <button
+            onClick={exitSelection}
+            className="text-xs text-slate-400 hover:text-white font-medium whitespace-nowrap"
+          >
+            Deselect
+          </button>
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={() => setBulkConfirm(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm */}
+      <ConfirmDialog
+        open={bulkConfirm}
+        title="Delete Selected Buses"
+        message={`Are you sure you want to delete ${selectedIds.size} selected bus${selectedIds.size !== 1 ? 'es' : ''}? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkConfirm(false)}
       />
     </main>
   );

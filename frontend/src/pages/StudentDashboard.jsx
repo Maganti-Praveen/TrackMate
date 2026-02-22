@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   MapPin, Navigation, Bell, BellOff, RefreshCw, Phone,
-  ChevronRight, AlertTriangle, Gauge, Clock, Bus, Volume2, Settings
+  ChevronRight, AlertTriangle, Gauge, Clock, Bus, Volume2, Settings,
+  ArrowRightLeft, XCircle, Loader2
 } from 'lucide-react';
 import StudentMap from '../components/StudentMap';
 import { useSocket } from '../hooks/useSocket';
@@ -131,6 +132,13 @@ const StudentDashboard = () => {
   });
   const [lastRefreshed, setLastRefreshed] = useState(null);
 
+  // Missed bus redirect state
+  const [redirectInfo, setRedirectInfo] = useState(null);
+  const [redirectLoading, setRedirectLoading] = useState(false);
+  const redirectInfoRef = useRef(null);
+  // Keep ref in sync so memoized fetchProfile can read current redirect state
+  useEffect(() => { redirectInfoRef.current = redirectInfo; }, [redirectInfo]);
+
   const subscribedTripRef = useRef(null);
   const previousTripIdRef = useRef(() => {
     // Restore previous trip ID from stored events so we don't wipe them on refresh
@@ -191,7 +199,32 @@ const StudentDashboard = () => {
       return updated;
     });
 
-    // Check if this is the student's stop
+    // ── Redirect-aware: detect when redirected bus reaches the matching stop ──
+    const redirect = redirectInfoRef.current;
+    if (redirect) {
+      const matchSeq = redirect.matchingStop?.seq;
+      if (matchSeq != null && payload?.stopIndex === matchSeq && type === 'ARRIVED') {
+        // Redirected bus arrived at student's stop!
+        setRedirectInfo(prev => ({ ...prev, arrived: true, etaMinutes: 0, etaMs: 0 }));
+        toast.success('Your alternative bus has arrived at your stop!', { icon: '🎉', duration: 6000 });
+        return;
+      }
+      if (matchSeq != null && payload?.stopIndex > matchSeq) {
+        // Redirected bus passed the stop — auto-clear redirect
+        setRedirectInfo(null);
+        toast('Redirected bus has passed your stop', { icon: '⚠️', duration: 4000 });
+        return;
+      }
+      // Update stops-away count for redirected bus
+      if (matchSeq != null && typeof payload?.stopIndex === 'number') {
+        const newStopsAway = matchSeq - payload.stopIndex;
+        if (newStopsAway >= 0) {
+          setRedirectInfo(prev => prev ? { ...prev, stopsAway: newStopsAway } : prev);
+        }
+      }
+    }
+
+    // Check if this is the student's original stop
     const studentStopSeq = stopInfo?.seq ?? stopInfo?.sequence;
     const isMyStop = studentStopSeq != null && payload?.stopIndex === studentStopSeq;
 
@@ -216,10 +249,13 @@ const StudentDashboard = () => {
         toast('Bus has departed from your stop', { icon: '🚌', duration: 5000 });
       }
     } else {
-      toast[type === 'ARRIVED' ? 'success' : 'custom'](
-        `Bus ${type === 'ARRIVED' ? 'arrived at' : 'left'} ${event.stopName}`,
-        { icon: type === 'ARRIVED' ? '📍' : '🚌' }
-      );
+      // Only show toasts for non-redirect stop events (avoid noise)
+      if (!redirect) {
+        toast[type === 'ARRIVED' ? 'success' : 'custom'](
+          `Bus ${type === 'ARRIVED' ? 'arrived at' : 'left'} ${event.stopName}`,
+          { icon: type === 'ARRIVED' ? '📍' : '🚌' }
+        );
+      }
     }
     fetchProfile();
   }, [stopInfo]);
@@ -240,6 +276,11 @@ const StudentDashboard = () => {
     },
     'bus:trip_ended': () => {
       // Instantly refresh when a trip ends
+      // If redirect is active and the redirected trip ended, clear it
+      if (redirectInfoRef.current) {
+        setRedirectInfo(null);
+        toast('Redirected trip has ended', { icon: 'ℹ️' });
+      }
       fetchProfileRef.current?.();
     },
   }), [handleLocationUpdate, handleEtaUpdate, handleStopEvent]);
@@ -256,7 +297,10 @@ const StudentDashboard = () => {
 
       setProfile({ ...user, ...data });
       setStopInfo(normalizeStop(data));
-      setBusPosition(normalizeLocation(normalizeBus(data)?.lastKnownLocation));
+      // Don't overwrite bus position if redirect is active
+      if (!redirectInfoRef.current) {
+        setBusPosition(normalizeLocation(normalizeBus(data)?.lastKnownLocation));
+      }
 
       const tripRes = await api.get('/students/trip').catch(() => ({ data: null }));
       if (tripRes.data) {
@@ -278,8 +322,11 @@ const StudentDashboard = () => {
           progress: tripRes.data.progress
         });
         if (tripRes.data.driver) setDriverInfo(tripRes.data.driver);
-        const livePos = normalizeLocation(tripRes.data?.bus?.lastKnownLocation);
-        if (livePos) setBusPosition(livePos);
+        // Don't overwrite bus position if redirect is active
+        if (!redirectInfoRef.current) {
+          const livePos = normalizeLocation(tripRes.data?.bus?.lastKnownLocation);
+          if (livePos) setBusPosition(livePos);
+        }
 
         setStatusMessage('Live tracking active');
       } else {
@@ -313,6 +360,54 @@ const StudentDashboard = () => {
     }
   }, [user]);
 
+  // ── Missed Bus Redirect Handlers ──
+  const handleMissedBus = async () => {
+    setRedirectLoading(true);
+    try {
+      const { data } = await api.post('/students/missed-bus');
+      if (data.found && data.redirect) {
+        setRedirectInfo(data.redirect);
+        // Show redirected bus on the map immediately
+        const loc = normalizeLocation(data.redirect.redirectedBus?.lastKnownLocation);
+        if (loc) setBusPosition(loc);
+        toast.success(data.message, { icon: '🔄', duration: 5000 });
+      } else {
+        toast(data.message || 'No alternative buses available', { icon: '😔', duration: 4000 });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to find alternative bus');
+    } finally {
+      setRedirectLoading(false);
+    }
+  };
+
+  const handleCancelRedirect = async () => {
+    try {
+      await api.post('/students/cancel-redirect');
+      setRedirectInfo(null);
+      toast('Back to your original bus', { icon: '🚌' });
+      fetchProfile(); // This restores original bus position on map
+    } catch {
+      toast.error('Failed to cancel redirect');
+    }
+  };
+
+  // Check redirect status on mount (restore after page refresh)
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const { data } = await api.get('/students/redirect-status');
+        if (data.active && data.redirect) {
+          setRedirectInfo(data.redirect);
+          // Restore redirected bus position on map
+          const loc = normalizeLocation(data.redirect.redirectedBus?.lastKnownLocation);
+          if (loc) setBusPosition(loc);
+        }
+      } catch { /* ignore */ }
+    };
+    checkRedirect();
+  }, []);
+
   // Keep ref in sync so socket handlers always call the latest version
   fetchProfileRef.current = fetchProfile;
 
@@ -323,15 +418,16 @@ const StudentDashboard = () => {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Subscribe to trip socket
+  // Subscribe to trip socket (use redirected trip if active)
+  const activeTripId = redirectInfo?.redirectedTripId || tripId;
   useEffect(() => {
-    if (!socket || !tripId || !isAuthenticated) return;
-    socket.emit('student:subscribe', { tripId });
-    subscribedTripRef.current = tripId;
+    if (!socket || !activeTripId || !isAuthenticated) return;
+    socket.emit('student:subscribe', { tripId: activeTripId });
+    subscribedTripRef.current = activeTripId;
     return () => {
-      socket.emit('student:unsubscribe', { tripId });
+      socket.emit('student:unsubscribe', { tripId: activeTripId });
     };
-  }, [socket, tripId, isAuthenticated]);
+  }, [socket, activeTripId, isAuthenticated]);
 
   // Auto-refresh every 30 seconds (pauses when tab is hidden)
   useEffect(() => {
@@ -447,7 +543,10 @@ const StudentDashboard = () => {
   };
 
   const formattedEta = eta?.value ? formatETA(eta.value) : '—';
-  const stopPosition = stopInfo ? normalizeLocation(stopInfo) : null;
+  // When redirected, show the matching stop on the map instead of the original stop
+  const stopPosition = redirectInfo?.matchingStop
+    ? normalizeLocation(redirectInfo.matchingStop)
+    : stopInfo ? normalizeLocation(stopInfo) : null;
 
   // Loading state
   if (loading) {
@@ -594,32 +693,137 @@ const StudentDashboard = () => {
               </>
             ) : stopDepartedInfo?.hasDeparted ? (
               <>
-                <div className="sd-hero-badge-wrap">
-                  <span className="sd-hero-badge sd-hero-badge-departed">Departed</span>
-                </div>
-                <p className="sd-hero-title">🚌 Bus has departed</p>
-                <p className="sd-hero-subtitle">
-                  from <span className="sd-accent-text font-medium">{stopDepartedInfo.stopName || stopInfo?.name}</span>
-                </p>
-                <div className="sd-departed-grid">
-                  {stopDepartedInfo.arrivedAt && (
-                    <div className="sd-departed-cell">
-                      <p className="sd-departed-label">Arrived at</p>
-                      <p className="sd-departed-value">
-                        {new Date(stopDepartedInfo.arrivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                {redirectInfo ? (
+                  /* ── Redirected State ── */
+                  <>
+                    <div className="sd-hero-badge-wrap">
+                      <span className="sd-hero-badge" style={{
+                        background: redirectInfo.arrived ? 'rgba(34,197,94,0.25)' : 'rgba(99,102,241,0.25)',
+                        color: redirectInfo.arrived ? '#86efac' : '#a5b4fc'
+                      }}>
+                        <ArrowRightLeft className="w-3.5 h-3.5" style={{ marginRight: 4 }} />
+                        {redirectInfo.arrived ? 'Arrived!' : 'Redirected'}
+                      </span>
                     </div>
-                  )}
-                  {stopDepartedInfo.departedAt && (
-                    <div className="sd-departed-cell">
-                      <p className="sd-departed-label">Departed at</p>
-                      <p className="sd-departed-value">
-                        {new Date(stopDepartedInfo.departedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <p className="sd-hero-title">
+                      {redirectInfo.arrived ? '🎉 Bus Arrived at Your Stop!' : '🔄 Tracking Alternative Bus'}
+                    </p>
+                    <p className="sd-hero-subtitle">
+                      {redirectInfo.arrived ? (
+                        <>
+                          <span className="sd-accent-text font-medium">{redirectInfo.redirectedBus?.name}</span> is at your stop
+                        </>
+                      ) : (
+                        <>
+                          Now tracking <span className="sd-accent-text font-medium">{redirectInfo.redirectedBus?.name}</span>
+                          {redirectInfo.redirectedRoute?.name && !redirectInfo.sameRoute && (
+                            <span className="text-slate-400"> ({redirectInfo.redirectedRoute.name})</span>
+                          )}
+                        </>
+                      )}
+                    </p>
+
+                    <div className="sd-departed-grid" style={{ marginTop: '0.75rem' }}>
+                      <div className="sd-departed-cell">
+                        <p className="sd-departed-label">Bus</p>
+                        <p className="sd-departed-value">{redirectInfo.redirectedBus?.numberPlate || '—'}</p>
+                      </div>
+                      <div className="sd-departed-cell">
+                        <p className="sd-departed-label">ETA</p>
+                        <p className="sd-departed-value" style={redirectInfo.arrived ? { color: '#86efac' } : {}}>
+                          {redirectInfo.arrived ? 'Arrived!' : redirectInfo.etaMinutes ? `~${redirectInfo.etaMinutes} min` : '—'}
+                        </p>
+                      </div>
+                      <div className="sd-departed-cell">
+                        <p className="sd-departed-label">Stops Away</p>
+                        <p className="sd-departed-value">{redirectInfo.stopsAway ?? '—'}</p>
+                      </div>
+                      <div className="sd-departed-cell">
+                        <p className="sd-departed-label">Your Stop</p>
+                        <p className="sd-departed-value">{redirectInfo.matchingStop?.name || stopInfo?.name || '—'}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <p className="sd-hero-footer-note">📍 Bus is continuing on route — see map below</p>
+
+                    {redirectInfo.driver && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                        <span>👨‍✈️ {redirectInfo.driver.name}</span>
+                        {redirectInfo.driver.phone && (
+                          <a href={`tel:${redirectInfo.driver.phone}`} style={{ color: '#818cf8' }}>
+                            <Phone className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleCancelRedirect}
+                      className="sd-btn-outline"
+                      style={{ marginTop: '0.75rem', fontSize: '0.8rem', padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Back to My Bus
+                    </button>
+                  </>
+                ) : (
+                  /* ── Normal Departed State ── */
+                  <>
+                    <div className="sd-hero-badge-wrap">
+                      <span className="sd-hero-badge sd-hero-badge-departed">Departed</span>
+                    </div>
+                    <p className="sd-hero-title">🚌 Bus has departed</p>
+                    <p className="sd-hero-subtitle">
+                      from <span className="sd-accent-text font-medium">{stopDepartedInfo.stopName || stopInfo?.name}</span>
+                    </p>
+                    <div className="sd-departed-grid">
+                      {stopDepartedInfo.arrivedAt && (
+                        <div className="sd-departed-cell">
+                          <p className="sd-departed-label">Arrived at</p>
+                          <p className="sd-departed-value">
+                            {new Date(stopDepartedInfo.arrivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
+                      {stopDepartedInfo.departedAt && (
+                        <div className="sd-departed-cell">
+                          <p className="sd-departed-label">Departed at</p>
+                          <p className="sd-departed-value">
+                            {new Date(stopDepartedInfo.departedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Missed Bus Button */}
+                    <button
+                      onClick={handleMissedBus}
+                      disabled={redirectLoading}
+                      style={{
+                        marginTop: '0.75rem',
+                        width: '100%',
+                        padding: '0.65rem 1rem',
+                        borderRadius: '0.75rem',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        color: '#fbbf24',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: redirectLoading ? 'wait' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {redirectLoading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Finding alternative...</>
+                      ) : (
+                        <><ArrowRightLeft className="w-4 h-4" /> I Missed My Bus — Find Another</>
+                      )}
+                    </button>
+                    <p className="sd-hero-footer-note">📍 Bus is continuing on route — see map below</p>
+                  </>
+                )}
               </>
             ) : (
               <>

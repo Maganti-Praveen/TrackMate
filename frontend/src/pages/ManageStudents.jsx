@@ -6,7 +6,7 @@ import Drawer from '../components/Drawer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Users, Plus, Search, Edit2, Trash2, Phone,
-  User, X, Bus, MapPin, CheckCircle, Clock, Upload, FileSpreadsheet, AlertTriangle, Loader2
+  User, X, Bus, MapPin, CheckCircle, Clock, Upload, FileSpreadsheet, AlertTriangle, Loader2, Filter, ChevronDown, Route, CheckSquare, Square, MousePointerClick
 } from 'lucide-react';
 import TrackMateLoader from '../components/TrackMateLoader';
 
@@ -37,13 +37,30 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
 };
 
 /* Student Card Component */
-const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
+const StudentCard = ({ student, assignment, onEdit, onDelete, selectionMode, isSelected, onToggleSelect }) => {
   const isAssigned = Boolean(assignment);
 
+  const handleCardClick = () => {
+    if (selectionMode) onToggleSelect(student._id);
+  };
+
   return (
-    <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+    <div
+      className={`card p-4 transition-all group cursor-pointer ${isSelected ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500/30'
+        : 'hover:border-indigo-500/30'
+        }`}
+      onClick={handleCardClick}
+    >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
+          {selectionMode && (
+            <div className="flex-shrink-0">
+              {isSelected
+                ? <CheckSquare className="w-5 h-5 text-indigo-400" />
+                : <Square className="w-5 h-5 text-slate-500" />
+              }
+            </div>
+          )}
           <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isAssigned ? 'bg-emerald-500/20' : 'bg-amber-500/20'
             }`}>
             <User className={`w-5 h-5 ${isAssigned ? 'text-emerald-400' : 'text-amber-400'}`} />
@@ -54,8 +71,8 @@ const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
           </div>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${isAssigned
-            ? 'bg-emerald-500/20 text-emerald-400'
-            : 'bg-amber-500/20 text-amber-400'
+          ? 'bg-emerald-500/20 text-emerald-400'
+          : 'bg-amber-500/20 text-amber-400'
           }`}>
           {isAssigned ? 'Assigned' : 'Pending'}
         </span>
@@ -90,26 +107,28 @@ const StudentCard = ({ student, assignment, onEdit, onDelete }) => {
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-1">
-        <button
-          onClick={() => onEdit(student)}
-          className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
-          title="Edit student"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onDelete(student)}
-          disabled={isAssigned}
-          className={`p-2 rounded-lg transition ${isAssigned
+      {!selectionMode && (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(student); }}
+            className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+            title="Edit student"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(student); }}
+            disabled={isAssigned}
+            className={`p-2 rounded-lg transition ${isAssigned
               ? 'text-slate-600 cursor-not-allowed'
               : 'text-red-400 hover:bg-red-500/20'
-            }`}
-          title={isAssigned ? 'Remove assignment first' : 'Delete student'}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
+              }`}
+            title={isAssigned ? 'Remove assignment first' : 'Delete student'}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -118,9 +137,13 @@ const ManageStudents = () => {
   const [students, setStudents] = useState([]);
   const [assignments, setAssignments] = useState({});
   const [buses, setBuses] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [stops, setStops] = useState([]);
   const [loadingStops, setLoadingStops] = useState(false);
   const [search, setSearch] = useState('');
+  const [busFilter, setBusFilter] = useState('');
+  const [routeFilter, setRouteFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [form, setForm] = useState(blankForm);
@@ -133,14 +156,18 @@ const ManageStudents = () => {
   const [csvUploading, setCsvUploading] = useState(false);
   const [csvResults, setCsvResults] = useState(null);
   const fileInputRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
 
   const loadStudents = async () => {
     setLoading(true);
     try {
-      const [studentsRes, assignmentsRes, busesRes] = await Promise.all([
+      const [studentsRes, assignmentsRes, busesRes, routesRes] = await Promise.all([
         api.get('/admin/students'),
         api.get('/admin/assignments'),
-        api.get('/buses')
+        api.get('/buses'),
+        api.get('/routes')
       ]);
       setStudents(studentsRes.data);
       const assignmentMap = assignmentsRes.data.reduce((acc, assignment) => {
@@ -151,6 +178,7 @@ const ManageStudents = () => {
       }, {});
       setAssignments(assignmentMap);
       setBuses(busesRes.data || []);
+      setRoutes(routesRes.data || []);
     } catch (error) {
       toast.error('Unable to load students');
     } finally {
@@ -225,6 +253,40 @@ const ManageStudents = () => {
     }
   };
 
+  // === Multi-Select Handlers ===
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.size === 0) setSelectionMode(false);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredStudents.map(s => s._id)));
+  };
+
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    setBulkConfirm(false);
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await api.delete(`/admin/students/${id}`);
+        deleted++;
+      } catch { /* skip failures */ }
+    }
+    toast.success(`${deleted} student${deleted !== 1 ? 's' : ''} deleted`);
+    exitSelection();
+    loadStudents();
+  };
+
   // === CSV Upload Handlers ===
   const openCsvModal = () => {
     setCsvModalOpen(true);
@@ -271,7 +333,7 @@ const ManageStudents = () => {
       const formData = new FormData();
       formData.append('file', csvFile);
       const { data } = await api.post('/admin/students/bulk-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-type' }
       });
       setCsvResults(data);
       if (data.created > 0) {
@@ -288,15 +350,94 @@ const ManageStudents = () => {
   };
 
   const filteredStudents = useMemo(() => {
+    let result = students;
+
+    // Text search
     const needle = search.trim().toLowerCase();
-    if (!needle) return students;
-    return students.filter((student) =>
-      [student.username, student.name, student.phone, student.email].some((value) => value?.toLowerCase().includes(needle))
-    );
-  }, [students, search]);
+    if (needle) {
+      result = result.filter((student) =>
+        [student.username, student.name, student.phone, student.email].some((value) => value?.toLowerCase().includes(needle))
+      );
+    }
+
+    // Bus filter
+    if (busFilter) {
+      result = result.filter((student) => {
+        const asgn = assignments[student._id];
+        return asgn?.bus?._id === busFilter || asgn?.bus === busFilter;
+      });
+    }
+
+    // Route filter
+    if (routeFilter) {
+      result = result.filter((student) => {
+        const asgn = assignments[student._id];
+        const busId = asgn?.bus?._id || asgn?.bus;
+        if (!busId) return false;
+        const bus = buses.find(b => b._id === busId);
+        const rId = bus?.route?._id || bus?.route;
+        return rId === routeFilter;
+      });
+    }
+
+    // Status filter
+    if (statusFilter === 'assigned') {
+      result = result.filter((student) => Boolean(assignments[student._id]));
+    } else if (statusFilter === 'pending') {
+      result = result.filter((student) => !assignments[student._id]);
+    }
+
+    return result;
+  }, [students, search, busFilter, routeFilter, statusFilter, assignments, buses]);
 
   const assignedCount = Object.keys(assignments).length;
   const unassigned = Math.max(students.length - assignedCount, 0);
+
+  const hasActiveFilters = search || busFilter || routeFilter || statusFilter;
+  const clearFilters = () => {
+    setSearch('');
+    setBusFilter('');
+    setRouteFilter('');
+    setStatusFilter('');
+  };
+
+  // === Multi-select handlers ===
+  const toggleSelectStudent = (studentId) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentId)) {
+        newSet.delete(studentId);
+      } else {
+        newSet.add(studentId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredStudents.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredStudents.map((s) => s._id)));
+    }
+  };
+
+  const askBulkDelete = () => {
+    setBulkConfirm(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      await api.post('/admin/students/bulk-delete', { studentIds: Array.from(selectedIds) });
+      toast.success(`${selectedIds.size} students removed`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      setBulkConfirm(false);
+      loadStudents();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to delete students');
+    }
+  };
 
   return (
     <main className="min-h-screen pb-24 md:pb-8">
@@ -322,6 +463,16 @@ const ManageStudents = () => {
               <Plus className="w-5 h-5" />
               Add Student
             </button>
+            <button
+              onClick={() => { setSelectionMode(!selectionMode); setSelectedIds(new Set()); }}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition sm:w-auto flex-1 ${selectionMode
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                : 'border border-white/10 text-slate-300 hover:bg-white/5 hover:border-white/20'
+                }`}
+            >
+              <MousePointerClick className="w-5 h-5" />
+              {selectionMode ? 'Cancel' : 'Select'}
+            </button>
           </div>
         </header>
 
@@ -332,25 +483,122 @@ const ManageStudents = () => {
           <StatCard icon={Clock} label="Pending" value={unassigned} subtitle="Awaiting" color="amber" />
         </div>
 
-        {/* Search */}
-        <div className="card p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by name or roll number..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+        {/* Filters */}
+        <div className="card p-4 space-y-3">
+          {/* Row 1: Search + Dropdowns */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by name, roll number, phone, email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Bus Filter */}
+            <div className="relative sm:w-48">
+              <Bus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <select
+                value={busFilter}
+                onChange={(e) => setBusFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
               >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+                <option value="">All Buses</option>
+                {buses.map((bus) => (
+                  <option key={bus._id} value={bus._id}>
+                    {bus.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Status Filter */}
+            <div className="relative sm:w-44">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
+              >
+                <option value="">All Status</option>
+                <option value="assigned">Assigned</option>
+                <option value="pending">Pending</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Route Filter */}
+            <div className="relative sm:w-48">
+              <Route className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <select
+                value={routeFilter}
+                onChange={(e) => setRouteFilter(e.target.value)}
+                className="w-full pl-10 pr-8 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
+              >
+                <option value="">All Routes</option>
+                {routes.map((route) => (
+                  <option key={route._id} value={route._id}>
+                    {route.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Row 2: Active Filters + Result Count */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5"
+                >
+                  <X className="w-3 h-3" />
+                  Clear all
+                </button>
+              )}
+              {search && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs">
+                  Search: "{search.length > 15 ? search.slice(0, 15) + '…' : search}"
+                  <button onClick={() => setSearch('')} className="ml-0.5 hover:text-white"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {busFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs">
+                  Bus: {buses.find(b => b._id === busFilter)?.name || 'Unknown'}
+                  <button onClick={() => setBusFilter('')} className="ml-0.5 hover:text-white"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {routeFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs">
+                  Route: {routes.find(r => r._id === routeFilter)?.name || 'Unknown'}
+                  <button onClick={() => setRouteFilter('')} className="ml-0.5 hover:text-white"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {statusFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300 text-xs">
+                  {statusFilter === 'assigned' ? '✓ Assigned' : '⏳ Pending'}
+                  <button onClick={() => setStatusFilter('')} className="ml-0.5 hover:text-white"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 flex-shrink-0">
+              {filteredStudents.length} of {students.length} student{students.length !== 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
@@ -366,6 +614,9 @@ const ManageStudents = () => {
                 assignment={assignments[student._id]}
                 onEdit={openEdit}
                 onDelete={askDelete}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(student._id)}
+                onToggleSelect={toggleSelect}
               />
             ))}
           </div>
@@ -678,6 +929,46 @@ const ManageStudents = () => {
           </div>
         </div>
       )}
+
+      {/* Floating Selection Bar */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-white/10 backdrop-blur-lg rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-4 animate-fade-in">
+          <p className="text-sm text-white font-medium whitespace-nowrap">
+            {selectedIds.size} selected
+          </p>
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={selectAll}
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-medium whitespace-nowrap"
+          >
+            Select all ({filteredStudents.length})
+          </button>
+          <button
+            onClick={exitSelection}
+            className="text-xs text-slate-400 hover:text-white font-medium whitespace-nowrap"
+          >
+            Deselect
+          </button>
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={() => setBulkConfirm(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 font-medium text-sm transition"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm */}
+      <ConfirmDialog
+        open={bulkConfirm}
+        title="Delete Selected Students"
+        message={`Are you sure you want to delete ${selectedIds.size} selected student${selectedIds.size !== 1 ? 's' : ''}? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkConfirm(false)}
+      />
     </main>
   );
 };

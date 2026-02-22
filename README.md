@@ -1,68 +1,154 @@
-# TrackMate — Real-Time College Bus Tracking System
+# 🚍 TrackMate — Real-Time School Bus Tracking System
 
-TrackMate is a full-stack Progressive Web Application (PWA) that enables real-time GPS tracking of college buses. It provides three role-based dashboards — **Admin**, **Driver**, and **Student** — connected through WebSocket communication for live position updates, ETA calculations, and push notifications.
+**TrackMate** is a full-stack, real-time school bus tracking platform built for **Ramachandra College of Engineering (RCE), Eluru**. It enables students to track their assigned bus live on a map, receive push-notification ETAs, and get redirected to alternative buses if they miss theirs — all from a mobile-friendly Progressive Web App.
 
-## Tech Stack
+---
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite 7, Tailwind CSS, Leaflet Maps, Socket.IO Client |
-| Backend | Node.js, Express 4, Socket.IO 4, Mongoose 7 |
-| Database | MongoDB Atlas |
-| Auth | JWT (JSON Web Tokens), bcryptjs |
-| Notifications | Web Push (VAPID), Nodemailer (Gmail) |
-| Geospatial | @turf/turf, OSRM Routing Service |
+## ✨ Key Features
 
-## Features
+### 🔐 Role-Based Access (Admin / Driver / Student)
 
-- **Real-time GPS tracking** with live map updates via WebSocket
-- **Automatic ETA calculation** using OSRM routing + exponential smoothing
-- **Geofence-based stop detection** — auto-detects bus arrival/departure at stops
-- **Push notifications** — proximity alerts, arrival notifications, SOS emergency alerts
-- **Email registration system** — welcome email with credentials on student signup
-- **Role-based access control** — Admin, Driver, Student with protected routes
-- **PWA support** — installable, works offline, service worker caching
-- **Admin dashboard** — fleet management, analytics, trip history, CSV export
-- **Driver dashboard** — trip management, live location sharing, manual stop events
-- **Student dashboard** — live ETA, bus position, event history, notification preferences
-- **Rate limiting** on auth endpoints for brute-force protection
-- **NoSQL injection prevention** via input sanitization middleware
-- **Password security** — bcrypt hashing, first-login forced password change
+| Role | Capabilities |
+|---|---|
+| **Admin** | Manage buses, drivers, routes, stops, students. View live map of all buses, trip analytics, CSV export. Assign students to buses/stops. Bulk-upload students via CSV. |
+| **Driver** | Start/end trips, share GPS in real time via WebSocket, trigger SOS alerts, view route with stops. Built-in driver simulator for testing. |
+| **Student** | View assigned bus on a live map, see real-time ETA to their stop, receive push notifications on bus proximity, report missed bus and get redirected to nearest alternative. |
 
-## Project Structure
+### 🗺️ Real-Time GPS Tracking
+
+- **WebSocket-powered** location streaming (Socket.IO) — sub-second latency
+- **OSRM-based ETA** — road-aware driving-time estimates, with exponential smoothing for stability
+- **Automatic stop detection** — geo-fence triggers (75 m radius, 3 s dwell) auto-detect arrivals/departures
+- **Segment statistics** — historical travel times per segment improve ETA accuracy over time
+
+### 🔔 Push Notifications (Web Push / VAPID)
+
+- Proximity alerts when the bus is N minutes / N meters from the student's stop
+- Arrival/left notifications per stop
+- SOS emergency broadcasts from the driver
+- Email fallback via **Brevo HTTP API** (welcome email, stop arrival, password reset)
+
+### 🚫 Missed Bus Redirect
+
+- Student taps "Missed Bus" → system finds the nearest alternative bus (same route first, then cross-route) that hasn't passed their stop yet
+- Live tracking automatically switches to the redirect bus
+- Cancel redirect any time to return to original assignment
+
+### 🌐 Public Tracking
+
+- Shareable URL `/track/BusNo30` — no login required
+- Bus selector page at `/track` lists all buses with live status
+- Space-insensitive, case-insensitive URL matching
+
+### 📱 Progressive Web App (PWA)
+
+- Installable on Android/iOS home screen
+- Offline fallback page
+- Service worker with cache-first strategy for static assets, network-first for navigation
+- Wake Lock API to prevent screen dimming during tracking
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────┐         ┌──────────────────────┐
+│   React Frontend     │◄──────►│   Express Backend     │
+│   (Vite + React 18)  │  REST  │   (Node.js)           │
+│                      │◄──────►│                       │
+│   Leaflet Maps       │  WS    │   Socket.IO Server    │
+│   Framer Motion      │        │   MongoDB Atlas       │
+│   Bootstrap 5        │        │   OSRM Routing        │
+│   Lucide Icons       │        │   Brevo Email API     │
+│   PWA + Service Worker│       │   Web Push (VAPID)    │
+└──────────────────────┘         └──────────────────────┘
+```
+
+### Backend Stack
+
+| Technology | Purpose |
+|---|---|
+| Node.js + Express | REST API server |
+| Socket.IO | Real-time bidirectional GPS streaming |
+| MongoDB Atlas (Mongoose) | Persistent storage |
+| OSRM | Road-network ETA calculations |
+| web-push (VAPID) | Browser push notifications |
+| Brevo HTTP API | Transactional emails |
+| bcryptjs | Password hashing |
+| jsonwebtoken | JWT authentication |
+| express-rate-limit | Rate limiting for auth endpoints |
+| @turf/turf | Geospatial calculations (point-on-line, line-slice) |
+| csv-parser + multer | CSV bulk upload |
+
+### Frontend Stack
+
+| Technology | Purpose |
+|---|---|
+| React 18 | UI framework |
+| Vite 7 | Build tool + dev server |
+| React Router 6 | Client-side routing |
+| Leaflet + React-Leaflet | Interactive maps |
+| Socket.IO Client | Real-time updates |
+| Framer Motion | Animations |
+| Bootstrap 5 | Base styling |
+| Lucide React | Icon system |
+| PapaParse | CSV parsing in browser |
+| @dnd-kit | Drag-and-drop stop reordering |
+| Axios | HTTP client |
+
+---
+
+## 📂 Project Structure
 
 ```
 TrackMate/
-├── backend/                    # Express API server
-│   ├── server.js               # Entry point, middleware, route mounting
-│   ├── config/                 # DB connection, constants
-│   ├── controllers/            # Route handlers & Socket.IO logic
-│   ├── middleware/              # Auth, role, validation middleware
-│   ├── models/                 # Mongoose schemas (7 models)
-│   ├── routes/                 # Express route definitions
-│   ├── utils/                  # Email, ETA, geo, notifications, logging
-│   ├── inMemory/               # In-memory active trip state cache
-│   └── scripts/                # Database seed script
-├── frontend/                   # React SPA
+├── backend/
+│   ├── server.js                 # Express + Socket.IO entry point
+│   ├── config/
+│   │   ├── db.js                 # MongoDB connection
+│   │   └── constants.js          # App-wide constants & env validation
+│   ├── models/
+│   │   ├── User.js               # User (admin/driver/student)
+│   │   ├── Bus.js                # Bus entity
+│   │   ├── Route.js              # Route with embedded stops + segStats
+│   │   ├── Stop.js               # Physical stop (linked to route)
+│   │   ├── Trip.js               # Trip lifecycle (PENDING→ONGOING→COMPLETED)
+│   │   ├── StudentAssignment.js  # Student ↔ Bus ↔ Stop mapping
+│   │   └── StopEvent.js          # ARRIVED/LEFT/SOS event log
+│   ├── controllers/              # 13 controller files
+│   ├── routes/                   # 11 route files
+│   ├── middleware/               # auth, role, validation, sanitization
+│   ├── utils/                    # ETA, geo, email, push, logging
+│   ├── inMemory/                 # In-memory activeTrips cache
+│   └── scripts/                  # Database seeder
+├── frontend/
 │   ├── src/
-│   │   ├── pages/              # 13 page components
-│   │   ├── components/         # 14 reusable components
-│   │   ├── context/            # Auth & Theme context providers
-│   │   ├── hooks/              # Custom hooks (auth, geolocation, socket)
-│   │   ├── constants/          # API URLs, geo constants
-│   │   └── utils/              # API client, ETA utils, notifications
-│   └── public/                 # PWA manifest, service worker, markers
-└── lp-files/                   # Landing page assets
+│   │   ├── pages/                # 15 page components
+│   │   ├── components/           # 14 reusable components
+│   │   ├── hooks/                # useSocket, useGeolocation, useAuth, useWakeLock
+│   │   ├── context/              # AuthContext, ThemeContext
+│   │   ├── utils/                # API, debounce, ETA, map, notifications, offline
+│   │   ├── constants/            # API URLs, geo constants
+│   │   ├── main.jsx              # Router + entry point
+│   │   └── index.css             # Global styles
+│   ├── public/
+│   │   ├── sw.js                 # Service worker
+│   │   ├── manifest.json         # PWA manifest
+│   │   ├── offline.html          # Offline fallback
+│   │   └── markers/              # Custom map markers
+│   └── vite.config.js
+└── README.md
 ```
 
-## Prerequisites
+---
 
-- **Node.js** v18 or higher
-- **MongoDB** (local or Atlas cloud)
-- **Gmail account** with App Password for email service
-- **VAPID keys** for push notifications
+## 🚀 Getting Started
 
-## Installation & Setup
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **MongoDB** (Atlas cluster or local instance)
+- npm or yarn
 
 ### 1. Clone the Repository
 
@@ -78,128 +164,205 @@ cd backend
 npm install
 ```
 
-Create a `.env` file in the `backend/` directory:
+Create `.env`:
 
 ```env
 PORT=5000
 NODE_ENV=development
-
-MONGO_URI=your_mongodb_connection_string
+MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/?appName=TrackMate
 DB_NAME=TrackMatev1
-
-JWT_SECRET=your_jwt_secret_key
-
+JWT_SECRET=your-secret-key
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
+# OSRM (public demo server — for production, self-host)
 OSRM_BASE_URL=http://router.project-osrm.org
 
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_gmail_app_password
-
-VAPID_PUBLIC_KEY=your_vapid_public_key
-VAPID_PRIVATE_KEY=your_vapid_private_key
-VAPID_EMAIL=mailto:your_email@example.com
-
+# Auto-end stale trips after N hours
 STALE_TRIP_HOURS=12
+
+# Email (Brevo HTTP API)
+EMAIL_USER=your-email@gmail.com
+BREVO_API_KEY=xkeysib-...
+
+# Push Notifications (generate: npx web-push generate-vapid-keys)
+VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_EMAIL=mailto:admin@trackmate.com
 ```
 
-Generate VAPID keys:
-```bash
-npx web-push generate-vapid-keys
-```
-
-### 3. Seed the Admin Account
+Start the server:
 
 ```bash
-npm run seed
-```
-
-This creates a default admin account: `ad1` / `ad1` (change password on first login).
-
-### 4. Start the Backend
-
-```bash
-npm run dev     # Development (with nodemon auto-restart)
-# or
+npm run dev     # Development (nodemon)
 npm start       # Production
 ```
 
-### 5. Frontend Setup
+### 3. Frontend Setup
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-Edit the `.env` file in the `frontend/` directory:
+Create `.env`:
 
 ```env
-# Backend API URL
-# For local dev: comment this out → auto-detects localhost / LAN
-# For production (Vercel): set to your Render backend URL
-VITE_BACKEND_URL=https://trackmate-backend.onrender.com
+# Leave commented for local dev (auto-detects localhost/LAN)
+# VITE_BACKEND_URL=https://your-backend.onrender.com
 
-VITE_VAPID_PUBLIC_KEY=your_vapid_public_key
+VITE_VAPID_PUBLIC_KEY=your-vapid-public-key
 VITE_MIN_UPDATE_INTERVAL_MS=1000
 ```
 
-> **Tip:** For local development, comment out `VITE_BACKEND_URL` — the app auto-detects `localhost` and LAN IPs.
-
-### 6. Start the Frontend
+Start the dev server:
 
 ```bash
-npm run dev
+npm run dev     # Vite dev server on port 5173
+npm run build   # Production build
 ```
 
-The app will be available at `http://localhost:5173`.
+### 4. Default Accounts
 
-### Mobile Testing (LAN)
+On first startup, the server creates a default admin:
 
-To test on mobile devices connected to the same WiFi:
+- **Username:** `admin`
+- **Password:** `admin123`
 
-1. The frontend auto-detects LAN access and connects to the backend using the LAN IP
-2. Open Windows Firewall for ports 5000 and 5173
-3. On mobile Chrome, add your LAN URLs to `chrome://flags/#unsafely-treat-insecure-origin-as-secure` for PWA features (push notifications, service worker, geolocation)
+---
 
-## Default Accounts
+## 🔑 API Endpoints
 
-| Role | Username | Password | Notes |
-|------|----------|----------|-------|
-| Admin | ad1 | ad1 | Created by seed script |
+### Authentication
 
-Students self-register via the app. Drivers are created by the admin through the dashboard.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/login` | ✗ | Login (rate-limited: 10/15min) |
+| POST | `/api/auth/register` | ✗ | Student self-registration (rate-limited: 5/hr) |
+| GET | `/api/auth/me` | ✓ | Get current user profile |
+| PUT | `/api/auth/profile` | ✓ | Update profile / change password |
+| POST | `/api/auth/forgot-password` | ✗ | Reset password to roll number |
 
-## Scripts
+### Admin
 
-| Command | Directory | Description |
-|---------|-----------|-------------|
-| `npm run dev` | backend | Start with nodemon (auto-restart) |
-| `npm start` | backend | Production start |
-| `npm run seed` | backend | Seed admin account |
-| `npm run dev` | frontend | Vite dev server with HMR |
-| `npm run build` | frontend | Production build |
-| `npm run preview` | frontend | Preview production build |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/admin/dashboard` | Admin | Dashboard statistics |
+| GET | `/api/admin/active-trips` | Admin | All active trips |
+| GET | `/api/admin/live-buses` | Admin | Live bus positions |
+| GET | `/api/admin/events` | Admin | Event history |
+| DELETE | `/api/admin/events` | Admin | Clear events |
+| POST | `/api/admin/assign` | Admin | Assign student to bus/stop |
+| GET | `/api/admin/assignments` | Admin | All assignments |
+| PUT | `/api/admin/assignments/:id` | Admin | Update assignment |
+| DELETE | `/api/admin/assignments/:id` | Admin | Delete assignment |
+| GET | `/api/admin/analytics` | Admin | Trip analytics |
+| GET | `/api/admin/export-csv` | Admin | Export trips as CSV |
 
-## Deployment
+### Buses, Routes, Stops, Drivers, Students
 
-### Backend → Render
+Full CRUD operations for each entity — see route files for complete list.
 
-1. Create a new Web Service on [Render](https://render.com)
-2. Connect your GitHub repo, set root directory to `backend`
-3. Build command: `npm install` | Start command: `npm start`
-4. Add all backend environment variables (`MONGO_URI`, `JWT_SECRET`, `VAPID_*`, `EMAIL_*`, etc.)
-5. Set `ALLOWED_ORIGINS` to your Vercel frontend URL (e.g., `https://trackmate.vercel.app`)
+### Driver
 
-### Frontend → Vercel
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/driver/start-trip` | Driver | Start a trip |
+| POST | `/api/driver/end-trip/:tripId` | Driver | End a trip |
+| GET | `/api/driver/active-trip` | Driver | Get driver's active trip |
+| GET | `/api/driver/assigned-bus` | Driver | Get assigned bus |
 
-1. Import your GitHub repo on [Vercel](https://vercel.com)
-2. Set root directory to `frontend`
-3. Add environment variable: `VITE_BACKEND_URL` = your Render backend URL (e.g., `https://trackmate-backend.onrender.com`)
-4. Add `VITE_VAPID_PUBLIC_KEY` with your VAPID public key
-5. Deploy — `vercel.json` handles SPA routing automatically
+### Student
 
-> **No code changes needed** — just set `VITE_BACKEND_URL` in Vercel's environment variables to point to your Render backend.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/student/assignment` | Student | Get bus/stop assignment |
+| GET | `/api/student/eta` | Student | Get ETA to student's stop |
+| GET | `/api/student/live-trip` | Student | Get live trip data |
+| POST | `/api/students/missed-bus` | Student | Report missed bus |
+| GET | `/api/students/redirect-status` | Student | Check redirect status |
+| POST | `/api/students/cancel-redirect` | Student | Cancel redirect |
 
-## License
+### Public (No Auth)
 
-This project is developed by Maganti Praveen Sai as a final year project.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/public/buses` | ✗ | List all buses with active status |
+| GET | `/api/public/track/:busIdentifier` | ✗ | Get tracking data for a bus |
+
+### WebSocket Events
+
+| Event | Direction | Description |
+|---|---|---|
+| `auth:token` | Client → Server | Authenticate WebSocket connection |
+| `auth:ready` | Server → Client | Authentication confirmed |
+| `driver:location_update` | Client → Server | Driver GPS update |
+| `trip:location_update` | Server → Client | Broadcast bus location |
+| `trip:eta_update` | Server → Client | Broadcast ETA updates |
+| `trip:stop_event` | Server → Client | Stop arrival/departure |
+| `student:subscribe` | Client → Server | Subscribe to a trip |
+| `public:subscribe` | Client → Server | Public subscribe to a trip |
+| `bus:trip_started` | Server → Client | Trip started notification |
+| `driver:sos` | Client → Server | Driver SOS alert |
+| `stats:live_visitors` | Server → Client | Live visitor count |
+
+---
+
+## 🌍 Deployment
+
+### Backend (Render)
+
+- Deploy Node.js web service
+- Set all `.env` variables in Render dashboard
+- Health check endpoint: `/ping` (beautiful status page)
+- Keep-alive via UptimeRobot pinging `/ping`
+
+### Frontend (Vercel)
+
+- Deploy with `vercel.json` (SPA rewrites configured)
+- Set `VITE_BACKEND_URL` in Vercel environment variables
+- Configure `vercel.json`:
+
+```json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+---
+
+## 📊 Database Schema
+
+```
+User ──────────► Bus ◄── Route
+  │                │        │
+  │         StudentAssignment │
+  │              │        │
+  │              ▼        ▼
+  │            Stop     Trip ──► StopEvent
+  │                      │
+  │                   locations[]
+  │                   lastLocation
+  └── pushSubscription
+```
+
+---
+
+## 👥 Team
+
+**Department:** Computer Science & Engineering  
+**Institution:** Ramachandra College of Engineering, Eluru, Andhra Pradesh  
+
+| Name | Roll Number | Role |
+|---|---|---|
+| Maganti Praveen Sai | 22ME1A05G5 | Full Stack Developer & System Architect |
+| Chandu Anand Sai Vivek | 23ME5A0512 | Backend Developer |
+| Mamidibattula Chandra Sreya | 22ME1A05G6 | Frontend Developer |
+| Perla Kirthana | 22ME1A05H8 | Frontend & Documentation Support |
+
+**Mentor:** Prof./Ms. Rajeswari Bolla, CSE Department
+
+---
+
+## 📄 License
+
+This project is developed as an academic capstone project for B.Tech CSE (2022-2026) at RCE, Eluru.

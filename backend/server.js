@@ -18,6 +18,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const { registerLocationHandlers } = require('./controllers/locationController');
+const publicRoutes = require('./routes/publicRoutes');
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/students', studentRoutes); // Alias for frontend compatibility
 app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/public', publicRoutes);
 
 // Lightweight health check — used by UptimeRobot / cron pings to prevent Render sleep
 app.get('/ping', (_req, res) => {
@@ -115,7 +117,7 @@ body{min-height:100vh;display:flex;align-items:center;justify-content:center;fon
     <div class="stat"><div class="stat-label">Uptime</div><div class="stat-value orange">${uptime}</div></div>
     <div class="stat"><div class="stat-label">Status</div><div class="stat-value">Online</div></div>
     <div class="stat"><div class="stat-label">Server</div><div class="stat-value">Render</div></div>
-    <div class="stat"><div class="stat-label">Checked</div><div class="stat-value">${new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'})}</div></div>
+    <div class="stat"><div class="stat-label">Checked</div><div class="stat-value">${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}</div></div>
   </div>
   <div class="foot">Monitored by UptimeRobot &middot; <a href="https://trackmaterce.onrender.com" target="_blank">Go to TrackMate</a></div>
 </div>
