@@ -469,7 +469,8 @@ const handleDriverLocationUpdate = async (io, socket, payload) => {
             body: `Bus is ${etaMinutes} min away (${Math.round(dist)}m). Get ready!`,
             url: '/student',
             tag: 'proximity-alert',
-            icon: '/markers/bus.png'
+            icon: '/logo%20vertical.png',
+            badge: '/favicons/android-chrome-192x192.png'
           });
 
           // Mark as notified for this trip

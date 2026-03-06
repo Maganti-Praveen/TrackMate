@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /* Stat Card Component */
-const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
+const StatCard = ({ icon: Icon, label, value, subtitle, color = 'orange' }) => {
   const colors = {
-    indigo: 'from-indigo-500 to-indigo-600',
+    orange: 'from-orange-500 to-orange-600',
     emerald: 'from-emerald-500 to-emerald-600',
     amber: 'from-amber-500 to-amber-600'
   };
@@ -34,13 +34,13 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
 
 /* Assignment Row Component */
 const AssignmentRow = ({ assignment, onEdit, onDelete }) => (
-  <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+  <div className="card p-4 hover:border-orange-500/30 transition-all group">
     <div className="flex items-center gap-4">
       {/* Student Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-            <Users className="w-4 h-4 text-indigo-400" />
+          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+            <Users className="w-4 h-4 text-orange-400" />
           </div>
           <div className="min-w-0">
             <p className="text-white font-medium truncate">{assignment.student?.name || 'Unnamed'}</p>
@@ -76,7 +76,7 @@ const AssignmentRow = ({ assignment, onEdit, onDelete }) => (
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(assignment)}
-          className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+          className="p-2 rounded-lg text-orange-400 hover:bg-orange-500/20 transition"
           title="Edit assignment"
         >
           <Edit2 className="w-4 h-4" />
@@ -319,7 +319,7 @@ const AssignStudents = () => {
           </div>
           <button
             onClick={() => setShowAssignForm(!showAssignForm)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition sm:w-auto w-full"
           >
             {showAssignForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             {showAssignForm ? 'Close' : 'New Assignment'}
@@ -330,7 +330,7 @@ const AssignStudents = () => {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <StatCard icon={CheckCircle} label="Assigned" value={assignments.length} subtitle="Students" color="emerald" />
           <StatCard icon={AlertCircle} label="Unassigned" value={unassignedStudents} subtitle="Need routing" color="amber" />
-          <StatCard icon={Bus} label="Buses" value={buses.length} subtitle="Available" color="indigo" />
+          <StatCard icon={Bus} label="Buses" value={buses.length} subtitle="Available" color="orange" />
         </div>
 
         {/* Assignment Form */}
@@ -345,7 +345,7 @@ const AssignStudents = () => {
                 onClick={() => setFormMode('existing')}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
                   formMode === 'existing' 
-                    ? 'bg-indigo-500 text-white' 
+                    ? 'bg-orange-500 text-white' 
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -356,7 +356,7 @@ const AssignStudents = () => {
                 onClick={() => setFormMode('quick')}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
                   formMode === 'quick' 
-                    ? 'bg-indigo-500 text-white' 
+                    ? 'bg-orange-500 text-white' 
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -374,13 +374,13 @@ const AssignStudents = () => {
                       placeholder="Search students..."
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     />
                   </div>
                   <select
                     value={selectedStudentId}
                     onChange={(e) => setSelectedStudentId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
                     required
                   >
                     <option value="">Select student</option>
@@ -397,14 +397,14 @@ const AssignStudents = () => {
                     placeholder="Roll number"
                     value={quickStudent.rollNumber}
                     onChange={(e) => setQuickStudent((prev) => ({ ...prev, rollNumber: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     required
                   />
                   <input
                     placeholder="Student name (optional)"
                     value={quickStudent.name}
                     onChange={(e) => setQuickStudent((prev) => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                   />
                 </div>
               )}
@@ -413,7 +413,7 @@ const AssignStudents = () => {
                 <select
                   value={formBusId}
                   onChange={(e) => handleBusChange(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
                   required
                 >
                   <option value="">Select bus</option>
@@ -426,7 +426,7 @@ const AssignStudents = () => {
                 <select
                   value={formStopId}
                   onChange={(e) => setFormStopId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 disabled:opacity-50"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50 disabled:opacity-50"
                   required
                   disabled={!formStops.length}
                 >
@@ -450,7 +450,7 @@ const AssignStudents = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+                className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition"
               >
                 Assign Student
               </button>
@@ -468,7 +468,7 @@ const AssignStudents = () => {
                 placeholder="Search assignments..."
                 value={filterQuery}
                 onChange={(e) => setFilterQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               />
               {filterQuery && (
                 <button
@@ -482,7 +482,7 @@ const AssignStudents = () => {
             <select
               value={filterBus}
               onChange={(e) => setFilterBus(e.target.value)}
-              className="px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50"
+              className="px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-orange-500/50"
             >
               <option value="all">All buses</option>
               {buses.map((bus) => (
@@ -533,7 +533,7 @@ const AssignStudents = () => {
             <button
               type="submit"
               form="assignment-form"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition"
             >
               Save Changes
             </button>
@@ -550,7 +550,7 @@ const AssignStudents = () => {
                 setDrawerForm((prev) => ({ ...prev, busId: nextBusId, stopId: '' }));
                 hydrateStopsForBus(nextBusId, setDrawerStops);
               }}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
               required
             >
               <option value="">Select bus</option>
@@ -564,7 +564,7 @@ const AssignStudents = () => {
             <select
               value={drawerForm.stopId}
               onChange={(e) => setDrawerForm((prev) => ({ ...prev, stopId: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
               required
             >
               <option value="">Select stop</option>

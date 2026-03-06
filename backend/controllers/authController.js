@@ -245,7 +245,17 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Forgot password — reset to roll number and email it
+// Generate a random temporary password (10 chars: letters + digits)
+const generateTempPassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars
+  let result = '';
+  for (let i = 0; i < 10; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+// Forgot password — reset to a random temp password and email it
 const forgotPassword = async (req, res) => {
   try {
     const identifier = typeof req.body.identifier === 'string' ? req.body.identifier.trim() : '';
@@ -270,20 +280,24 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'No email associated with this account. Contact admin.' });
     }
 
-    // Reset password to the username (roll number)
-    user.password = await hashPassword(user.username);
+    // Generate a secure random temporary password
+    const tempPassword = generateTempPassword();
+
+    // Hash and save the new temp password
+    user.password = await hashPassword(tempPassword);
     user.firstLogin = true; // Force password change on next login
     await user.save();
 
-    // Send password reset email
+    // Send password reset email with the actual temp password
     const { sendPasswordResetEmail } = require('../utils/emailService');
     sendPasswordResetEmail({
       email: user.email,
       fullName: user.name || user.username,
-      username: user.username
+      username: user.username,
+      tempPassword // pass the generated password to include in the email
     }).catch(err => console.error('Password reset email failed:', err.message));
 
-    res.json({ message: 'Password reset successful. Check your email for login credentials.' });
+    res.json({ message: 'A temporary password has been sent to your email. Please log in and change it immediately.' });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Failed to reset password' });

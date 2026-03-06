@@ -12,11 +12,11 @@ import TrackMateLoader from '../components/TrackMateLoader';
 
 // ===== COMPONENTS =====
 
-const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
+const StatCard = ({ icon: Icon, label, value, color = 'orange' }) => {
   const colors = {
-    indigo: 'bg-indigo-500/20 text-indigo-400',
-    emerald: 'bg-emerald-500/20 text-emerald-400',
     orange: 'bg-orange-500/20 text-orange-400',
+    emerald: 'bg-emerald-500/20 text-emerald-400',
+    amber: 'bg-amber-500/20  text-amber-400',
     purple: 'bg-purple-500/20 text-purple-400',
   };
 
@@ -74,8 +74,8 @@ const QuickLink = ({ to, icon: Icon, label }) => (
     to={to}
     className="flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition group"
   >
-    <div className="p-2 rounded-lg bg-indigo-500/20">
-      <Icon className="w-5 h-5 text-indigo-400" />
+    <div className="p-2 rounded-lg bg-orange-500/20">
+      <Icon className="w-5 h-5 text-orange-400" />
     </div>
     <span className="flex-1 text-white font-medium">{label}</span>
     <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition" />
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
   const socketHandlers = useMemo(() => ({
     'trip:sos': setSosAlert,
     'stats:live_visitors': setVisitorCount,
-    'admin:joined': () => {} // No action needed - admin room join is confirmed via socket connection
+    'admin:joined': () => { } // No action needed - admin room join is confirmed via socket connection
   }), []);
 
   const { socket, isConnected } = useSocket(socketHandlers);
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p className="text-white font-medium mb-2">Failed to load</p>
           <p className="text-slate-400 text-sm mb-4">{error}</p>
-          <button onClick={fetchData} className="px-6 py-2 bg-indigo-500 text-white rounded-xl font-medium">
+          <button onClick={fetchData} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition">
             Try Again
           </button>
         </div>
@@ -217,9 +217,9 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={Bus} label="Total Buses" value={stats.busCount} color="indigo" />
+          <StatCard icon={Bus} label="Total Buses" value={stats.busCount} color="orange" />
           <StatCard icon={UserCheck} label="Drivers" value={stats.driverCount} color="emerald" />
-          <StatCard icon={Users} label="Students" value={stats.studentCount} color="orange" />
+          <StatCard icon={Users} label="Students" value={stats.studentCount} color="amber" />
           <StatCard icon={Navigation} label="Active Trips" value={stats.activeTrips} color="purple" />
           {analytics && (
             <>
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
         <section className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Map className="w-5 h-5 text-indigo-400" />
+              <Map className="w-5 h-5 text-orange-400" />
               <h2 className="text-lg font-semibold text-white">Live Fleet Map</h2>
             </div>
             <span className="text-xs text-slate-500">{liveBuses.length} buses active</span>

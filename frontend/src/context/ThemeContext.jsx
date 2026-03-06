@@ -1,36 +1,22 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage first, default to 'dark'
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('trackmate-theme') || 'dark';
-    }
-    return 'dark';
-  });
-
   useEffect(() => {
-    // Save to localStorage
-    localStorage.setItem('trackmate-theme', theme);
-    
-    // Apply theme to document using data-theme attribute
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+    // Always light theme
+    localStorage.setItem('trackmate-theme', 'light');
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+  }, []);
 
   const value = {
-    theme,
-    setTheme,
-    toggleTheme,
-    isDark: theme === 'dark',
-    isLight: theme === 'light'
+    theme: 'light',
+    setTheme: () => {},
+    toggleTheme: () => {},
+    isDark: false,
+    isLight: true
   };
 
   return (
@@ -43,13 +29,12 @@ export const ThemeProvider = ({ children }) => {
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    // Return safe defaults instead of throwing
     return {
-      theme: 'dark',
+      theme: 'light',
       setTheme: () => {},
       toggleTheme: () => {},
-      isDark: true,
-      isLight: false
+      isDark: false,
+      isLight: true
     };
   }
   return context;

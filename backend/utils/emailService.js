@@ -297,11 +297,13 @@ const sendStopArrivalEmail = async ({ email, fullName, stopName, etaMinutes }) =
  * @param {Object} params - Email parameters
  * @param {string} params.email - User email address
  * @param {string} params.fullName - User full name
- * @param {string} params.username - Username/roll number (also the reset password)
+ * @param {string} params.username - Username/roll number
+ * @param {string} params.tempPassword - The generated temporary password to send
  * @returns {Promise<boolean>} Success status
  */
-const sendPasswordResetEmail = async ({ email, fullName, username }) => {
+const sendPasswordResetEmail = async ({ email, fullName, username, tempPassword }) => {
   try {
+    const displayPassword = tempPassword || username; // fallback for legacy calls
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -318,7 +320,7 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#F57C00 0%,#FF9800 50%,#FFB74D 100%);border-radius:12px 12px 0 0;padding:36px 32px;text-align:center;">
           <img src="https://trackmaterce.onrender.com/email-logo.png" alt="TrackMate" width="56" height="56" style="display:block;margin:0 auto;border-radius:14px;" />
-          <h1 style="margin:14px 0 0;font-size:24px;font-weight:700;color:#FFFFFF;">Password Updated</h1>
+          <h1 style="margin:14px 0 0;font-size:24px;font-weight:700;color:#FFFFFF;">Password Reset</h1>
           <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">TrackMate – Smart Bus Tracking</p>
         </td></tr>
 
@@ -326,12 +328,14 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
         <tr><td style="background-color:#FFFFFF;padding:36px 32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
 
           <h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#2D2D2D;">Hi ${fullName},</h2>
-          <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">Your password has been reset successfully. Use the credentials below to log back in.</p>
+          <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">
+            We received a request to reset your TrackMate password. Use the temporary credentials below to log in, then change your password immediately.
+          </p>
 
           <!-- Credentials Card -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8F0;border:1px solid #FFE0B2;border-radius:10px;margin-bottom:24px;">
             <tr><td style="padding:20px 24px;">
-              <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#E65100;">&#128100;&nbsp; Login Credentials</p>
+              <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#E65100;">&#128100;&nbsp; Temporary Login Credentials</p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#444;">
                 <tr>
                   <td style="padding:8px 0;font-weight:600;color:#795548;width:160px;">Username</td>
@@ -339,7 +343,9 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
                 </tr>
                 <tr>
                   <td style="padding:8px 0;font-weight:600;color:#795548;border-top:1px solid #FFE0B2;">Temporary Password</td>
-                  <td style="padding:8px 0;border-top:1px solid #FFE0B2;"><code style="background:#FFF3E0;padding:3px 10px;border-radius:4px;font-size:14px;color:#E65100;font-weight:600;">${username}</code></td>
+                  <td style="padding:8px 0;border-top:1px solid #FFE0B2;">
+                    <code style="background:#FFF3E0;padding:5px 14px;border-radius:4px;font-size:16px;color:#E65100;font-weight:700;letter-spacing:1px;">${displayPassword}</code>
+                  </td>
                 </tr>
               </table>
             </td></tr>
@@ -348,8 +354,8 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
           <!-- Security Warning -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF3E0;border-left:4px solid #F57C00;border-radius:0 10px 10px 0;margin-bottom:24px;">
             <tr><td style="padding:16px 20px;">
-              <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E65100;">&#128274;&nbsp; Change Your Password</p>
-              <p style="margin:0;font-size:13px;color:#6D4C00;line-height:1.5;">Please update your password immediately after logging in. Your temporary password is your roll number for security purposes.</p>
+              <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E65100;">&#128274;&nbsp; Change Your Password Immediately</p>
+              <p style="margin:0;font-size:13px;color:#6D4C00;line-height:1.5;">This is a one-time temporary password. You will be required to set a new password after logging in. Do not share this password with anyone.</p>
             </td></tr>
           </table>
 
@@ -393,7 +399,7 @@ const sendPasswordResetEmail = async ({ email, fullName, username }) => {
     const success = await sendEmail({
       to: email,
       toName: fullName,
-      subject: 'TrackMate \u2013 Your Password Has Been Reset',
+      subject: 'TrackMate \u2013 Your Temporary Password',
       html
     });
     if (success) console.log(`\u2705 Password reset email sent to ${email}`);
@@ -409,3 +415,4 @@ module.exports = {
   sendStopArrivalEmail,
   sendPasswordResetEmail
 };
+

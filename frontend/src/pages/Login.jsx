@@ -163,7 +163,7 @@ const Login = () => {
         <div className="login-card login-card-animate">
           {/* Mobile logo (hidden on desktop) */}
           <div className="login-card-mobile-logo">
-            <img src="/logohorigental.svg" alt="TrackMate" className="h-10" />
+            <img src="/logohorigental.svg" alt="TrackMate" className="h-10 mobile-logo-img" />
           </div>
 
           {/* Card Header */}
@@ -254,7 +254,7 @@ const Login = () => {
 
           {/* Footer hint */}
           <p className="login-footer-hint mt-6">
-            Contact your administrator if you need an account
+            Contact your administrator if you need an account trackmate15@gmail.com
           </p>
         </div>
       </div>
@@ -305,8 +305,8 @@ const Login = () => {
               {forgotResult && (
                 <div
                   className={`login-card-animate rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${forgotResult.type === 'success'
-                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                      : 'bg-red-50 border border-red-200 text-red-600'
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                    : 'bg-red-50 border border-red-200 text-red-600'
                     }`}
                 >
                   {forgotResult.type === 'success'

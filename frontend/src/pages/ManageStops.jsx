@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
@@ -18,9 +18,9 @@ const defaultStopForm = (routeId = '') => ({
 });
 
 /* Stat Card */
-const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
+const StatCard = ({ icon: Icon, label, value, color = 'orange' }) => {
   const colors = {
-    indigo: 'from-indigo-500 to-indigo-600',
+    orange: 'from-orange-500 to-orange-600',
     emerald: 'from-emerald-500 to-emerald-600',
     purple: 'from-purple-500 to-purple-600'
   };
@@ -42,10 +42,10 @@ const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => {
 
 /* Stop Card */
 const StopCard = ({ stop, onEdit, onDelete }) => (
-  <div className="card p-4 hover:border-indigo-500/30 transition-all group">
+  <div className="card p-4 hover:border-orange-500/30 transition-all group">
     <div className="flex items-start gap-3">
-      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-        <span className="text-indigo-400 font-bold">{stop.sequence}</span>
+      <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+        <span className="text-orange-400 font-bold">{stop.sequence}</span>
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-white font-semibold truncate">{stop.name}</h3>
@@ -64,7 +64,7 @@ const StopCard = ({ stop, onEdit, onDelete }) => (
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(stop)}
-          className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+          className="p-2 rounded-lg text-orange-400 hover:bg-orange-500/20 transition"
           title="Edit stop"
         >
           <Edit2 className="w-4 h-4" />
@@ -211,7 +211,7 @@ const ManageStops = () => {
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto w-full"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition sm:w-auto w-full"
           >
             <Plus className="w-5 h-5" />
             Add Stop
@@ -226,7 +226,7 @@ const ManageStops = () => {
             <select
               value={selectedRoute}
               onChange={(e) => selectRoute(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50 appearance-none"
             >
               {routes.map((route) => (
                 <option key={route._id} value={route._id}>{route.name}</option>
@@ -238,7 +238,7 @@ const ManageStops = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <StatCard icon={Octagon} label="Total Stops" value={stops.length} color="indigo" />
+          <StatCard icon={Octagon} label="Total Stops" value={stops.length} color="orange" />
           <StatCard icon={Clock} label="Est. Time" value={`${totalTime} min`} color="emerald" />
           <StatCard icon={Navigation} label="Route" value={selectedRouteName.substring(0, 12)} color="purple" />
         </div>
@@ -253,7 +253,7 @@ const ManageStops = () => {
                 <input
                   value={form.name}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                   placeholder="e.g., Main Street"
                   required
                 />
@@ -266,7 +266,7 @@ const ManageStops = () => {
                     step="any"
                     value={form.latitude}
                     onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     placeholder="e.g., 12.9716"
                     required
                   />
@@ -278,7 +278,7 @@ const ManageStops = () => {
                     step="any"
                     value={form.longitude}
                     onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     placeholder="e.g., 77.5946"
                     required
                   />
@@ -292,7 +292,7 @@ const ManageStops = () => {
                     min="1"
                     value={form.sequence}
                     onChange={(e) => setForm((prev) => ({ ...prev, sequence: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     required
                   />
                 </div>
@@ -303,7 +303,7 @@ const ManageStops = () => {
                     min="0"
                     value={form.averageTravelMinutes}
                     onChange={(e) => setForm((prev) => ({ ...prev, averageTravelMinutes: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
                     placeholder="2"
                   />
                 </div>
@@ -318,7 +318,7 @@ const ManageStops = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition"
                 >
                   Add Stop
                 </button>
@@ -361,7 +361,7 @@ const ManageStops = () => {
             <button
               type="submit"
               form="stop-edit-form"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition"
             >
               Save Changes
             </button>
@@ -374,7 +374,7 @@ const ManageStops = () => {
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               required
             />
           </div>
@@ -385,7 +385,7 @@ const ManageStops = () => {
               step="any"
               value={form.latitude}
               onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               required
             />
           </div>
@@ -396,7 +396,7 @@ const ManageStops = () => {
               step="any"
               value={form.longitude}
               onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               required
             />
           </div>
@@ -407,7 +407,7 @@ const ManageStops = () => {
               min="1"
               value={form.sequence}
               onChange={(e) => setForm((prev) => ({ ...prev, sequence: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               required
             />
           </div>
@@ -418,7 +418,7 @@ const ManageStops = () => {
               min="0"
               value={form.averageTravelMinutes}
               onChange={(e) => setForm((prev) => ({ ...prev, averageTravelMinutes: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
             />
           </div>
         </form>

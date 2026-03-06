@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUp, ArrowDown, Trash2, GripVertical, MapPin, X } from 'lucide-react';
 import {
@@ -75,7 +75,7 @@ const StopNameModal = ({ isOpen, defaultName, onConfirm, onCancel }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
               <MapPin className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -103,7 +103,7 @@ const StopNameModal = ({ isOpen, defaultName, onConfirm, onCancel }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Main Street Station"
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all"
               autoComplete="off"
             />
           </div>
@@ -119,7 +119,7 @@ const StopNameModal = ({ isOpen, defaultName, onConfirm, onCancel }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/25 transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 shadow-lg shadow-orange-500/25 transition-all"
             >
               Add Stop
             </button>
@@ -145,13 +145,13 @@ const SortableStopRow = ({ stop, index, updateStopName, removeStop, moveStop }) 
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-800/60 p-3 transition-all hover:border-indigo-500/30 hover:bg-slate-800/80"
+      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-800/60 p-3 transition-all hover:border-orange-500/30 hover:bg-slate-800/80"
     >
       <div {...attributes} {...listeners} className="cursor-grab text-slate-500 hover:text-slate-300 active:cursor-grabbing transition-colors">
         <GripVertical size={16} />
       </div>
 
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-xs font-bold text-indigo-400 border border-indigo-500/20">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-400/20 text-xs font-bold text-orange-400 border border-orange-500/20">
         {index + 1}
       </span>
 
@@ -475,7 +475,7 @@ const MapEditor = ({ initialRoute = null, initialStops = [], onSave, panelContai
       <div className="flex gap-2">
         <button
           type="button"
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:shadow-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSave}
           disabled={sortedStops.length < 2}
         >

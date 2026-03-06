@@ -1,22 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../context/ThemeContext';
 import {
   Bus, Home, Users, Navigation, MapPin, UserCheck,
-  User, LogOut, Sun, Moon, Bell, Menu, X, ChevronRight
+  User, LogOut, Menu, X, ChevronRight
 } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
-  const darkMode = isDark ?? true;
 
   // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); setProfileOpen(false); }, [location.pathname]);
@@ -109,23 +106,6 @@ const Navbar = () => {
 
           {/* Right — Icon Actions */}
           <div className="nav-right">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="nav-icon-btn"
-              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {darkMode ? <Sun className="w-[1.15rem] h-[1.15rem]" /> : <Moon className="w-[1.15rem] h-[1.15rem]" />}
-            </button>
-
-            {/* Notification Bell */}
-            {user && (
-              <button className="nav-icon-btn nav-bell-btn" title="Notifications">
-                <Bell className="w-[1.15rem] h-[1.15rem]" />
-                <span className="nav-bell-badge" />
-              </button>
-            )}
-
             {/* Profile Dropdown */}
             {user && (
               <div className="nav-profile-wrap" ref={profileRef}>
@@ -235,10 +215,6 @@ const Navbar = () => {
 
             {/* Drawer Footer */}
             <div className="nav-drawer-footer">
-              <button onClick={toggleTheme} className="nav-drawer-link">
-                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-              </button>
               <button onClick={logout} className="nav-drawer-link nav-drawer-link-danger">
                 <LogOut className="w-5 h-5" />
                 <span>Logout</span>

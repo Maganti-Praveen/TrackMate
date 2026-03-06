@@ -95,8 +95,8 @@ const testPush = async (req, res) => {
                 body: 'Push notifications are working! You\'ll get alerts when your bus is nearby.',
                 url: '/student',
                 tag: 'test-push',
-                icon: '/favicons/android-chrome-192x192.png',
-                badge: '/favicons/favicon-32x32.png'
+                icon: '/logo%20vertical.png',
+                badge: '/favicons/android-chrome-192x192.png'
             }));
             res.json({ message: 'Test notification sent.' });
         } catch (pushErr) {

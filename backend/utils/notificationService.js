@@ -41,7 +41,7 @@ const sendPushNotification = async ({ busId, title, body }) => {
   for (const assignment of assignments) {
     const student = assignment.student;
     if (student?.pushSubscription) {
-      const payload = { title, body, url: '/student', icon: '/favicons/android-chrome-192x192.png', badge: '/favicons/favicon-32x32.png' };
+      const payload = { title, body, url: '/student', icon: '/logo%20vertical.png', badge: '/favicons/android-chrome-192x192.png' };
       const success = await sendPush(student.pushSubscription, payload);
       if (success) {
         sentCount++;
@@ -86,8 +86,8 @@ const sendSOSNotification = async ({ tripId, message }) => {
       const payload = {
         title: '🚨 EMERGENCY ALERT',
         body: `Driver SOS: ${message}`,
-        icon: '/favicons/android-chrome-192x192.png',
-        badge: '/favicons/favicon-32x32.png',
+        icon: '/logo%20vertical.png',
+        badge: '/favicons/android-chrome-192x192.png',
         data: { url: '/student' },
         tag: 'sos-alert',
         renotify: true,

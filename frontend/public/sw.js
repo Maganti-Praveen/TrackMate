@@ -9,6 +9,8 @@ const PRECACHE_URLS = [
   '/favicons/android-chrome-192x192.png',
   '/favicons/android-chrome-512x512.png',
   '/favicons/favicon-32x32.png',
+  '/logo%20vertical.png',
+  '/logohorigental.png',
   '/manifest.json'
 ];
 
@@ -100,8 +102,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/favicons/android-chrome-192x192.png',
-    badge: data.badge || '/favicons/favicon-32x32.png',
+    icon: data.icon || '/logo%20vertical.png',
+    badge: data.badge || '/favicons/android-chrome-192x192.png',
     image: data.image || undefined,
     data: {
       url: data.url

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api } from '../utils/api';
 import Drawer from '../components/Drawer';
@@ -17,9 +17,9 @@ const createEmptyBus = () => ({
 });
 
 /* Stat Card Component */
-const StatCard = ({ icon: Icon, label, value, subtitle, color = 'indigo' }) => {
+const StatCard = ({ icon: Icon, label, value, subtitle, color = 'orange' }) => {
   const colors = {
-    indigo: 'from-indigo-500 to-indigo-600',
+    orange: 'from-orange-500 to-orange-600',
     emerald: 'from-emerald-500 to-emerald-600',
     amber: 'from-amber-500 to-amber-600',
     purple: 'from-purple-500 to-purple-600'
@@ -51,8 +51,8 @@ const BusCard = ({ bus, onEdit, onDelete, selectionMode, isSelected, onToggleSel
 
   return (
     <div
-      className={`card p-4 transition-all group cursor-pointer ${isSelected ? 'border-indigo-500 bg-indigo-500/5 ring-1 ring-indigo-500/30'
-          : 'hover:border-indigo-500/30'
+      className={`card p-4 transition-all group cursor-pointer ${isSelected ? 'border-orange-500 bg-orange-500/5 ring-1 ring-orange-500/30'
+          : 'hover:border-orange-500/30'
         }`}
       onClick={handleCardClick}
     >
@@ -61,14 +61,14 @@ const BusCard = ({ bus, onEdit, onDelete, selectionMode, isSelected, onToggleSel
           {selectionMode && (
             <div className="flex-shrink-0">
               {isSelected
-                ? <CheckSquare className="w-5 h-5 text-indigo-400" />
+                ? <CheckSquare className="w-5 h-5 text-orange-400" />
                 : <Square className="w-5 h-5 text-slate-500" />
               }
             </div>
           )}
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${hasRoute ? 'bg-indigo-500/20' : 'bg-slate-700'
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${hasRoute ? 'bg-orange-500/20' : 'bg-slate-700'
             }`}>
-            <Bus className={`w-5 h-5 ${hasRoute ? 'text-indigo-400' : 'text-slate-400'}`} />
+            <Bus className={`w-5 h-5 ${hasRoute ? 'text-orange-400' : 'text-slate-400'}`} />
           </div>
           <div className="min-w-0">
             <h3 className="text-white font-semibold truncate">{bus.name}</h3>
@@ -103,7 +103,7 @@ const BusCard = ({ bus, onEdit, onDelete, selectionMode, isSelected, onToggleSel
           <div className="flex items-center gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(bus); }}
-              className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/20 transition"
+              className="p-2 rounded-lg text-orange-400 hover:bg-orange-500/20 transition"
               title="Edit bus"
             >
               <Edit2 className="w-4 h-4" />
@@ -290,7 +290,7 @@ const ManageBuses = () => {
             <button
               onClick={() => { if (selectionMode) exitSelection(); else setSelectionMode(true); }}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition sm:w-auto ${selectionMode
-                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10'
+                  ? 'border-orange-500 text-orange-400 bg-orange-500/10'
                   : 'border-white/10 text-slate-300 hover:bg-white/5 hover:border-white/20'
                 }`}
             >
@@ -300,7 +300,7 @@ const ManageBuses = () => {
             {!selectionMode && (
               <button
                 onClick={openCreate}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition sm:w-auto flex-1"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition sm:w-auto flex-1"
               >
                 <Plus className="w-5 h-5" />
                 Add Bus
@@ -311,7 +311,7 @@ const ManageBuses = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={Bus} label="Total Buses" value={buses.length} subtitle="In fleet" color="indigo" />
+          <StatCard icon={Bus} label="Total Buses" value={buses.length} subtitle="In fleet" color="orange" />
           <StatCard icon={Navigation} label="Active" value={activeBuses} subtitle="On routes" color="emerald" />
           <StatCard icon={Bus} label="Idle" value={buses.length - activeBuses} subtitle="Available" color="amber" />
           <StatCard icon={Users} label="Capacity" value={totalCapacity} subtitle="Total seats" color="purple" />
@@ -328,7 +328,7 @@ const ManageBuses = () => {
                 placeholder="Search buses..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               />
               {search && (
                 <button
@@ -344,14 +344,14 @@ const ManageBuses = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition sm:w-auto w-full justify-center ${hasActiveFilters
-                  ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10'
+                  ? 'border-orange-500 text-orange-400 bg-orange-500/10'
                   : 'border-white/10 text-slate-400 hover:text-white hover:border-white/20'
                 }`}
             >
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filters</span>
               {hasActiveFilters && (
-                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">
                   {(routeFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
                 </span>
               )}
@@ -367,7 +367,7 @@ const ManageBuses = () => {
                 <select
                   value={routeFilter}
                   onChange={(e) => setRouteFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-orange-500/50"
                 >
                   <option value="all">All routes</option>
                   {routes.map((route) => (
@@ -380,7 +380,7 @@ const ManageBuses = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-indigo-500/50"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800/50 border border-white/5 text-white focus:outline-none focus:border-orange-500/50"
                 >
                   <option value="all">All buses</option>
                   <option value="assigned">On route</option>
@@ -390,7 +390,7 @@ const ManageBuses = () => {
               {hasActiveFilters && (
                 <button
                   onClick={() => { setRouteFilter('all'); setStatusFilter('all'); }}
-                  className="sm:col-span-2 text-sm text-indigo-400 hover:text-indigo-300 transition"
+                  className="sm:col-span-2 text-sm text-orange-400 hover:text-orange-300 transition"
                 >
                   Clear all filters
                 </button>
@@ -443,7 +443,7 @@ const ManageBuses = () => {
             <button
               type="submit"
               form="bus-form"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition"
             >
               {editingBus ? 'Save Changes' : 'Add Bus'}
             </button>
@@ -457,7 +457,7 @@ const ManageBuses = () => {
               name="name"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               placeholder="e.g., Bus Alpha"
               required
             />
@@ -468,7 +468,7 @@ const ManageBuses = () => {
               name="numberPlate"
               value={form.numberPlate}
               onChange={(e) => setForm((prev) => ({ ...prev, numberPlate: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 uppercase"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50 uppercase"
               placeholder="e.g., TN 01 AB 1234"
               required
             />
@@ -481,7 +481,7 @@ const ManageBuses = () => {
               min="1"
               value={form.capacity}
               onChange={(e) => setForm((prev) => ({ ...prev, capacity: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
               required
             />
           </div>
@@ -491,7 +491,7 @@ const ManageBuses = () => {
               name="route"
               value={form.route}
               onChange={(e) => setForm((prev) => ({ ...prev, route: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
             >
               <option value="">Unassigned</option>
               {routes.map((route) => (
@@ -505,7 +505,7 @@ const ManageBuses = () => {
               name="driver"
               value={form.driver}
               onChange={(e) => setForm((prev) => ({ ...prev, driver: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-indigo-500/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
             >
               <option value="">Unassigned</option>
               {drivers.map((driver) => (
@@ -537,7 +537,7 @@ const ManageBuses = () => {
           <div className="w-px h-6 bg-white/10" />
           <button
             onClick={selectAll}
-            className="text-xs text-indigo-400 hover:text-indigo-300 font-medium whitespace-nowrap"
+            className="text-xs text-orange-400 hover:text-orange-300 font-medium whitespace-nowrap"
           >
             Select all ({filteredBuses.length})
           </button>

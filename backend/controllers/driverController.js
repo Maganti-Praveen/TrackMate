@@ -32,7 +32,7 @@ const createDriverAccount = async (req, res) => {
     const { username, password, name, phone } = req.body;
     const plainPassword = password || username;
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
-    
+
     const driver = await User.create({
       username,
       password: hashedPassword,

@@ -84,7 +84,7 @@ const getActiveTrip = async (req, res) => {
     // Check if trip is stale (older than 12 hours)
     const tripAge = Date.now() - new Date(trip.startedAt || trip.createdAt).getTime();
     const maxAge = STALE_TRIP_HOURS * 60 * 60 * 1000;
-    
+
     if (tripAge > maxAge) {
       // Auto-end stale trip
       trip.status = 'COMPLETED';
